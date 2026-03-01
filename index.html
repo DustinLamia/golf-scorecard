@@ -55,7 +55,7 @@
   .voice-btn.listening{background:rgba(192,57,43,.3);border-color:var(--red);animation:pulse-ring 1.2s ease-out infinite;}
   .voice-btn.listening svg{fill:var(--red);}
   @keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(192,57,43,.5);}70%{box-shadow:0 0 0 20px rgba(192,57,43,0);}100%{box-shadow:0 0 0 0 rgba(192,57,43,0);}}
-  .voice-hint{margin-top:10px;font-size:.75rem;color:var(--tan);text-align:center;letter-spacing:1px;text-transform:uppercase;max-width:260px;}
+  .voice-hint{margin-top:10px;font-size:.75rem;color:var(--tan);text-align:center;letter-spacing:1px;text-transform:uppercase;max-width:260px;line-height:1.5;}
   .voice-transcript{margin-top:8px;font-size:.85rem;color:var(--cream);text-align:center;min-height:20px;font-style:italic;opacity:.8;padding:0 20px;}
   .voice-feedback{margin-top:6px;font-size:.8rem;text-align:center;min-height:18px;padding:0 20px;color:var(--gold);font-weight:500;}
   .scorecard-wrapper{overflow-x:auto;border-radius:12px;background:rgba(0,0,0,.25);backdrop-filter:blur(10px);border:1px solid rgba(245,240,232,.15);}
@@ -86,17 +86,6 @@
   .legend{display:flex;gap:12px;justify-content:center;padding:8px 0 16px;flex-wrap:wrap;}
   .legend-item{display:flex;align-items:center;gap:5px;font-size:.7rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;}
   .legend-dot{width:10px;height:10px;border-radius:2px;}
-  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center;padding:20px;}
-  .overlay.show{display:flex;}
-  .overlay-card{background:#2a4a25;border:1px solid rgba(201,168,76,.4);border-radius:16px;padding:28px 24px;max-width:340px;width:100%;text-align:center;}
-  .overlay-card h3{font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:2px;margin-bottom:10px;color:var(--gold);}
-  .overlay-card p{font-size:.85rem;color:var(--tan);margin-bottom:6px;}
-  .scores-confirm{background:rgba(0,0,0,.3);border-radius:8px;padding:12px;margin:14px 0;text-align:left;}
-  .scores-confirm p{color:var(--cream);font-size:.9rem;margin-bottom:4px;}
-  .overlay-buttons{display:flex;gap:10px;margin-top:16px;}
-  .overlay-buttons button{flex:1;padding:12px;border-radius:8px;border:none;cursor:pointer;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;}
-  .btn-confirm{background:var(--gold);color:var(--dark);}
-  .btn-cancel{background:rgba(255,255,255,.1);color:var(--cream);border:1px solid rgba(255,255,255,.2)!important;}
   @media(max-width:400px){header h1{font-size:2rem;}}
 </style>
 </head>
@@ -181,41 +170,18 @@
   </div>
 </div>
 
-<div class="overlay" id="confirm-overlay">
-  <div class="overlay-card">
-    <h3>Confirm Scores</h3>
-    <p id="overlay-subtitle"></p>
-    <div class="scores-confirm" id="overlay-scores"></div>
-    <div class="overlay-buttons">
-      <button class="btn-cancel" onclick="closeOverlay()">Redo</button>
-      <button class="btn-confirm" onclick="applyScores()">Yes, Save</button>
-    </div>
-  </div>
-</div>
-
 <script>
 const COURSES=[
   {name:"Pebble Beach Golf Links",city:"Pebble Beach",state:"CA",tees:[{name:"Blue",pars:[4,5,4,4,3,5,3,4,4,4,4,3,4,5,4,4,3,5],yardages:[381,502,390,327,195,516,107,418,466,446,380,202,392,565,397,402,178,543]},{name:"White",pars:[4,5,4,4,3,5,3,4,4,4,4,3,4,5,4,4,3,5],yardages:[354,467,362,295,170,480,100,385,432,408,350,175,360,530,368,371,155,510]}]},
   {name:"Augusta National Golf Club",city:"Augusta",state:"GA",tees:[{name:"Tournament",pars:[4,5,4,3,4,3,4,5,4,4,4,3,5,4,5,3,4,4],yardages:[445,575,350,240,455,180,450,570,460,495,520,155,510,440,530,170,440,465]}]},
   {name:"TPC Sawgrass Stadium Course",city:"Ponte Vedra Beach",state:"FL",tees:[{name:"Black",pars:[4,5,3,4,4,4,4,3,5,4,4,3,4,4,4,5,3,4],yardages:[423,532,177,384,466,393,442,237,583,424,558,365,181,467,449,523,223,440]},{name:"Blue",pars:[4,5,3,4,4,4,4,3,5,4,4,3,4,4,4,5,3,4],yardages:[395,510,155,362,445,368,420,215,560,400,530,342,160,445,425,500,200,416]}]},
   {name:"Torrey Pines South Course",city:"La Jolla",state:"CA",tees:[{name:"Blue",pars:[4,4,3,5,4,3,5,4,4,4,4,3,4,4,5,3,4,5],yardages:[450,399,198,490,453,193,501,450,376,403,218,504,448,175,570,440,572,450]}]},
-  {name:"Torrey Pines North Course",city:"La Jolla",state:"CA",tees:[{name:"Blue",pars:[4,3,4,4,4,5,3,4,4,4,4,5,3,4,4,3,5,4],yardages:[369,163,399,383,527,180,358,350,419,411,576,174,408,376,148,504,403,411]}]},
   {name:"Bethpage Black Course",city:"Farmingdale",state:"NY",tees:[{name:"Black",pars:[4,4,3,5,4,4,5,3,4,4,4,4,5,3,4,4,3,4],yardages:[430,389,230,517,478,408,519,210,432,492,435,499,614,161,430,478,207,411]}]},
   {name:"Pinehurst No. 2",city:"Pinehurst",state:"NC",tees:[{name:"Gold",pars:[4,4,4,4,4,3,4,3,5,4,4,3,4,4,5,4,3,4],yardages:[413,459,338,546,482,218,401,178,571,606,431,156,392,449,549,531,187,432]}]},
   {name:"Whistling Straits Straits Course",city:"Haven",state:"WI",tees:[{name:"Championship",pars:[4,4,3,4,5,5,4,3,4,4,4,3,5,4,4,3,4,5],yardages:[405,477,174,453,588,471,394,223,437,403,563,175,567,445,396,224,432,514]}]},
-  {name:"Bandon Dunes Golf Resort",city:"Bandon",state:"OR",tees:[{name:"Blue",pars:[4,4,4,4,3,5,4,3,5,4,4,4,3,4,5,3,4,4],yardages:[368,422,368,375,175,565,375,145,549,376,370,382,156,375,554,164,420,392]}]},
-  {name:"Oakmont Country Club",city:"Oakmont",state:"PA",tees:[{name:"Championship",pars:[4,4,4,3,4,3,4,3,5,4,4,4,5,3,4,4,3,4],yardages:[482,341,428,171,379,194,479,288,477,462,371,667,185,358,453,230,313,484]}]},
-  {name:"Winged Foot West Course",city:"Mamaroneck",state:"NY",tees:[{name:"Championship",pars:[4,4,3,5,3,5,4,4,4,4,3,4,5,3,4,4,3,4],yardages:[453,409,216,469,145,513,430,442,471,190,396,535,175,461,417,216,444,456]}]},
-  {name:"Muirfield Village Golf Club",city:"Dublin",state:"OH",tees:[{name:"Championship",pars:[4,4,4,3,4,3,5,4,4,4,4,4,3,4,5,3,4,4],yardages:[455,452,401,204,527,455,563,177,418,441,567,185,455,363,537,204,430,444]}]},
   {name:"Shadow Creek Golf Course",city:"North Las Vegas",state:"NV",tees:[{name:"Blue",pars:[4,4,3,4,5,4,3,5,4,4,3,4,5,4,4,3,5,4],yardages:[442,382,191,407,585,441,201,550,439,419,189,450,568,460,398,178,565,430]}]},
-  {name:"Valhalla Golf Club",city:"Louisville",state:"KY",tees:[{name:"Championship",pars:[4,5,4,3,4,4,5,3,4,4,3,4,4,5,3,4,4,5],yardages:[412,579,416,209,468,458,630,209,412,434,159,465,518,575,205,505,441,542]}]},
-  {name:"Erin Hills Golf Course",city:"Erin",state:"WI",tees:[{name:"Blue",pars:[4,4,3,4,4,5,4,3,5,4,5,4,3,4,4,3,5,4],yardages:[407,485,215,445,390,568,434,207,563,412,575,448,215,455,463,200,575,468]}]},
-  {name:"Congressional Blue Course",city:"Bethesda",state:"MD",tees:[{name:"Blue",pars:[4,4,4,3,4,4,3,5,4,4,4,5,4,3,4,3,5,4],yardages:[428,465,438,199,432,394,174,602,434,438,415,589,380,168,426,229,532,490]}]},
   {name:"Streamsong Red Course",city:"Streamsong",state:"FL",tees:[{name:"Blue",pars:[4,4,3,5,4,4,3,5,4,4,4,3,5,4,4,3,4,5],yardages:[387,368,165,538,412,455,185,545,418,412,390,195,550,382,412,159,403,562]}]},
   {name:"Streamsong Blue Course",city:"Streamsong",state:"FL",tees:[{name:"Blue",pars:[4,3,4,4,5,4,3,4,5,4,4,3,5,4,4,3,4,5],yardages:[395,178,402,378,555,412,188,395,542,392,418,165,555,388,405,152,392,548]}]},
-  {name:"Sand Valley Golf Resort",city:"Nekoosa",state:"WI",tees:[{name:"Blue",pars:[4,4,3,5,4,4,3,5,4,4,4,3,5,4,4,3,4,5],yardages:[388,412,175,545,392,428,168,550,405,418,395,182,562,378,415,158,402,540]}]},
-  {name:"Cabot Cliffs",city:"Inverness",state:"Nova Scotia",tees:[{name:"Blue",pars:[4,3,5,4,4,3,4,4,5,3,4,4,3,5,4,3,4,5],yardages:[392,168,512,383,432,175,385,402,540,152,398,418,179,535,388,145,415,538]}]},
-  {name:"Pelican Hill Ocean North",city:"Newport Coast",state:"CA",tees:[{name:"Blue",pars:[4,3,5,4,4,3,4,5,4,4,3,4,5,4,4,3,5,4],yardages:[423,181,535,432,417,175,395,543,397,431,171,448,559,408,435,184,522,410]}]},
   {name:"World Woods Pine Barrens",city:"Brooksville",state:"FL",tees:[{name:"Blue",pars:[4,4,3,5,4,4,3,5,4,4,3,4,5,4,4,3,5,4],yardages:[385,375,158,535,405,442,178,540,412,398,162,428,542,368,398,145,512,385]}]},
   {name:"The Club at Venetian Bay",city:"New Smyrna Beach",state:"FL",tees:[
     {name:"Gold (7072)",pars:[5,4,3,4,5,3,4,4,4,4,5,3,4,4,4,3,4,5],yardages:[528,447,214,413,533,191,406,384,358,435,556,190,458,432,362,195,420,550]},
@@ -228,7 +194,7 @@ const COURSES=[
     {name:"Black (6988)",pars:[4,4,3,4,5,4,5,4,3,4,3,4,5,3,4,5,4,4],yardages:[442,431,177,461,518,444,480,330,172,405,242,423,515,230,361,576,464,317]},
     {name:"Blue (6517)", pars:[4,4,3,4,5,4,5,4,3,4,3,4,5,3,4,5,4,4],yardages:[399,399,166,450,509,399,441,288,136,387,224,399,499,209,336,554,440,283]},
     {name:"White (5977)",pars:[4,4,3,4,5,4,5,4,3,4,3,4,5,3,4,5,4,4],yardages:[363,366,148,420,487,363,397,255,118,360,200,375,471,185,308,527,412,252]},
-    {name:"Gold (5399)", pars:[4,4,3,4,5,4,5,4,3,4,3,4,5,3,4,5,4,4],yardages:[324,328,128,382,455,326,350,218,101,330,175,341,435,162,278,493,378,221]},
+    {name:"Gold (5399)", pars:[4,4,3,4,5,4,5,4,3,4,5,4,4],yardages:[324,328,128,382,455,326,350,218,101,330,175,341,435,162,278,493,378,221]},
     {name:"Red (4678)",  pars:[4,4,3,4,5,4,5,4,3,4,3,4,5,3,4,5,4,4],yardages:[278,285,110,330,400,280,295,185,88,288,148,292,380,140,240,435,325,181]}
   ]},
   {name:"DeBary Golf & Country Club",city:"DeBary",state:"FL",tees:[
@@ -241,7 +207,7 @@ const COURSES=[
 ];
 
 let players=[],holes=9,pars=[],yardages=[],scores=[];
-let recognition=null,isListening=false,pendingScores=null;
+let recognition=null,isListening=false;
 let selectedCourse=null,selectedTee=null;
 
 document.querySelectorAll('.holes-btn').forEach(btn=>{
@@ -268,17 +234,12 @@ function fuzzyMatch(query,course){
   const q=query.toLowerCase().trim();
   const name=(course.name||'').toLowerCase();
   const city=(course.city||'').toLowerCase();
-  const state=(course.state||'').toLowerCase();
   const nameWords=name.split(/\s+/);
   const cityWords=city.split(/\s+/);
   const allWords=[...nameWords,...cityWords];
-  // ONLY match on word boundaries — 'ven' must start a word, not appear mid-word
   if(allWords.some(w=>w.startsWith(q)))return 0;
-  // Short queries (under 4 chars): prefix-only, no fuzzy, no substring
   if(q.length<4)return 999;
-  // Longer queries: full name/city substring OK (e.g. 'netian' in 'Venetian')
   if(name.includes(q)||city.includes(q))return 1;
-  // Word-by-word fuzzy for typos
   const qWords=q.split(/\s+/);
   let totalDist=0;
   for(const qw of qWords){
@@ -290,17 +251,15 @@ function fuzzyMatch(query,course){
   }
   return totalDist;
 }
+
 function closeDropdown(){
-  const results=document.getElementById('course-results');
-  if(results)results.innerHTML='';
-  const status=document.getElementById('search-status');
-  if(status)status.textContent='';
+  const r=document.getElementById('course-results');if(r)r.innerHTML='';
+  const s=document.getElementById('search-status');if(s)s.textContent='';
 }
-document.addEventListener('click',function(e){
-  if(!e.target.closest('.course-search-row')&&!e.target.closest('#course-results')){
-    closeDropdown();
-  }
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.course-search-row'))closeDropdown();
 });
+
 const API_KEY='BFTCFEDTFTZTS55WTT4K55SKZE';
 const API_BASE='https://api.golfcourseapi.com/v1';
 
@@ -311,16 +270,12 @@ async function searchCourse(){
   results.innerHTML='';
   document.getElementById('tee-section').style.display='none';
   document.getElementById('selected-badge').style.display='none';
-  if(!query){status.textContent='Type a course name and hit Search';return;}
+  if(!query){status.textContent='';return;}
 
-  // First check local database
   const localMatches=COURSES
     .map(c=>({course:c,score:fuzzyMatch(query,c)}))
-    .filter(x=>x.score<999)
-    .sort((a,b)=>a.score-b.score)
-    .map(x=>x.course);
+    .filter(x=>x.score<999).sort((a,b)=>a.score-b.score).map(x=>x.course);
 
-  // Show local results immediately
   if(localMatches.length){
     status.textContent='Searching...';
     localMatches.forEach(course=>{
@@ -332,35 +287,27 @@ async function searchCourse(){
     });
   }
 
-  // Then fetch from API
-  status.textContent='&#8987; Searching courses...';
-  try {
-    const resp=await fetch(API_BASE+'/search?search_query='+encodeURIComponent(query)+'&per_page=20',{
-      headers:{'Authorization':'Key '+API_KEY}
-    });
+  status.textContent='&#8987; Searching...';
+  try{
+    const resp=await fetch(API_BASE+'/search?search_query='+encodeURIComponent(query)+'&per_page=20',{headers:{'Authorization':'Key '+API_KEY}});
     const data=await resp.json();
     const apiCourses=(data.courses||[]).filter(c=>c.location?.country==='United States');
-
-    // Remove duplicates vs local results
     const localNames=new Set(localMatches.map(c=>c.name.toLowerCase()));
     const newFromApi=apiCourses.filter(c=>!localNames.has(c.course_name.toLowerCase()));
-
     const total=localMatches.length+newFromApi.length;
-    if(!total){status.textContent='No matches found. Try a different name or city.';return;}
+    if(!total){status.textContent='No matches found.';return;}
     status.textContent=total+' course'+(total!==1?'s':'')+' found';
-
     newFromApi.forEach(course=>{
       const div=document.createElement('div');
       div.className='course-item';
-      const city=course.location?.city||'';
-      const state=course.location?.state||'';
+      const city=course.location?.city||'',state=course.location?.state||'';
       div.innerHTML='<div class="cn">'+course.course_name+'</div><div class="cl">'+city+(state?', '+state:'')+' &middot; Tap to load scorecard</div>';
       div.onclick=()=>selectApiCourse(course.id,div);
       results.appendChild(div);
     });
-  } catch(e){
-    if(!localMatches.length) status.textContent='Offline – no matches found. Try "Custom / Local Course".';
-    else status.textContent=localMatches.length+' local course'+(localMatches.length!==1?'s':'')+' found (offline)';
+  }catch(e){
+    if(!localMatches.length)status.textContent='Offline – try "Custom / Local Course"';
+    else status.textContent=localMatches.length+' local course'+(localMatches.length!==1?'s':'')+' found';
   }
 }
 
@@ -368,53 +315,30 @@ async function selectApiCourse(id,el){
   document.querySelectorAll('.course-item').forEach(d=>d.classList.remove('selected'));
   el.classList.add('selected');
   el.querySelector('.cl').textContent='Loading scorecard...';
-  try {
+  try{
     const resp=await fetch(API_BASE+'/courses/'+id,{headers:{'Authorization':'Key '+API_KEY}});
     const data=await resp.json();
     const c=data.course;
-
-    // Build tees array from API response, prefer male tees
     const rawTees=[...(c.tees?.male||[]),...(c.tees?.female||[])];
-    // Deduplicate by tee name
-    const seen=new Set();
-    const tees=[];
+    const seen=new Set(),tees=[];
     rawTees.forEach(t=>{
       const key=t.tee_name+'-'+(t.holes?.length||0);
       if(!seen.has(key)&&t.holes&&t.holes.length>0){
         seen.add(key);
-        tees.push({
-          name:t.tee_name+' ('+t.total_yards+'y)',
-          pars:t.holes.map(h=>h.par),
-          yardages:t.holes.map(h=>h.yardage)
-        });
+        tees.push({name:t.tee_name+' ('+t.total_yards+'y)',pars:t.holes.map(h=>h.par),yardages:t.holes.map(h=>h.yardage)});
       }
     });
-
-    if(!tees.length){
-      el.querySelector('.cl').textContent='No scorecard data available';
-      return;
-    }
-
-    const course={
-      name:c.course_name,
-      city:c.location?.city||'',
-      state:c.location?.state||'',
-      tees:tees
-    };
-
+    if(!tees.length){el.querySelector('.cl').textContent='No scorecard data available';return;}
+    const course={name:c.course_name,city:c.location?.city||'',state:c.location?.state||'',tees};
     el.querySelector('.cl').textContent=course.city+(course.state?', '+course.state:'')+' · '+tees[0].pars.length+' holes';
     selectCourse(course,el);
-  } catch(e){
-    el.querySelector('.cl').textContent='Error loading – try again';
-    el.classList.remove('selected');
-  }
+  }catch(e){el.querySelector('.cl').textContent='Error loading – try again';el.classList.remove('selected');}
 }
 
 function selectCourse(course,el){
   document.querySelectorAll('.course-item').forEach(d=>d.classList.remove('selected'));
   el.classList.add('selected');
   selectedCourse=course;
-  // Fill input with selected course name and close dropdown
   document.getElementById('course-input').value=course.name;
   setTimeout(closeDropdown,150);
   selectedTee=course.tees[0];
@@ -423,8 +347,7 @@ function selectCourse(course,el){
   const teeSection=document.getElementById('tee-section');
   const teeBtns=document.getElementById('tee-btns');
   if(course.tees.length>1){
-    teeSection.style.display='block';
-    teeBtns.innerHTML='';
+    teeSection.style.display='block';teeBtns.innerHTML='';
     course.tees.forEach((tee,i)=>{
       const btn=document.createElement('button');
       btn.className='tee-btn'+(i===0?' active':'');
@@ -432,9 +355,7 @@ function selectCourse(course,el){
       btn.onclick=()=>{document.querySelectorAll('.tee-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');selectedTee=tee;updateBadge();};
       teeBtns.appendChild(btn);
     });
-  } else {
-    teeSection.style.display='none';
-  }
+  }else{teeSection.style.display='none';}
   updateBadge();
 }
 
@@ -458,10 +379,7 @@ function startRound(){
     yardages=selectedTee.yardages.slice(0,holes);
     while(pars.length<holes)pars.push(4);
     while(yardages.length<holes)yardages.push(0);
-  } else {
-    pars=Array(holes).fill(4);
-    yardages=Array(holes).fill(0);
-  }
+  }else{pars=Array(holes).fill(4);yardages=Array(holes).fill(0);}
   scores=players.map(()=>Array(holes).fill(null));
   document.getElementById('setup-screen').style.display='none';
   document.getElementById('scorecard-screen').style.display='block';
@@ -506,6 +424,8 @@ function buildTable(){
   totalRow.innerHTML='<td>Total</td>';
   for(let h=0;h<holes;h++)totalRow.innerHTML+='<td>-</td>';
   totalRow.innerHTML+='<td>-</td>';
+  const first=document.getElementById('hh-1');
+  if(first)first.classList.add('current');
 }
 
 function updatePar(hi,val){pars[hi]=parseInt(val)||4;refreshTotals();document.getElementById('par-total').textContent=pars.reduce((a,b)=>a+b,0);}
@@ -535,139 +455,137 @@ function refreshTotals(){
   });
 }
 
+// ── Voice: SINGLE recognition instance, two modes ──
+// iOS/Safari only allows one active SpeechRecognition at a time.
+// We use ONE continuous instance that switches between 'wake' and 'score' mode.
 function setupSpeech(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){document.getElementById('voice-hint').textContent='Use Safari on iPhone or Chrome on Android.';return;}
+  if(!SR){
+    document.getElementById('voice-hint').textContent='Use Safari on iPhone or Chrome on Android.';
+    document.getElementById('wake-status').textContent='';
+    return;
+  }
 
-  // ── Main recognition (score entry) ──
+  const WAKE_TRIGGERS=['hey voicescore','hey voice score','hey voicer','okay voicescore','ok voicescore','hey boys score','hey boy score'];
+
+  let _mode='wake';
+  let _accumulated='';
+
   recognition=new SR();
-  recognition.continuous=false;recognition.interimResults=true;recognition.lang='en-US';
-  let _accumulated=''; // collect across multiple final chunks (iOS splits speech)
+  recognition.continuous=true;
+  recognition.interimResults=true;
+  recognition.lang='en-US';
+
   recognition.onresult=(e)=>{
     let interim='',final='';
     for(let i=e.resultIndex;i<e.results.length;i++){
       if(e.results[i].isFinal)final+=e.results[i][0].transcript+' ';
       else interim+=e.results[i][0].transcript;
     }
-    if(final)_accumulated+=final;
-    const display=_accumulated||interim;
-    document.getElementById('voice-transcript').textContent='"'+fixTranscript(display.trim())+'"';
-    // Reset the inactivity timer every time we hear something
-    if(final||interim){
-      clearTimeout(window._silenceTimer);
-      window._silenceTimer=setTimeout(()=>{
-        if(isListening&&_accumulated.trim()){
-          // We have speech — treat accumulated as the final result
-          const toparse=_accumulated.trim();
-          _accumulated='';
-          isListening=false;
-          try{recognition.stop();}catch(e){}
-          setListeningUI(false);
-          parseVoice(toparse);
-          setTimeout(()=>{if(wakeActive)try{wakeRecognition.start();}catch(e){}},600);
-        } else if(isListening){
-          // Nothing heard yet — just time out
-          _accumulated='';
-          isListening=false;
-          try{recognition.stop();}catch(e){}
-          setListeningUI(false);
-          document.getElementById('voice-feedback').textContent='Mic timed out — say "Hey VoiceScore"';
-          setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
-          setTimeout(()=>{if(wakeActive)try{wakeRecognition.start();}catch(e){}},600);
-        }
-      },2000); // 2s of silence after last word = done speaking
-    }
-  };
-  recognition.onend=()=>{
-    if(isListening){
-      // iOS Safari ends recognition mid-speech — restart immediately
-      try{recognition.start();}catch(e){}
+
+    if(_mode==='wake'){
+      const heard=(final||interim).toLowerCase().trim();
+      // Also allow tap-to-activate: if isListening was set by button tap, switch mode
+      if(isListening||WAKE_TRIGGERS.some(w=>heard.includes(w))){
+        _accumulated='';
+        _mode='score';
+        isListening=true;
+        setListeningUI(true);
+        document.getElementById('voice-feedback').textContent='';
+        clearTimeout(window._silenceTimer);
+        window._silenceTimer=setTimeout(()=>commitScore(true),12000);
+      }
     } else {
-      setListeningUI(false);
+      // Score mode: accumulate chunks, reset 2s silence timer on every word
+      if(final)_accumulated+=final;
+      const display=_accumulated||interim;
+      if(display.trim())
+        document.getElementById('voice-transcript').textContent='"'+fixTranscript(display.trim())+'"';
+      clearTimeout(window._silenceTimer);
+      window._silenceTimer=setTimeout(()=>commitScore(false),2000);
     }
   };
-  recognition.onerror=(e)=>{if(e.error!=='no-speech')document.getElementById('voice-feedback').textContent='Mic error: '+e.error;};
 
-  // ── Wake word listener ──
-  startWakeWord();
-}
+  function commitScore(timedOut){
+    if(_mode!=='score')return;
+    clearTimeout(window._silenceTimer);
+    const toparse=_accumulated.trim();
+    _accumulated='';
+    _mode='wake';
+    isListening=false;
+    setListeningUI(false);
+    if(toparse){
+      parseVoice(toparse);
+    } else if(timedOut){
+      document.getElementById('voice-feedback').textContent='Mic timed out \u2014 say "Hey VoiceScore"';
+      setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
+    }
+  }
 
-let wakeRecognition=null,wakeActive=false;
-const WAKE_WORD='hey voicescore';
-const WAKE_ALTS=['hey voice score','hey voicer','hey voice','okay voicescore','ok voicescore','hey boys score','hey boy score'];
-
-function startWakeWord(){
-  const SR2=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR2)return;
-  wakeRecognition=new SR2();
-  wakeRecognition.continuous=true;
-  wakeRecognition.interimResults=true;
-  wakeRecognition.lang='en-US';
-  wakeActive=true;
-  wakeRecognition.onresult=(e)=>{
-    if(isListening)return; // already listening for scores
-    let text='';
-    for(let i=e.resultIndex;i<e.results.length;i++) text+=e.results[i][0].transcript;
-    text=text.toLowerCase().trim();
-    const triggered=[WAKE_WORD,...WAKE_ALTS].some(w=>text.includes(w));
-    if(triggered){
-      document.getElementById('voice-feedback').textContent='';
-      _accumulated='';
-      toggleListening();
+  recognition.onend=()=>{
+    // Always restart — we need continuous wake-word monitoring
+    if(!recognition._killed){
+      setTimeout(()=>{try{recognition.start();}catch(ex){}},300);
     }
   };
-  wakeRecognition.onend=()=>{if(wakeActive&&!isListening){try{wakeRecognition.start();}catch(e){}}};
-  wakeRecognition.onerror=(e)=>{if(e.error!=='no-speech'&&e.error!=='aborted'){wakeActive=false;}};
-  try{wakeRecognition.start();}catch(e){}
+
+  recognition.onerror=(e)=>{
+    if(e.error==='not-allowed'){
+      document.getElementById('voice-hint').textContent='Mic access denied. Tap to enable in Settings.';
+      document.getElementById('wake-status').textContent='';
+    } else if(e.error==='aborted'){
+      // ignore — expected on restart
+    } else if(e.error!=='no-speech'){
+      setTimeout(()=>{if(!recognition._killed)try{recognition.start();}catch(ex){}},800);
+    }
+  };
+
+  recognition._killed=false;
+  try{recognition.start();}catch(e){}
 }
 
-function stopWakeWord(){
-  wakeActive=false;
-  if(wakeRecognition)try{wakeRecognition.stop();}catch(e){}
-}
-
+// Manual tap handler — sets isListening so next onresult switches to score mode
 function toggleListening(){
   if(!recognition)return;
-  // Pause wake word while actively listening for scores
-  if(wakeRecognition&&!isListening)try{wakeRecognition.stop();}catch(e){}
   if(isListening){
-    isListening=false;recognition.stop();setListeningUI(false);
-    // Resume wake word after short delay
-    setTimeout(()=>{if(wakeActive)try{wakeRecognition.start();}catch(e){}},500);
+    // Cancel score mode, go back to wake
+    isListening=false;
+    setListeningUI(false);
+    clearTimeout(window._silenceTimer);
   } else {
-    isListening=true;setListeningUI(true);
-    _accumulated='';
-    try{recognition.start();}catch(e){}
-    // Start an initial timeout in case no speech is detected at all
+    // Prime for score mode on next speech
+    isListening=true;
+    setListeningUI(true);
     clearTimeout(window._silenceTimer);
     window._silenceTimer=setTimeout(()=>{
-      if(isListening&&!_accumulated){
-        isListening=false;
-        try{recognition.stop();}catch(e){}
-        setListeningUI(false);
-        document.getElementById('voice-feedback').textContent='Mic timed out — say "Hey VoiceScore"';
-        setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
-        setTimeout(()=>{if(wakeActive)try{wakeRecognition.start();}catch(e){}},600);
-      }
-    },10000);
+      if(isListening){isListening=false;setListeningUI(false);}
+    },12000);
   }
 }
+
 function setListeningUI(on){
-  const btn=document.getElementById('voice-btn'),hint=document.getElementById('voice-hint');
-  if(on){btn.classList.add('listening');hint.textContent='Listening... say "Dustin birdie, Scott bogey"';}
-  else{btn.classList.remove('listening');hint.textContent='Tap mic \u00b7 Say "Dustin birdie, Scott bogey"';document.getElementById('voice-transcript').textContent='';}
+  const btn=document.getElementById('voice-btn');
+  const hint=document.getElementById('voice-hint');
+  const ws=document.getElementById('wake-status');
+  if(on){
+    btn.classList.add('listening');
+    hint.innerHTML='Listening&hellip; say scores now';
+    ws.textContent='';
+  } else {
+    btn.classList.remove('listening');
+    hint.innerHTML='Say <strong style="color:var(--gold)">"Hey VoiceScore"</strong> or tap mic';
+    ws.textContent='\uD83C\uDFA4 Wake word active';
+    document.getElementById('voice-transcript').textContent='';
+  }
 }
 
 const numWords={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,a:1,an:1};
 function w2n(str){str=str.trim().toLowerCase();if(!isNaN(parseInt(str)))return parseInt(str);return numWords[str]||null;}
 
-// Convert score term to strokes based on par
-function scoreTermToStrokes(term, par){
+function scoreTermToStrokes(term,par){
   term=term.toLowerCase().trim();
-  const n=w2n(term);
-  if(n)return n;
+  const n=w2n(term);if(n)return n;
   if(term==='ace'||term==='hole in one')return 1;
-  if(term==='condor')return par-4;
   if(term==='albatross'||term==='double eagle')return par-3;
   if(term==='eagle')return par-2;
   if(term==='birdie')return par-1;
@@ -681,83 +599,28 @@ function scoreTermToStrokes(term, par){
 
 function fixTranscript(text){
   text=text.toLowerCase().trim();
-
-  // Hole number mishearings
-  const holeFixes={
-    'who won':'hole one','whole one':'hole one','who one':'hole one','hall one':'hole one',
-    'who too':'hole two','whole two':'hole two','who to':'hole two','hall two':'hole two',
-    'who three':'hole three','whole three':'hole three','hall three':'hole three',
-    'who for':'hole four','who four':'hole four','whole four':'hole four','hall four':'hole four',
-    'who five':'hole five','whole five':'hole five','hall five':'hole five',
-    'who six':'hole six','whole six':'hole six','hall six':'hole six',
-    'who seven':'hole seven','whole seven':'hole seven','hall seven':'hole seven',
-    'who eight':'hole eight','whole eight':'hole eight','hall eight':'hole eight',
-    'who nine':'hole nine','whole nine':'hole nine','hall nine':'hole nine',
-    'who ten':'hole ten','whole ten':'hole ten','hall ten':'hole ten',
-    'who eleven':'hole eleven','whole eleven':'hole eleven',
-    'who twelve':'hole twelve','whole twelve':'hole twelve',
-    'who 13':'hole 13','whole 13':'hole 13',
-    'who 14':'hole 14','whole 14':'hole 14',
-    'who 15':'hole 15','whole 15':'hole 15',
-    'who 16':'hole 16','whole 16':'hole 16',
-    'who 17':'hole 17','whole 17':'hole 17',
-    'who 18':'hole 18','whole 18':'hole 18',
-  };
-  for(const[bad,good]of Object.entries(holeFixes)){
-    text=text.replace(new RegExp('\\b'+bad+'\\b','gi'),good);
-  }
-
-  // Score term mishearings
-  const scoreFixes={
-    // birdie variants
-    'birtie':'birdie','birty':'birdie','burdie':'birdie','burdee':'birdie',
-    'birdo':'birdie','birdee':'birdie','birdi':'birdie','birdy':'birdie',
-    'buddy':'birdie','burdy':'birdie','brady':'birdie','birdie s':'birdie',
-    // bogey variants
-    'boggy':'bogey','bogy':'bogey','boogie':'bogey','bogie':'bogey',
-    'bow g':'bogey','bogue':'bogey','bogee':'bogey',
-    // eagle variants
-    'legal':'eagle','eagle s':'eagle','egal':'eagle','eggle':'eagle',
-    // par variants
-    'bar':'par','far':'par','car':'par','par s':'par',
-    // double bogey
-    'double bogy':'double bogey','double boggy':'double bogey','double bogie':'double bogey',
-    // triple bogey
-    'triple bogy':'triple bogey','triple boggy':'triple bogey',
-    // ace / hole in one
-    'a s':'ace','hey s':'ace',
-  };
-  for(const[bad,good]of Object.entries(scoreFixes)){
-    text=text.replace(new RegExp('\\b'+bad+'\\b','gi'),good);
-  }
-
-  // Fix player name mishearings dynamically
+  const holeFixes={'who won':'hole one','whole one':'hole one','who one':'hole one','hall one':'hole one','who too':'hole two','whole two':'hole two','who to':'hole two','hall two':'hole two','who three':'hole three','whole three':'hole three','hall three':'hole three','who for':'hole four','who four':'hole four','whole four':'hole four','hall four':'hole four','who five':'hole five','whole five':'hole five','hall five':'hole five','who six':'hole six','whole six':'hole six','hall six':'hole six','who seven':'hole seven','whole seven':'hole seven','hall seven':'hole seven','who eight':'hole eight','whole eight':'hole eight','hall eight':'hole eight','who nine':'hole nine','whole nine':'hole nine','hall nine':'hole nine','who ten':'hole ten','whole ten':'hole ten','hall ten':'hole ten','who eleven':'hole eleven','whole eleven':'hole eleven','who twelve':'hole twelve','whole twelve':'hole twelve','who 13':'hole 13','whole 13':'hole 13','who 14':'hole 14','whole 14':'hole 14','who 15':'hole 15','whole 15':'hole 15','who 16':'hole 16','whole 16':'hole 16','who 17':'hole 17','whole 17':'hole 17','who 18':'hole 18','whole 18':'hole 18'};
+  for(const[bad,good]of Object.entries(holeFixes))text=text.replace(new RegExp('\\b'+bad+'\\b','gi'),good);
+  const scoreFixes={'birtie':'birdie','birty':'birdie','burdie':'birdie','burdee':'birdie','birdo':'birdie','birdee':'birdie','birdi':'birdie','birdy':'birdie','buddy':'birdie','burdy':'birdie','brady':'birdie','boggy':'bogey','bogy':'bogey','boogie':'bogey','bogie':'bogey','bow g':'bogey','bogue':'bogey','bogee':'bogey','legal':'eagle','egal':'eagle','eggle':'eagle','double bogy':'double bogey','double boggy':'double bogey','double bogie':'double bogey','triple bogy':'triple bogey','triple boggy':'triple bogey'};
+  for(const[bad,good]of Object.entries(scoreFixes))text=text.replace(new RegExp('\\b'+bad+'\\b','gi'),good);
   players.forEach(name=>{
     const nl=name.toLowerCase();
-    // Common single-char off mishearings (e.g. "dustin" -> "dusty in")
-    // Just normalize spacing around the name
     text=text.replace(new RegExp(nl.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),nl);
   });
-
   return text;
 }
 
-function bestNameMatch(word, playerList){
-  // Returns the player whose name best matches the word, or null
-  // Allows partial match: "dusty" -> "Dustin", "tuck" -> "Tucker"
+function bestNameMatch(word,playerList){
   word=word.toLowerCase();
   let best=null,bestScore=999;
   playerList.forEach(name=>{
     const nl=name.toLowerCase();
-    // Exact match
     if(nl===word){best=name;bestScore=0;return;}
-    // Word starts with the name or name starts with word (handles truncation)
     if(nl.startsWith(word)||word.startsWith(nl)){
       const score=Math.abs(nl.length-word.length);
       if(score<bestScore){best=name;bestScore=score;}
       return;
     }
-    // Levenshtein for short names
     if(word.length>=3){
       const dist=levenshtein(word,nl);
       const threshold=Math.floor(nl.length/4)+1;
@@ -772,7 +635,6 @@ function parseVoice(text){
   const corrected=text.toLowerCase().trim();
   document.getElementById('voice-transcript').textContent='"'+corrected+'"';
 
-  // Extract hole number if present
   let holeNum=null;
   const hm=corrected.match(/hole\s+(\w+)/i);
   if(hm){
@@ -781,31 +643,22 @@ function parseVoice(text){
       document.getElementById('voice-feedback').textContent='Hole "'+hm[1]+'" not recognized.';return;
     }
   }
-
-  // Default to current hole or first unfilled
   if(!holeNum){
     const currentEl=document.querySelector('.hole-header.current');
-    if(currentEl){
-      holeNum=parseInt(currentEl.id.replace('hh-',''));
-    } else {
-      for(let h=0;h<holes;h++){
-        if(players.some((_,pi)=>scores[pi][h]===null)){holeNum=h+1;break;}
-      }
+    if(currentEl)holeNum=parseInt(currentEl.id.replace('hh-',''));
+    else{
+      for(let h=0;h<holes;h++){if(players.some((_,pi)=>scores[pi][h]===null)){holeNum=h+1;break;}}
       if(!holeNum)holeNum=1;
     }
   }
 
   const par=pars[holeNum-1];
   const ps={};
-
-  // Tokenize the transcript into words
   const words=corrected.replace(/[,\.!?]/g,' ').split(/\s+/).filter(Boolean);
 
-  // Walk through words looking for name -> score pairs
   for(let i=0;i<words.length;i++){
     const player=bestNameMatch(words[i],players);
     if(player){
-      // Look ahead for the score (could be 1 or 2 words: "double bogey")
       const twoWord=words[i+1]&&words[i+2]?words[i+1]+' '+words[i+2]:null;
       const oneWord=words[i+1]||null;
       let sc=null;
@@ -816,11 +669,12 @@ function parseVoice(text){
   }
 
   if(!Object.keys(ps).length){
-    document.getElementById('voice-feedback').textContent='No scores heard — try: "Dustin birdie Scott bogey"';
+    document.getElementById('voice-feedback').textContent='No scores heard \u2014 try: "Dustin birdie Scott bogey"';
     return;
   }
   applyScoresDirectly(holeNum,ps);
 }
+
 function scoreLabel(score,par){
   const d=score-par;
   if(d<=-3)return'albatross';if(d===-2)return'eagle';if(d===-1)return'birdie';
@@ -837,14 +691,12 @@ function applyScoresDirectly(hole,scoreMap){
     if(inp){inp.value=score;colorScore(pi,hi);}
   });
   refreshTotals();
-  // Advance hole highlight
   document.querySelectorAll('.hole-header').forEach(h=>h.classList.remove('current'));
   const next=document.getElementById('hh-'+Math.min(hole+1,holes));
   if(next)next.classList.add('current');
-  // Readback
   const parts=Object.entries(scoreMap).map(([name,score])=>name+', '+scoreLabel(score,par));
   const readback='Hole '+hole+'. '+parts.join('. ');
-  document.getElementById('voice-feedback').textContent='✓ '+readback;
+  document.getElementById('voice-feedback').textContent='\u2713 '+readback;
   setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},5000);
   if(window.speechSynthesis){
     window.speechSynthesis.cancel();
@@ -861,15 +713,17 @@ function exportScores(){
   txt+='='.repeat(40)+'\nTotal\t'+pars.reduce((a,b)=>a+b,0)+'\t'+yardages.reduce((a,b)=>a+b,0)+'\t'+players.map((_,pi)=>{const f=scores[pi].filter(s=>s!==null);return f.length?f.reduce((a,b)=>a+b,0):'-';}).join('\t');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));a.download='scorecard.txt';a.click();
 }
+
 function confirmReset(){
   if(confirm('Start a new round? Current scores will be lost.')){
-    isListening=false;if(recognition)try{recognition.stop();}catch(e){}
+    isListening=false;
+    if(recognition){recognition._killed=true;try{recognition.stop();}catch(e){}}
     selectedCourse=null;selectedTee=null;
     document.getElementById('scorecard-screen').style.display='none';
     document.getElementById('setup-screen').style.display='block';
     document.getElementById('course-results').innerHTML='';
     document.getElementById('course-input').value='';
-    document.getElementById('search-status').textContent='Type a course name and hit Search';
+    document.getElementById('search-status').textContent='';
     document.getElementById('tee-section').style.display='none';
     document.getElementById('selected-badge').style.display='none';
     document.getElementById('course-banner').style.display='none';
