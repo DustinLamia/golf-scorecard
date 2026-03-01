@@ -542,25 +542,49 @@ function setupSpeech(){
   // ── Main recognition (score entry) ──
   recognition=new SR();
   recognition.continuous=false;recognition.interimResults=true;recognition.lang='en-US';
+  let _accumulated=''; // collect across multiple final chunks (iOS splits speech)
   recognition.onresult=(e)=>{
     let interim='',final='';
-    for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript;else interim+=e.results[i][0].transcript;}
-    const display=final||interim;
-    document.getElementById('voice-transcript').textContent='"'+fixTranscript(display)+'"';
-    if(final){
-      // Got a final result — stop mic, parse, resume wake word
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal)final+=e.results[i][0].transcript+' ';
+      else interim+=e.results[i][0].transcript;
+    }
+    if(final)_accumulated+=final;
+    const display=_accumulated||interim;
+    document.getElementById('voice-transcript').textContent='"'+fixTranscript(display.trim())+'"';
+    // Reset the inactivity timer every time we hear something
+    if(final||interim){
       clearTimeout(window._silenceTimer);
-      isListening=false;
-      recognition.stop();
-      setListeningUI(false);
-      parseVoice(final);
-      setTimeout(()=>{if(wakeActive)try{wakeRecognition.start();}catch(e){}},600);
+      window._silenceTimer=setTimeout(()=>{
+        if(isListening&&_accumulated.trim()){
+          // We have speech — treat accumulated as the final result
+          const toparse=_accumulated.trim();
+          _accumulated='';
+          isListening=false;
+          try{recognition.stop();}catch(e){}
+          setListeningUI(false);
+          parseVoice(toparse);
+          setTimeout(()=>{if(wakeActive)try{wakeRecognition.start();}catch(e){}},600);
+        } else if(isListening){
+          // Nothing heard yet — just time out
+          _accumulated='';
+          isListening=false;
+          try{recognition.stop();}catch(e){}
+          setListeningUI(false);
+          document.getElementById('voice-feedback').textContent='Mic timed out — say "Hey VoiceScore"';
+          setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
+          setTimeout(()=>{if(wakeActive)try{wakeRecognition.start();}catch(e){}},600);
+        }
+      },2000); // 2s of silence after last word = done speaking
     }
   };
   recognition.onend=()=>{
-    // Only restart if still explicitly listening (e.g. no final result yet came in)
-    if(isListening){try{recognition.start();}catch(e){}}
-    else{setListeningUI(false);}
+    if(isListening){
+      // iOS Safari ends recognition mid-speech — restart immediately
+      try{recognition.start();}catch(e){}
+    } else {
+      setListeningUI(false);
+    }
   };
   recognition.onerror=(e)=>{if(e.error!=='no-speech')document.getElementById('voice-feedback').textContent='Mic error: '+e.error;};
 
@@ -588,6 +612,7 @@ function startWakeWord(){
     const triggered=[WAKE_WORD,...WAKE_ALTS].some(w=>text.includes(w));
     if(triggered){
       document.getElementById('voice-feedback').textContent='';
+      _accumulated='';
       toggleListening();
     }
   };
@@ -611,19 +636,20 @@ function toggleListening(){
     setTimeout(()=>{if(wakeActive)try{wakeRecognition.start();}catch(e){}},500);
   } else {
     isListening=true;setListeningUI(true);
+    _accumulated='';
     try{recognition.start();}catch(e){}
-    // Auto-stop after 8 seconds of silence
+    // Start an initial timeout in case no speech is detected at all
     clearTimeout(window._silenceTimer);
     window._silenceTimer=setTimeout(()=>{
-      if(isListening){
+      if(isListening&&!_accumulated){
         isListening=false;
         try{recognition.stop();}catch(e){}
         setListeningUI(false);
-        document.getElementById('voice-feedback').textContent='Mic timed out — say "Hey VoiceScore" to start again';
+        document.getElementById('voice-feedback').textContent='Mic timed out — say "Hey VoiceScore"';
         setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
         setTimeout(()=>{if(wakeActive)try{wakeRecognition.start();}catch(e){}},600);
       }
-    },8000);
+    },10000);
   }
 }
 function setListeningUI(on){
