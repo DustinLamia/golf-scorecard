@@ -146,7 +146,7 @@
     <button class="voice-btn" id="voice-btn" onclick="toggleListening()">
       <svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1.5 4v6a1.5 1.5 0 0 0 3 0V5a1.5 1.5 0 0 0-3 0zM5 10a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 0 1 2 0 8 8 0 0 1-7 7.93V21h2a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2h2v-2.07A8 8 0 0 1 4 11a1 1 0 0 1 1-1z"/></svg>
     </button>
-    <div class="voice-hint" id="voice-hint">Say <strong style="color:var(--gold)">"VoiceScore"</strong> or tap mic</div>
+    <div class="voice-hint" id="voice-hint">Say <strong style="color:var(--gold)">"Voice Score"</strong> or tap mic</div>
     <div style="font-size:.68rem;color:var(--tan);margin-top:4px;text-align:center;letter-spacing:.5px;" id="wake-status">&#127908; Wake word active</div>
     <div class="voice-transcript" id="voice-transcript"></div>
     <div class="voice-feedback" id="voice-feedback"></div>
@@ -467,7 +467,7 @@ function setupSpeech(){
     return;
   }
 
-  const WAKE_TRIGGERS=['hey voicescore','hey voice score','voicescore','voice score','hey voicer','hey voice','okay voicescore','ok voicescore','hey boys score','hey boy score','a voice score','hey boys','score score','hey scorer','voice scorer','hey scores','lets score','let score','score this','hey boys cor','hey voiced','hey voices','hey boys go','a voicescore','the voicescore','hey voiced score'];
+  const WAKE_TRIGGERS=['voice score','hey voice score','voicescore','hey voicescore','voice scorer','hey voice','voice scores','boys score','voice cor','voiced score','a voice score','the voice score','voice school','boys core','voice store','boys cor'];
 
   let _mode='wake';
   let _accumulated='';
@@ -497,6 +497,7 @@ function setupSpeech(){
         _mode='score';
         isListening=true;
         setListeningUI(true);
+        playMicOn();
         document.getElementById('voice-feedback').textContent='';
         clearTimeout(window._silenceTimer);
         window._silenceTimer=setTimeout(()=>commitScore(true),12000);
@@ -520,6 +521,7 @@ function setupSpeech(){
     _mode='wake';
     isListening=false;
     setListeningUI(false);
+    playMicOff();
     if(toparse){
       parseVoice(toparse);
     } else if(timedOut){
@@ -556,14 +558,14 @@ function toggleListening(){
   unlockAudio();
   if(!recognition)return;
   if(isListening){
-    // Cancel score mode, go back to wake
     isListening=false;
     setListeningUI(false);
+    playMicOff();
     clearTimeout(window._silenceTimer);
   } else {
-    // Prime for score mode on next speech
     isListening=true;
     setListeningUI(true);
+    playMicOn();
     clearTimeout(window._silenceTimer);
     window._silenceTimer=setTimeout(()=>{
       if(isListening){isListening=false;setListeningUI(false);}
@@ -581,7 +583,7 @@ function setListeningUI(on){
     ws.textContent='';
   } else {
     btn.classList.remove('listening');
-    hint.innerHTML='Say <strong style="color:var(--gold)">"VoiceScore"</strong> or tap mic';
+    hint.innerHTML='Say <strong style="color:var(--gold)">"Voice Score"</strong> or tap mic';
     ws.textContent='\uD83C\uDFA4 Wake word active';
     document.getElementById('voice-transcript').textContent='';
   }
@@ -753,13 +755,42 @@ function showAndSpeak(msg,duration){
   autoSpeak(msg);
 }
 
+// ── Audio feedback sounds ──
+function playTone(freq, duration, type='sine', fadeOut=true){
+  if(!window._audioUnlocked)return;
+  try{
+    const ctx=window._audioCtx||(window._audioCtx=new(window.AudioContext||window.webkitAudioContext)());
+    if(ctx.state==='suspended')ctx.resume();
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.type=type;osc.frequency.setValueAtTime(freq,ctx.currentTime);
+    gain.gain.setValueAtTime(0.18,ctx.currentTime);
+    if(fadeOut)gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+duration);
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+duration);
+  }catch(e){}
+}
+
+function playMicOn(){
+  // Two ascending tones — "ready"
+  playTone(660,0.12);
+  setTimeout(()=>playTone(880,0.15),100);
+}
+
+function playMicOff(){
+  // Two descending tones — "done"
+  playTone(880,0.12);
+  setTimeout(()=>playTone(550,0.18),100);
+}
+
 // iOS audio unlock — must call this inside a real user gesture (tap)
 // After that, speechSynthesis works automatically
 function unlockAudio(){
   if(window._audioUnlocked)return;
   window._audioUnlocked=true;
-  // Resume any suspended AudioContext
-  if(window._audioCtx&&window._audioCtx.state==='suspended')window._audioCtx.resume();
+  // Create and resume AudioContext
+  if(!window._audioCtx)window._audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  if(window._audioCtx.state==='suspended')window._audioCtx.resume();
   // Fire a silent utterance to warm up speechSynthesis
   window.speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(' ');
