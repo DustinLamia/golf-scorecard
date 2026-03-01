@@ -370,6 +370,7 @@ function updateBadge(){
 }
 
 function startRound(){
+  unlockAudio();
   const inputs=document.querySelectorAll('.player-name');
   players=[];
   inputs.forEach(inp=>{const v=inp.value.trim();if(v)players.push(v);});
@@ -488,14 +489,7 @@ function setupSpeech(){
       // Also allow tap-to-activate: if isListening was set by button tap, switch mode
       const wakeMatch=WAKE_TRIGGERS.find(w=>heard.includes(w));
       if(isListening||wakeMatch){
-        // Unlock speech synthesis on wake word (in case mic button was never tapped)
-        if(!window._speechUnlocked){
-          window._speechUnlocked=true;
-          const u=new SpeechSynthesisUtterance('');
-          u.volume=0;u.rate=1;
-          window.speechSynthesis.cancel();
-          window.speechSynthesis.speak(u);
-        }
+        unlockAudio();
         // Strip the wake phrase itself from what follows, so it's not parsed as a score
         let remainder=heard;
         if(wakeMatch){const idx=heard.indexOf(wakeMatch);remainder=heard.slice(idx+wakeMatch.length).trim();}
@@ -555,21 +549,11 @@ function setupSpeech(){
   recognition._killed=false;
   try{recognition.start();}catch(e){}
 
-  // Unlock speechSynthesis on iOS — requires a user gesture
-  // Fire a silent utterance on first mic tap to unblock audio
-  document.getElementById('voice-btn').addEventListener('click',function unlockSpeech(){
-    if(!window._speechUnlocked){
-      window._speechUnlocked=true;
-      const u=new SpeechSynthesisUtterance('');
-      u.volume=0;u.rate=1;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-    }
-  });
 }
 
 // Manual tap handler — sets isListening so next onresult switches to score mode
 function toggleListening(){
+  unlockAudio();
   if(!recognition)return;
   if(isListening){
     // Cancel score mode, go back to wake
@@ -704,6 +688,37 @@ function parseVoice(text){
   applyScoresDirectly(holeNum,ps);
 }
 
+// iOS audio unlock — must call this inside a real user gesture (tap)
+// After that, speechSynthesis works automatically
+function unlockAudio(){
+  if(window._audioUnlocked)return;
+  window._audioUnlocked=true;
+  // Resume any suspended AudioContext
+  if(window._audioCtx&&window._audioCtx.state==='suspended')window._audioCtx.resume();
+  // Fire a silent utterance to warm up speechSynthesis
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(' ');
+  u.volume=0.01;u.rate=1;
+  window.speechSynthesis.speak(u);
+}
+
+function speakNow(btn){
+  if(!window._pendingReadback)return;
+  if(btn)btn.remove();
+  window.speechSynthesis.cancel();
+  const utt=new SpeechSynthesisUtterance(window._pendingReadback);
+  utt.rate=1.05;utt.pitch=1;utt.volume=1;
+  window.speechSynthesis.speak(utt);
+  window._pendingReadback=null;
+}
+
+function autoSpeak(text){
+  window.speechSynthesis.cancel();
+  const utt=new SpeechSynthesisUtterance(text);
+  utt.rate=1.05;utt.pitch=1;utt.volume=1;
+  window.speechSynthesis.speak(utt);
+}
+
 function scoreLabel(score,par){
   const d=score-par;
   if(d<=-3)return'albatross';if(d===-2)return'eagle';if(d===-1)return'birdie';
@@ -727,15 +742,19 @@ function applyScoresDirectly(hole,scoreMap){
   const readback='Hole '+hole+'. '+parts.join('. ');
   document.getElementById('voice-feedback').textContent='\u2713 '+readback;
   setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},5000);
-  if(window.speechSynthesis){
-    // Delay slightly — iOS needs a moment after recognition ends before speaking
-    setTimeout(()=>{
-      window.speechSynthesis.cancel();
-      const utt=new SpeechSynthesisUtterance(readback);
-      utt.rate=1.05;utt.pitch=1;utt.volume=1;
-      window.speechSynthesis.speak(utt);
-    },400);
+  const fb=document.getElementById('voice-feedback');
+  window._pendingReadback=readback;
+  if(window._audioUnlocked){
+    fb.textContent='✓ '+readback;
+    setTimeout(()=>autoSpeak(readback),300);
+  } else {
+    fb.innerHTML='✓ '+readback+' <button onclick="unlockAudio();speakNow(this)" style="margin-left:8px;padding:3px 10px;background:var(--gold);border:none;border-radius:5px;color:var(--dark);font-size:.75rem;cursor:pointer;font-family:DM Sans,sans-serif;font-weight:600;">&#128264; Hear</button>';
   }
+  setTimeout(()=>{
+    const b=fb.querySelector('button');
+    if(b)b.remove();
+    if(fb.textContent.trim().startsWith('✓'))fb.textContent='';
+  },8000);
 }
 
 function exportScores(){
