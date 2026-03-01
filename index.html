@@ -486,8 +486,12 @@ function setupSpeech(){
     if(_mode==='wake'){
       const heard=(final||interim).toLowerCase().trim();
       // Also allow tap-to-activate: if isListening was set by button tap, switch mode
-      if(isListening||WAKE_TRIGGERS.some(w=>heard.includes(w))){
-        _accumulated='';
+      const wakeMatch=WAKE_TRIGGERS.find(w=>heard.includes(w));
+      if(isListening||wakeMatch){
+        // Strip the wake phrase itself from what follows, so it's not parsed as a score
+        let remainder=heard;
+        if(wakeMatch){const idx=heard.indexOf(wakeMatch);remainder=heard.slice(idx+wakeMatch.length).trim();}
+        _accumulated=remainder?' '+remainder:'';
         _mode='score';
         isListening=true;
         setListeningUI(true);
@@ -601,7 +605,7 @@ function fixTranscript(text){
   text=text.toLowerCase().trim();
   const holeFixes={'who won':'hole one','whole one':'hole one','who one':'hole one','hall one':'hole one','who too':'hole two','whole two':'hole two','who to':'hole two','hall two':'hole two','who three':'hole three','whole three':'hole three','hall three':'hole three','who for':'hole four','who four':'hole four','whole four':'hole four','hall four':'hole four','who five':'hole five','whole five':'hole five','hall five':'hole five','who six':'hole six','whole six':'hole six','hall six':'hole six','who seven':'hole seven','whole seven':'hole seven','hall seven':'hole seven','who eight':'hole eight','whole eight':'hole eight','hall eight':'hole eight','who nine':'hole nine','whole nine':'hole nine','hall nine':'hole nine','who ten':'hole ten','whole ten':'hole ten','hall ten':'hole ten','who eleven':'hole eleven','whole eleven':'hole eleven','who twelve':'hole twelve','whole twelve':'hole twelve','who 13':'hole 13','whole 13':'hole 13','who 14':'hole 14','whole 14':'hole 14','who 15':'hole 15','whole 15':'hole 15','who 16':'hole 16','whole 16':'hole 16','who 17':'hole 17','whole 17':'hole 17','who 18':'hole 18','whole 18':'hole 18'};
   for(const[bad,good]of Object.entries(holeFixes))text=text.replace(new RegExp('\\b'+bad+'\\b','gi'),good);
-  const scoreFixes={'birtie':'birdie','birty':'birdie','burdie':'birdie','burdee':'birdie','birdo':'birdie','birdee':'birdie','birdi':'birdie','birdy':'birdie','buddy':'birdie','burdy':'birdie','brady':'birdie','boggy':'bogey','bogy':'bogey','boogie':'bogey','bogie':'bogey','bow g':'bogey','bogue':'bogey','bogee':'bogey','legal':'eagle','egal':'eagle','eggle':'eagle','double bogy':'double bogey','double boggy':'double bogey','double bogie':'double bogey','triple bogy':'triple bogey','triple boggy':'triple bogey'};
+  const scoreFixes={'birtie':'birdie','birty':'birdie','burdie':'birdie','burdee':'birdie','birdo':'birdie','birdee':'birdie','birdi':'birdie','birdy':'birdie','buddy':'birdie','burdy':'birdie','brady':'birdie','bertie':'birdie','birty':'birdie','berty':'birdie','burtie':'birdie','boggy':'bogey','bogy':'bogey','boogie':'bogey','bogie':'bogey','bow g':'bogey','bogue':'bogey','bogee':'bogey','parr':'par','pars':'par','par s':'par','legal':'eagle','egal':'eagle','eggle':'eagle','double bogy':'double bogey','double boggy':'double bogey','double bogie':'double bogey','triple bogy':'triple bogey','triple boggy':'triple bogey'};
   for(const[bad,good]of Object.entries(scoreFixes))text=text.replace(new RegExp('\\b'+bad+'\\b','gi'),good);
   players.forEach(name=>{
     const nl=name.toLowerCase();
