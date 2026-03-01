@@ -146,7 +146,7 @@
     <button class="voice-btn" id="voice-btn" onclick="toggleListening()">
       <svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1.5 4v6a1.5 1.5 0 0 0 3 0V5a1.5 1.5 0 0 0-3 0zM5 10a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 0 1 2 0 8 8 0 0 1-7 7.93V21h2a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2h2v-2.07A8 8 0 0 1 4 11a1 1 0 0 1 1-1z"/></svg>
     </button>
-    <div class="voice-hint" id="voice-hint">Say <strong style="color:var(--gold)">"Hey VoiceScore"</strong> or tap mic</div>
+    <div class="voice-hint" id="voice-hint">Say <strong style="color:var(--gold)">"VoiceScore"</strong> or tap mic</div>
     <div style="font-size:.68rem;color:var(--tan);margin-top:4px;text-align:center;letter-spacing:.5px;" id="wake-status">&#127908; Wake word active</div>
     <div class="voice-transcript" id="voice-transcript"></div>
     <div class="voice-feedback" id="voice-feedback"></div>
@@ -467,7 +467,7 @@ function setupSpeech(){
     return;
   }
 
-  const WAKE_TRIGGERS=['hey voicescore','hey voice score','hey voicer','okay voicescore','ok voicescore','hey boys score','hey boy score'];
+  const WAKE_TRIGGERS=['hey voicescore','hey voice score','voicescore','voice score','hey voicer','hey voice','okay voicescore','ok voicescore','hey boys score','hey boy score','a voice score','hey boys','score score','hey scorer','voice scorer','hey scores','lets score','let score','score this','hey boys cor','hey voiced','hey voices','hey boys go','a voicescore','the voicescore','hey voiced score'];
 
   let _mode='wake';
   let _accumulated='';
@@ -581,7 +581,7 @@ function setListeningUI(on){
     ws.textContent='';
   } else {
     btn.classList.remove('listening');
-    hint.innerHTML='Say <strong style="color:var(--gold)">"Hey VoiceScore"</strong> or tap mic';
+    hint.innerHTML='Say <strong style="color:var(--gold)">"VoiceScore"</strong> or tap mic';
     ws.textContent='\uD83C\uDFA4 Wake word active';
     document.getElementById('voice-transcript').textContent='';
   }
@@ -682,10 +682,75 @@ function parseVoice(text){
   }
 
   if(!Object.keys(ps).length){
-    document.getElementById('voice-feedback').textContent='No scores heard \u2014 try: "Dustin birdie Scott bogey"';
+    const handled=handleQuery(corrected);
+    if(!handled)
+      document.getElementById('voice-feedback').textContent='No scores heard \u2014 try: "Dustin birdie Scott bogey"';
     return;
   }
   applyScoresDirectly(holeNum,ps);
+}
+
+function handleQuery(text){
+  // Detect "everyone/all/leaderboard" query
+  if(/everyone|everybody|all scores|leaderboard|standings|how is everyone|how are we|what(?:'s| is) the score|the score|current score|read.*score|score update/.test(text)){
+    speakAllScores();return true;
+  }
+  // Detect single player query: "what is dustin's score", "how is scott doing", "dustin's total"
+  const patterns=[
+    /what(?:'s| is| are)?\s+(.+?)(?:'s|s)?\s+(?:score|total|at|shooting|doing)/i,
+    /how\s+is\s+(.+?)\s+(?:doing|shooting|playing)/i,
+    /how(?:'s)\s+(.+?)\s+(?:doing|shooting|playing)/i,
+    /(.+?)(?:'s|s)?\s+(?:score|total|current)/i,
+  ];
+  for(const pat of patterns){
+    const m=text.match(pat);
+    if(m){
+      const raw=m[1].trim().replace(/^(is|the|a|an)\s+/i,'');
+      let name=bestNameMatch(raw,players);
+      if(!name){
+        for(const w of raw.split(/\s+/)){name=bestNameMatch(w,players);if(name)break;}
+      }
+      if(name){speakPlayerScore(name);return true;}
+    }
+  }
+  return false;
+}
+
+function speakPlayerScore(name){
+  const pi=players.indexOf(name);if(pi<0)return;
+  const filled=scores[pi].filter(s=>s!==null);
+  if(!filled.length){
+    const msg=name+' has no scores yet.';
+    showAndSpeak(msg,4000);return;
+  }
+  const total=filled.reduce((a,b)=>a+b,0);
+  const parSoFar=scores[pi].map((s,hi)=>s!==null?pars[hi]:0).reduce((a,b)=>a+b,0);
+  const diff=total-parSoFar;
+  const holesPlayed=filled.length;
+  const diffStr=diff===0?'even par':diff>0?diff+' over par':Math.abs(diff)+' under par';
+  const msg=name+' is '+diffStr+' through '+holesPlayed+' hole'+(holesPlayed!==1?'s':'')+', total '+total+'.';
+  showAndSpeak(msg,6000);
+}
+
+function speakAllScores(){
+  const parts=players.map(name=>{
+    const pi=players.indexOf(name);
+    const filled=scores[pi].filter(s=>s!==null);
+    if(!filled.length)return name+', no score yet';
+    const total=filled.reduce((a,b)=>a+b,0);
+    const parSoFar=scores[pi].map((s,hi)=>s!==null?pars[hi]:0).reduce((a,b)=>a+b,0);
+    const diff=total-parSoFar;
+    const diffStr=diff===0?'even':diff>0?'+'+diff:''+diff;
+    return name+', '+total+', '+diffStr;
+  });
+  showAndSpeak('Standings. '+parts.join('. ')+'.',8000);
+}
+
+function showAndSpeak(msg,duration){
+  const fb=document.getElementById('voice-feedback');
+  fb.textContent=msg;
+  setTimeout(()=>{if(fb.textContent===msg)fb.textContent='';},duration);
+  autoSpeak(msg);
 }
 
 // iOS audio unlock — must call this inside a real user gesture (tap)
@@ -742,19 +807,7 @@ function applyScoresDirectly(hole,scoreMap){
   const readback='Hole '+hole+'. '+parts.join('. ');
   document.getElementById('voice-feedback').textContent='\u2713 '+readback;
   setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},5000);
-  const fb=document.getElementById('voice-feedback');
-  window._pendingReadback=readback;
-  if(window._audioUnlocked){
-    fb.textContent='✓ '+readback;
-    setTimeout(()=>autoSpeak(readback),300);
-  } else {
-    fb.innerHTML='✓ '+readback+' <button onclick="unlockAudio();speakNow(this)" style="margin-left:8px;padding:3px 10px;background:var(--gold);border:none;border-radius:5px;color:var(--dark);font-size:.75rem;cursor:pointer;font-family:DM Sans,sans-serif;font-weight:600;">&#128264; Hear</button>';
-  }
-  setTimeout(()=>{
-    const b=fb.querySelector('button');
-    if(b)b.remove();
-    if(fb.textContent.trim().startsWith('✓'))fb.textContent='';
-  },8000);
+  showAndSpeak('✓ '+readback,6000);
 }
 
 function exportScores(){
