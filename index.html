@@ -157,7 +157,8 @@
     <button class="voice-btn" id="voice-btn" onclick="toggleListening()">
       <svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1.5 4v6a1.5 1.5 0 0 0 3 0V5a1.5 1.5 0 0 0-3 0zM5 10a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 0 1 2 0 8 8 0 0 1-7 7.93V21h2a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2h2v-2.07A8 8 0 0 1 4 11a1 1 0 0 1 1-1z"/></svg>
     </button>
-    <div class="voice-hint" id="voice-hint">Tap mic &middot; Say "Dustin birdie, Scott bogey"</div>
+    <div class="voice-hint" id="voice-hint">Say <strong style="color:var(--gold)">"Hey VoiceScore"</strong> or tap mic</div>
+    <div style="font-size:.68rem;color:var(--tan);margin-top:4px;text-align:center;letter-spacing:.5px;" id="wake-status">&#127908; Wake word active</div>
     <div class="voice-transcript" id="voice-transcript"></div>
     <div class="voice-feedback" id="voice-feedback"></div>
   </div>
@@ -537,22 +538,93 @@ function refreshTotals(){
 function setupSpeech(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){document.getElementById('voice-hint').textContent='Use Safari on iPhone or Chrome on Android.';return;}
+
+  // ── Main recognition (score entry) ──
   recognition=new SR();
   recognition.continuous=false;recognition.interimResults=true;recognition.lang='en-US';
   recognition.onresult=(e)=>{
     let interim='',final='';
     for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript;else interim+=e.results[i][0].transcript;}
-    document.getElementById('voice-transcript').textContent='"'+(final||interim)+'"';
-    if(final)parseVoice(final);
+    const display=final||interim;
+    document.getElementById('voice-transcript').textContent='"'+fixTranscript(display)+'"';
+    if(final){
+      // Got a final result — stop mic, parse, resume wake word
+      clearTimeout(window._silenceTimer);
+      isListening=false;
+      recognition.stop();
+      setListeningUI(false);
+      parseVoice(final);
+      setTimeout(()=>{if(wakeActive)try{wakeRecognition.start();}catch(e){}},600);
+    }
   };
-  recognition.onend=()=>{if(isListening){try{recognition.start();}catch(e){}}else{setListeningUI(false);}};
+  recognition.onend=()=>{
+    // Only restart if still explicitly listening (e.g. no final result yet came in)
+    if(isListening){try{recognition.start();}catch(e){}}
+    else{setListeningUI(false);}
+  };
   recognition.onerror=(e)=>{if(e.error!=='no-speech')document.getElementById('voice-feedback').textContent='Mic error: '+e.error;};
+
+  // ── Wake word listener ──
+  startWakeWord();
+}
+
+let wakeRecognition=null,wakeActive=false;
+const WAKE_WORD='hey voicescore';
+const WAKE_ALTS=['hey voice score','hey voicer','hey voice','okay voicescore','ok voicescore','hey boys score','hey boy score'];
+
+function startWakeWord(){
+  const SR2=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR2)return;
+  wakeRecognition=new SR2();
+  wakeRecognition.continuous=true;
+  wakeRecognition.interimResults=true;
+  wakeRecognition.lang='en-US';
+  wakeActive=true;
+  wakeRecognition.onresult=(e)=>{
+    if(isListening)return; // already listening for scores
+    let text='';
+    for(let i=e.resultIndex;i<e.results.length;i++) text+=e.results[i][0].transcript;
+    text=text.toLowerCase().trim();
+    const triggered=[WAKE_WORD,...WAKE_ALTS].some(w=>text.includes(w));
+    if(triggered){
+      document.getElementById('voice-feedback').textContent='';
+      toggleListening();
+    }
+  };
+  wakeRecognition.onend=()=>{if(wakeActive&&!isListening){try{wakeRecognition.start();}catch(e){}}};
+  wakeRecognition.onerror=(e)=>{if(e.error!=='no-speech'&&e.error!=='aborted'){wakeActive=false;}};
+  try{wakeRecognition.start();}catch(e){}
+}
+
+function stopWakeWord(){
+  wakeActive=false;
+  if(wakeRecognition)try{wakeRecognition.stop();}catch(e){}
 }
 
 function toggleListening(){
   if(!recognition)return;
-  if(isListening){isListening=false;recognition.stop();setListeningUI(false);}
-  else{isListening=true;setListeningUI(true);try{recognition.start();}catch(e){}}
+  // Pause wake word while actively listening for scores
+  if(wakeRecognition&&!isListening)try{wakeRecognition.stop();}catch(e){}
+  if(isListening){
+    isListening=false;recognition.stop();setListeningUI(false);
+    // Resume wake word after short delay
+    setTimeout(()=>{if(wakeActive)try{wakeRecognition.start();}catch(e){}},500);
+  } else {
+    isListening=true;setListeningUI(true);
+    try{recognition.start();}catch(e){}
+    // Auto-stop after 8 seconds of silence
+    clearTimeout(window._silenceTimer);
+    window._silenceTimer=setTimeout(()=>{
+      if(isListening){
+        isListening=false;
+        try{recognition.stop();}catch(e){}
+        setListeningUI(false);
+        document.getElementById('voice-feedback').textContent='Mic timed out — say "Hey VoiceScore" to start again';
+        setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
+        setTimeout(()=>{if(wakeActive)try{wakeRecognition.start();}catch(e){}},600);
+      }
+    },8000);
+  }
 }
 function setListeningUI(on){
   const btn=document.getElementById('voice-btn'),hint=document.getElementById('voice-hint');
@@ -581,7 +653,73 @@ function scoreTermToStrokes(term, par){
   return null;
 }
 
+function fixTranscript(text){
+  text=text.toLowerCase().trim();
+
+  // Hole number mishearings
+  const holeFixes={
+    'who won':'hole one','whole one':'hole one','who one':'hole one','hall one':'hole one',
+    'who too':'hole two','whole two':'hole two','who to':'hole two','hall two':'hole two',
+    'who three':'hole three','whole three':'hole three','hall three':'hole three',
+    'who for':'hole four','who four':'hole four','whole four':'hole four','hall four':'hole four',
+    'who five':'hole five','whole five':'hole five','hall five':'hole five',
+    'who six':'hole six','whole six':'hole six','hall six':'hole six',
+    'who seven':'hole seven','whole seven':'hole seven','hall seven':'hole seven',
+    'who eight':'hole eight','whole eight':'hole eight','hall eight':'hole eight',
+    'who nine':'hole nine','whole nine':'hole nine','hall nine':'hole nine',
+    'who ten':'hole ten','whole ten':'hole ten','hall ten':'hole ten',
+    'who eleven':'hole eleven','whole eleven':'hole eleven',
+    'who twelve':'hole twelve','whole twelve':'hole twelve',
+    'who 13':'hole 13','whole 13':'hole 13',
+    'who 14':'hole 14','whole 14':'hole 14',
+    'who 15':'hole 15','whole 15':'hole 15',
+    'who 16':'hole 16','whole 16':'hole 16',
+    'who 17':'hole 17','whole 17':'hole 17',
+    'who 18':'hole 18','whole 18':'hole 18',
+  };
+  for(const[bad,good]of Object.entries(holeFixes)){
+    text=text.replace(new RegExp('\\b'+bad+'\\b','gi'),good);
+  }
+
+  // Score term mishearings
+  const scoreFixes={
+    // birdie variants
+    'birtie':'birdie','birty':'birdie','burdie':'birdie','burdee':'birdie',
+    'birdo':'birdie','birdee':'birdie','birdi':'birdie','birdy':'birdie',
+    'buddy':'birdie','burdy':'birdie','brady':'birdie','birdie s':'birdie',
+    // bogey variants
+    'boggy':'bogey','bogy':'bogey','boogie':'bogey','bogie':'bogey',
+    'bow g':'bogey','bogue':'bogey','bogee':'bogey',
+    // eagle variants
+    'legal':'eagle','eagle s':'eagle','egal':'eagle','eggle':'eagle',
+    // par variants
+    'bar':'par','far':'par','car':'par','par s':'par',
+    // double bogey
+    'double bogy':'double bogey','double boggy':'double bogey','double bogie':'double bogey',
+    // triple bogey
+    'triple bogy':'triple bogey','triple boggy':'triple bogey',
+    // ace / hole in one
+    'a s':'ace','hey s':'ace',
+  };
+  for(const[bad,good]of Object.entries(scoreFixes)){
+    text=text.replace(new RegExp('\\b'+bad+'\\b','gi'),good);
+  }
+
+  // Fix player name mishearings dynamically
+  players.forEach(name=>{
+    const nl=name.toLowerCase();
+    // Common single-char off mishearings (e.g. "dustin" -> "dusty in")
+    // Just normalize spacing around the name
+    text=text.replace(new RegExp(nl.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'),nl);
+  });
+
+  return text;
+}
+
 function parseVoice(text){
+  text=fixTranscript(text);
+  document.getElementById('voice-transcript').textContent='"'+text+'"';
+
   text=text.toLowerCase().trim();
 
   // Extract hole number if present (optional)
@@ -627,44 +765,41 @@ function parseVoice(text){
   if(!Object.keys(ps).length){
     document.getElementById('voice-feedback').textContent='No scores heard. Try: "Dustin birdie, Scott bogey"';return;
   }
-  pendingScores={hole:holeNum,scores:ps};
-  showConfirmOverlay(holeNum,ps);
+  applyScoresDirectly(holeNum,ps);
 }
-function showConfirmOverlay(hole,scoreMap){
-  document.getElementById('overlay-subtitle').textContent='Hole '+hole+' \u00b7 Par '+pars[hole-1]+(yardages[hole-1]?' \u00b7 '+yardages[hole-1]+'yds':'');
-  const container=document.getElementById('overlay-scores');
-  container.innerHTML='';
+function scoreLabel(score,par){
+  const d=score-par;
+  if(d<=-3)return'albatross';if(d===-2)return'eagle';if(d===-1)return'birdie';
+  if(d===0)return'par';if(d===1)return'bogey';if(d===2)return'double bogey';
+  if(d===3)return'triple bogey';return score+' strokes';
+}
+
+function applyScoresDirectly(hole,scoreMap){
+  const hi=hole-1,par=pars[hi];
   Object.entries(scoreMap).forEach(([name,score])=>{
-    const p=document.createElement('p');
-    const par=pars[hole-1],diff=score-par;
-    const label=diff===0?'Par':diff===-1?'Birdie':diff<=-2?'Eagle':diff===1?'Bogey':'+'+diff;
-    p.innerHTML='<strong>'+name+'</strong>: '+score+' <span style="color:var(--tan);font-size:.8rem;">('+label+')</span>';
-    container.appendChild(p);
-  });
-  document.getElementById('confirm-overlay').classList.add('show');
-  if(isListening)try{recognition.stop();}catch(e){}
-}
-function applyScores(){
-  if(!pendingScores)return;
-  const{hole,scores:sm}=pendingScores,hi=hole-1;
-  Object.entries(sm).forEach(([name,score])=>{
     const pi=players.indexOf(name);if(pi<0)return;
     scores[pi][hi]=score;
     const inp=document.getElementById('s-'+pi+'-'+hi);
     if(inp){inp.value=score;colorScore(pi,hi);}
   });
-  refreshTotals();closeOverlay();
-  document.getElementById('voice-feedback').textContent='\u2713 Hole '+pendingScores.hole+' saved!';
-  setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
+  refreshTotals();
+  // Advance hole highlight
   document.querySelectorAll('.hole-header').forEach(h=>h.classList.remove('current'));
   const next=document.getElementById('hh-'+Math.min(hole+1,holes));
   if(next)next.classList.add('current');
+  // Readback
+  const parts=Object.entries(scoreMap).map(([name,score])=>name+', '+scoreLabel(score,par));
+  const readback='Hole '+hole+'. '+parts.join('. ');
+  document.getElementById('voice-feedback').textContent='✓ '+readback;
+  setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},5000);
+  if(window.speechSynthesis){
+    window.speechSynthesis.cancel();
+    const utt=new SpeechSynthesisUtterance(readback);
+    utt.rate=1.05;utt.pitch=1;utt.volume=1;
+    window.speechSynthesis.speak(utt);
+  }
 }
-function closeOverlay(){
-  document.getElementById('confirm-overlay').classList.remove('show');
-  pendingScores=null;
-  if(isListening)try{recognition.start();}catch(e){}
-}
+
 function exportScores(){
   const cLine=selectedCourse?'Course: '+selectedCourse.name+'\n':'';
   let txt='GOLF SCORECARD\n'+cLine+players.join(' | ')+'\n'+'='.repeat(40)+'\nHole\tPar\tYds\t'+players.join('\t')+'\n';
