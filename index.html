@@ -716,15 +716,39 @@ function fixTranscript(text){
   return text;
 }
 
+function bestNameMatch(word, playerList){
+  // Returns the player whose name best matches the word, or null
+  // Allows partial match: "dusty" -> "Dustin", "tuck" -> "Tucker"
+  word=word.toLowerCase();
+  let best=null,bestScore=999;
+  playerList.forEach(name=>{
+    const nl=name.toLowerCase();
+    // Exact match
+    if(nl===word){best=name;bestScore=0;return;}
+    // Word starts with the name or name starts with word (handles truncation)
+    if(nl.startsWith(word)||word.startsWith(nl)){
+      const score=Math.abs(nl.length-word.length);
+      if(score<bestScore){best=name;bestScore=score;}
+      return;
+    }
+    // Levenshtein for short names
+    if(word.length>=3){
+      const dist=levenshtein(word,nl);
+      const threshold=Math.floor(nl.length/4)+1;
+      if(dist<=threshold&&dist<bestScore){best=name;bestScore=dist;}
+    }
+  });
+  return bestScore<=3?best:null;
+}
+
 function parseVoice(text){
   text=fixTranscript(text);
-  document.getElementById('voice-transcript').textContent='"'+text+'"';
+  const corrected=text.toLowerCase().trim();
+  document.getElementById('voice-transcript').textContent='"'+corrected+'"';
 
-  text=text.toLowerCase().trim();
-
-  // Extract hole number if present (optional)
+  // Extract hole number if present
   let holeNum=null;
-  const hm=text.match(/hole\s+(\w+)/i);
+  const hm=corrected.match(/hole\s+(\w+)/i);
   if(hm){
     holeNum=w2n(hm[1]);
     if(!holeNum||holeNum<1||holeNum>holes){
@@ -732,13 +756,12 @@ function parseVoice(text){
     }
   }
 
-  // If no hole said, use the current highlighted hole or first unfilled hole
+  // Default to current hole or first unfilled
   if(!holeNum){
     const currentEl=document.querySelector('.hole-header.current');
     if(currentEl){
       holeNum=parseInt(currentEl.id.replace('hh-',''));
     } else {
-      // Find first hole with any missing score
       for(let h=0;h<holes;h++){
         if(players.some((_,pi)=>scores[pi][h]===null)){holeNum=h+1;break;}
       }
@@ -749,21 +772,26 @@ function parseVoice(text){
   const par=pars[holeNum-1];
   const ps={};
 
-  // Build a regex pattern that matches multi-word score terms too
-  const scorePattern='(hole\\s+in\\s+one|double\\s+eagle|double\\s+bogey|triple\\s+bogey|\\w+)';
+  // Tokenize the transcript into words
+  const words=corrected.replace(/[,\.!?]/g,' ').split(/\s+/).filter(Boolean);
 
-  players.forEach(name=>{
-    const nameLower=name.toLowerCase();
-    // Match: "PlayerName <score>" where score can be a word or number
-    const m=text.match(new RegExp(nameLower+'\\s+'+scorePattern,'i'));
-    if(m){
-      const sc=scoreTermToStrokes(m[1],par);
-      if(sc&&sc>0&&sc<=20)ps[name]=sc;
+  // Walk through words looking for name -> score pairs
+  for(let i=0;i<words.length;i++){
+    const player=bestNameMatch(words[i],players);
+    if(player){
+      // Look ahead for the score (could be 1 or 2 words: "double bogey")
+      const twoWord=words[i+1]&&words[i+2]?words[i+1]+' '+words[i+2]:null;
+      const oneWord=words[i+1]||null;
+      let sc=null;
+      if(twoWord)sc=scoreTermToStrokes(twoWord,par);
+      if(!sc&&oneWord)sc=scoreTermToStrokes(oneWord,par);
+      if(sc&&sc>0&&sc<=20){ps[player]=sc;i+=twoWord&&scoreTermToStrokes(twoWord,par)?2:1;}
     }
-  });
+  }
 
   if(!Object.keys(ps).length){
-    document.getElementById('voice-feedback').textContent='No scores heard. Try: "Dustin birdie, Scott bogey"';return;
+    document.getElementById('voice-feedback').textContent='No scores heard — try: "Dustin birdie Scott bogey"';
+    return;
   }
   applyScoresDirectly(holeNum,ps);
 }
