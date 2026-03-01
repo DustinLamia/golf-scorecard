@@ -157,7 +157,7 @@
     <button class="voice-btn" id="voice-btn" onclick="toggleListening()">
       <svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1.5 4v6a1.5 1.5 0 0 0 3 0V5a1.5 1.5 0 0 0-3 0zM5 10a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 0 1 2 0 8 8 0 0 1-7 7.93V21h2a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2h2v-2.07A8 8 0 0 1 4 11a1 1 0 0 1 1-1z"/></svg>
     </button>
-    <div class="voice-hint" id="voice-hint">Tap mic &middot; Say "hole 4, Dustin 4, Scott 3"</div>
+    <div class="voice-hint" id="voice-hint">Tap mic &middot; Say "Dustin birdie, Scott bogey"</div>
     <div class="voice-transcript" id="voice-transcript"></div>
     <div class="voice-feedback" id="voice-feedback"></div>
   </div>
@@ -556,25 +556,77 @@ function toggleListening(){
 }
 function setListeningUI(on){
   const btn=document.getElementById('voice-btn'),hint=document.getElementById('voice-hint');
-  if(on){btn.classList.add('listening');hint.textContent='Listening... say "Hole 4, Dustin 4, Scott 3"';}
-  else{btn.classList.remove('listening');hint.textContent='Tap mic \u00b7 Say "hole 4, Dustin 4, Scott 3"';document.getElementById('voice-transcript').textContent='';}
+  if(on){btn.classList.add('listening');hint.textContent='Listening... say "Dustin birdie, Scott bogey"';}
+  else{btn.classList.remove('listening');hint.textContent='Tap mic \u00b7 Say "Dustin birdie, Scott bogey"';document.getElementById('voice-transcript').textContent='';}
 }
 
 const numWords={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,a:1,an:1};
 function w2n(str){str=str.trim().toLowerCase();if(!isNaN(parseInt(str)))return parseInt(str);return numWords[str]||null;}
+
+// Convert score term to strokes based on par
+function scoreTermToStrokes(term, par){
+  term=term.toLowerCase().trim();
+  const n=w2n(term);
+  if(n)return n;
+  if(term==='ace'||term==='hole in one')return 1;
+  if(term==='condor')return par-4;
+  if(term==='albatross'||term==='double eagle')return par-3;
+  if(term==='eagle')return par-2;
+  if(term==='birdie')return par-1;
+  if(term==='par')return par;
+  if(term==='bogey')return par+1;
+  if(term==='double bogey'||term==='double')return par+2;
+  if(term==='triple bogey'||term==='triple')return par+3;
+  if(term==='quad'||term==='quadruple')return par+4;
+  return null;
+}
+
 function parseVoice(text){
   text=text.toLowerCase().trim();
+
+  // Extract hole number if present (optional)
+  let holeNum=null;
   const hm=text.match(/hole\s+(\w+)/i);
-  if(!hm){document.getElementById('voice-feedback').textContent='No hole number. Try: "Hole 4, Dustin 4, Scott 3"';return;}
-  const holeNum=w2n(hm[1]);
-  if(!holeNum||holeNum<1||holeNum>holes){document.getElementById('voice-feedback').textContent='Hole "'+hm[1]+'" not recognized.';return;}
-  const after=text.substring(text.indexOf(hm[0])+hm[0].length);
+  if(hm){
+    holeNum=w2n(hm[1]);
+    if(!holeNum||holeNum<1||holeNum>holes){
+      document.getElementById('voice-feedback').textContent='Hole "'+hm[1]+'" not recognized.';return;
+    }
+  }
+
+  // If no hole said, use the current highlighted hole or first unfilled hole
+  if(!holeNum){
+    const currentEl=document.querySelector('.hole-header.current');
+    if(currentEl){
+      holeNum=parseInt(currentEl.id.replace('hh-',''));
+    } else {
+      // Find first hole with any missing score
+      for(let h=0;h<holes;h++){
+        if(players.some((_,pi)=>scores[pi][h]===null)){holeNum=h+1;break;}
+      }
+      if(!holeNum)holeNum=1;
+    }
+  }
+
+  const par=pars[holeNum-1];
   const ps={};
+
+  // Build a regex pattern that matches multi-word score terms too
+  const scorePattern='(hole\\s+in\\s+one|double\\s+eagle|double\\s+bogey|triple\\s+bogey|\\w+)';
+
   players.forEach(name=>{
-    const m=after.match(new RegExp(name.toLowerCase()+'\\s+(\\w+)','i'));
-    if(m){const sc=w2n(m[1]);if(sc)ps[name]=sc;}
+    const nameLower=name.toLowerCase();
+    // Match: "PlayerName <score>" where score can be a word or number
+    const m=text.match(new RegExp(nameLower+'\\s+'+scorePattern,'i'));
+    if(m){
+      const sc=scoreTermToStrokes(m[1],par);
+      if(sc&&sc>0&&sc<=20)ps[name]=sc;
+    }
   });
-  if(!Object.keys(ps).length){document.getElementById('voice-feedback').textContent='No scores found.';return;}
+
+  if(!Object.keys(ps).length){
+    document.getElementById('voice-feedback').textContent='No scores heard. Try: "Dustin birdie, Scott bogey"';return;
+  }
   pendingScores={hole:holeNum,scores:ps};
   showConfirmOverlay(holeNum,ps);
 }
