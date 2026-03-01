@@ -13,7 +13,8 @@
   header h1{font-family:'Bebas Neue',cursive;font-size:clamp(2.4rem,8vw,3.5rem);letter-spacing:4px;color:var(--cream);text-shadow:2px 2px 0 rgba(0,0,0,.3);}
   header p{font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
   #setup-screen{padding:20px;max-width:500px;margin:0 auto;}
-  .setup-card{background:rgba(245,240,232,.1);backdrop-filter:blur(10px);border:1px solid rgba(245,240,232,.2);border-radius:16px;padding:24px;margin-bottom:16px;}
+  .setup-card{background:rgba(245,240,232,.1);backdrop-filter:blur(10px);border:1px solid rgba(245,240,232,.2);border-radius:16px;padding:24px;margin-bottom:16px;position:relative;z-index:1;}
+  .setup-card:first-child{z-index:10;}
   .setup-card h2{font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px;margin-bottom:16px;color:var(--gold);}
   .player-inputs{display:flex;flex-direction:column;gap:10px;}
   .player-input-row{display:flex;align-items:center;gap:10px;}
@@ -21,14 +22,16 @@
   input[type="text"],input[type="number"]{flex:1;background:rgba(0,0,0,.25);border:1px solid rgba(245,240,232,.25);border-radius:8px;padding:10px 14px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.95rem;outline:none;transition:border-color .2s;}
   input[type="text"]:focus,input[type="number"]:focus{border-color:var(--gold);}
   input::placeholder{color:rgba(245,240,232,.4);}
-  .course-search-row{display:flex;gap:8px;}
+  .course-search-row{display:flex;gap:8px;position:relative;}
   .course-search-row input{flex:1;}
   .btn-search{padding:10px 16px;background:var(--gold);border:none;border-radius:8px;color:var(--dark);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;}
-  .course-results{margin-top:10px;display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;}
-  .course-item{padding:10px 12px;background:rgba(0,0,0,.25);border:1px solid rgba(245,240,232,.15);border-radius:8px;cursor:pointer;transition:all .15s;}
-  .course-item:hover,.course-item.selected{border-color:var(--gold);background:rgba(201,168,76,.15);}
-  .course-item .cn{font-size:.9rem;font-weight:500;}
-  .course-item .cl{font-size:.75rem;color:var(--tan);margin-top:2px;}
+  .course-results:empty{display:none;}
+  .course-results{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:1000;display:flex;flex-direction:column;gap:0;max-height:300px;overflow-y:auto;background:#1e3d1a;border:1px solid rgba(201,168,76,.35);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.7);}
+  .course-item{padding:11px 14px;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer;transition:background .12s;text-align:left;}
+  .course-item:last-child{border-bottom:none;}
+  .course-item:hover,.course-item.selected{background:rgba(201,168,76,.2);}
+  .course-item .cn{font-size:.9rem;font-weight:600;color:#f5f0e8;}
+  .course-item .cl{font-size:.73rem;color:#b8a88a;margin-top:3px;}
   .search-status{font-size:.78rem;color:var(--tan);margin-top:6px;min-height:18px;}
   .tee-selector{margin-top:12px;}
   .tee-selector label{font-size:.8rem;color:var(--tan);display:block;margin-bottom:6px;}
@@ -107,11 +110,11 @@
   <div class="setup-card">
     <h2>Course</h2>
     <div class="course-search-row">
-      <input type="text" id="course-input" placeholder="Search course name or city..." onkeydown="if(event.key==='Enter')searchCourse()">
+      <input type="text" id="course-input" placeholder="Search course name or city..." oninput="debouncedSearch()" onkeydown="if(event.key==='Enter'){clearTimeout(searchTimer);searchCourse();}">
       <button class="btn-search" onclick="searchCourse()">Search</button>
+      <div class="course-results" id="course-results"></div>
     </div>
-    <div class="search-status" id="search-status">Type a course name and hit Search</div>
-    <div class="course-results" id="course-results"></div>
+    <div class="search-status" id="search-status"></div>
     <div id="tee-section" style="display:none">
       <div class="tee-selector">
         <label>Select Tee:</label>
@@ -213,6 +216,26 @@ const COURSES=[
   {name:"Cabot Cliffs",city:"Inverness",state:"Nova Scotia",tees:[{name:"Blue",pars:[4,3,5,4,4,3,4,4,5,3,4,4,3,5,4,3,4,5],yardages:[392,168,512,383,432,175,385,402,540,152,398,418,179,535,388,145,415,538]}]},
   {name:"Pelican Hill Ocean North",city:"Newport Coast",state:"CA",tees:[{name:"Blue",pars:[4,3,5,4,4,3,4,5,4,4,3,4,5,4,4,3,5,4],yardages:[423,181,535,432,417,175,395,543,397,431,171,448,559,408,435,184,522,410]}]},
   {name:"World Woods Pine Barrens",city:"Brooksville",state:"FL",tees:[{name:"Blue",pars:[4,4,3,5,4,4,3,5,4,4,3,4,5,4,4,3,5,4],yardages:[385,375,158,535,405,442,178,540,412,398,162,428,542,368,398,145,512,385]}]},
+  {name:"The Club at Venetian Bay",city:"New Smyrna Beach",state:"FL",tees:[
+    {name:"Gold (7072)",pars:[5,4,3,4,5,3,4,4,4,4,5,3,4,4,4,3,4,5],yardages:[528,447,214,413,533,191,406,384,358,435,556,190,458,432,362,195,420,550]},
+    {name:"Blue (6553)",pars:[5,4,3,4,5,3,4,4,4,4,5,3,4,4,4,3,4,5],yardages:[490,415,198,382,494,177,376,356,332,403,515,176,424,400,335,181,389,510]},
+    {name:"White (6032)",pars:[5,4,3,4,5,3,4,4,4,4,5,3,4,4,4,3,4,5],yardages:[452,382,180,352,455,162,346,328,305,372,475,162,390,368,308,166,358,470]},
+    {name:"Green (5297)",pars:[5,4,3,4,5,3,4,4,4,4,5,3,4,4,4,3,4,5],yardages:[398,336,158,308,400,142,304,288,268,326,418,142,342,322,270,146,314,412]},
+    {name:"Red (4932)",  pars:[5,4,3,4,5,3,4,4,4,4,5,3,4,4,4,3,4,5],yardages:[370,312,146,286,372,132,283,268,250,303,388,132,318,300,252,136,292,384]}
+  ]},
+  {name:"The Deltona Club",city:"Deltona",state:"FL",tees:[
+    {name:"Black (6988)",pars:[4,4,3,4,5,4,5,4,3,4,3,4,5,3,4,5,4,4],yardages:[442,431,177,461,518,444,480,330,172,405,242,423,515,230,361,576,464,317]},
+    {name:"Blue (6517)", pars:[4,4,3,4,5,4,5,4,3,4,3,4,5,3,4,5,4,4],yardages:[399,399,166,450,509,399,441,288,136,387,224,399,499,209,336,554,440,283]},
+    {name:"White (5977)",pars:[4,4,3,4,5,4,5,4,3,4,3,4,5,3,4,5,4,4],yardages:[363,366,148,420,487,363,397,255,118,360,200,375,471,185,308,527,412,252]},
+    {name:"Gold (5399)", pars:[4,4,3,4,5,4,5,4,3,4,3,4,5,3,4,5,4,4],yardages:[324,328,128,382,455,326,350,218,101,330,175,341,435,162,278,493,378,221]},
+    {name:"Red (4678)",  pars:[4,4,3,4,5,4,5,4,3,4,3,4,5,3,4,5,4,4],yardages:[278,285,110,330,400,280,295,185,88,288,148,292,380,140,240,435,325,181]}
+  ]},
+  {name:"DeBary Golf & Country Club",city:"DeBary",state:"FL",tees:[
+    {name:"Blue (6776)", pars:[5,3,4,4,4,5,3,4,4,4,5,3,4,4,4,5,3,4],yardages:[514,179,371,371,414,545,188,365,389,398,526,183,386,418,379,539,179,432]},
+    {name:"White (6234)",pars:[5,3,4,4,4,5,3,4,4,4,5,3,4,4,4,5,3,4],yardages:[472,158,342,342,385,505,165,338,361,370,490,162,359,390,352,505,158,400]},
+    {name:"Grey (5862)", pars:[5,3,4,4,4,5,3,4,4,4,5,3,4,4,4,5,3,4],yardages:[445,145,322,322,362,478,148,318,340,348,462,148,338,368,330,478,145,375]},
+    {name:"Red (5060)",  pars:[5,3,4,4,4,5,3,4,4,4,5,3,4,4,4,5,3,4],yardages:[385,122,278,278,312,415,122,275,294,302,400,128,292,318,285,415,122,325]}
+  ]},
   {name:"Custom / Local Course",city:"Your Town",state:"",tees:[{name:"Standard",pars:[4,4,3,4,5,4,3,4,4],yardages:[380,410,160,400,520,390,155,395,410]},{name:"Short",pars:[4,4,3,4,5,4,3,4,4],yardages:[340,370,130,360,470,350,125,355,370]}]}
 ];
 
@@ -228,30 +251,171 @@ document.querySelectorAll('.holes-btn').forEach(btn=>{
   });
 });
 
-function searchCourse(){
-  const query=document.getElementById('course-input').value.trim().toLowerCase();
+let searchTimer=null;
+function debouncedSearch(){clearTimeout(searchTimer);searchTimer=setTimeout(searchCourse,300);}
+
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  const dp=Array.from({length:m+1},(_,i)=>[i,...Array(n).fill(0)]);
+  for(let j=0;j<=n;j++)dp[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
+    dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+function fuzzyMatch(query,course){
+  const q=query.toLowerCase().trim();
+  const name=(course.name||'').toLowerCase();
+  const city=(course.city||'').toLowerCase();
+  const state=(course.state||'').toLowerCase();
+  const nameWords=name.split(/\s+/);
+  const cityWords=city.split(/\s+/);
+  const allWords=[...nameWords,...cityWords];
+  // ONLY match on word boundaries — 'ven' must start a word, not appear mid-word
+  if(allWords.some(w=>w.startsWith(q)))return 0;
+  // Short queries (under 4 chars): prefix-only, no fuzzy, no substring
+  if(q.length<4)return 999;
+  // Longer queries: full name/city substring OK (e.g. 'netian' in 'Venetian')
+  if(name.includes(q)||city.includes(q))return 1;
+  // Word-by-word fuzzy for typos
+  const qWords=q.split(/\s+/);
+  let totalDist=0;
+  for(const qw of qWords){
+    if(qw.length<2)continue;
+    const best=Math.min(...allWords.map(tw=>levenshtein(qw,tw.substring(0,qw.length+2))));
+    const threshold=Math.floor(qw.length/4)+1;
+    if(best>threshold)return 999;
+    totalDist+=best;
+  }
+  return totalDist;
+}
+function closeDropdown(){
+  const results=document.getElementById('course-results');
+  if(results)results.innerHTML='';
+  const status=document.getElementById('search-status');
+  if(status)status.textContent='';
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.course-search-row')&&!e.target.closest('#course-results')){
+    closeDropdown();
+  }
+});
+const API_KEY='BFTCFEDTFTZTS55WTT4K55SKZE';
+const API_BASE='https://api.golfcourseapi.com/v1';
+
+async function searchCourse(){
+  const query=document.getElementById('course-input').value.trim();
   const status=document.getElementById('search-status');
   const results=document.getElementById('course-results');
   results.innerHTML='';
   document.getElementById('tee-section').style.display='none';
   document.getElementById('selected-badge').style.display='none';
   if(!query){status.textContent='Type a course name and hit Search';return;}
-  const matches=COURSES.filter(c=>c.name.toLowerCase().includes(query)||c.city.toLowerCase().includes(query)||c.state.toLowerCase().includes(query));
-  if(!matches.length){status.textContent='No matches. Try city name, or use "Custom / Local Course".';return;}
-  status.textContent=matches.length+' course'+(matches.length>1?'s':'')+' found';
-  matches.forEach(course=>{
-    const div=document.createElement('div');
-    div.className='course-item';
-    div.innerHTML='<div class="cn">'+course.name+'</div><div class="cl">'+course.city+(course.state?', '+course.state:'')+' &middot; '+course.tees[0].pars.length+' holes</div>';
-    div.onclick=()=>selectCourse(course,div);
-    results.appendChild(div);
-  });
+
+  // First check local database
+  const localMatches=COURSES
+    .map(c=>({course:c,score:fuzzyMatch(query,c)}))
+    .filter(x=>x.score<999)
+    .sort((a,b)=>a.score-b.score)
+    .map(x=>x.course);
+
+  // Show local results immediately
+  if(localMatches.length){
+    status.textContent='Searching...';
+    localMatches.forEach(course=>{
+      const div=document.createElement('div');
+      div.className='course-item';
+      div.innerHTML='<div class="cn">'+course.name+'</div><div class="cl">'+course.city+(course.state?', '+course.state:'')+' &middot; '+course.tees[0].pars.length+' holes &middot; <span style="color:var(--gold);font-size:.7rem">&#9733; Local</span></div>';
+      div.onclick=()=>selectCourse(course,div);
+      results.appendChild(div);
+    });
+  }
+
+  // Then fetch from API
+  status.textContent='&#8987; Searching courses...';
+  try {
+    const resp=await fetch(API_BASE+'/search?search_query='+encodeURIComponent(query)+'&per_page=20',{
+      headers:{'Authorization':'Key '+API_KEY}
+    });
+    const data=await resp.json();
+    const apiCourses=(data.courses||[]).filter(c=>c.location?.country==='United States');
+
+    // Remove duplicates vs local results
+    const localNames=new Set(localMatches.map(c=>c.name.toLowerCase()));
+    const newFromApi=apiCourses.filter(c=>!localNames.has(c.course_name.toLowerCase()));
+
+    const total=localMatches.length+newFromApi.length;
+    if(!total){status.textContent='No matches found. Try a different name or city.';return;}
+    status.textContent=total+' course'+(total!==1?'s':'')+' found';
+
+    newFromApi.forEach(course=>{
+      const div=document.createElement('div');
+      div.className='course-item';
+      const city=course.location?.city||'';
+      const state=course.location?.state||'';
+      div.innerHTML='<div class="cn">'+course.course_name+'</div><div class="cl">'+city+(state?', '+state:'')+' &middot; Tap to load scorecard</div>';
+      div.onclick=()=>selectApiCourse(course.id,div);
+      results.appendChild(div);
+    });
+  } catch(e){
+    if(!localMatches.length) status.textContent='Offline – no matches found. Try "Custom / Local Course".';
+    else status.textContent=localMatches.length+' local course'+(localMatches.length!==1?'s':'')+' found (offline)';
+  }
+}
+
+async function selectApiCourse(id,el){
+  document.querySelectorAll('.course-item').forEach(d=>d.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('.cl').textContent='Loading scorecard...';
+  try {
+    const resp=await fetch(API_BASE+'/courses/'+id,{headers:{'Authorization':'Key '+API_KEY}});
+    const data=await resp.json();
+    const c=data.course;
+
+    // Build tees array from API response, prefer male tees
+    const rawTees=[...(c.tees?.male||[]),...(c.tees?.female||[])];
+    // Deduplicate by tee name
+    const seen=new Set();
+    const tees=[];
+    rawTees.forEach(t=>{
+      const key=t.tee_name+'-'+(t.holes?.length||0);
+      if(!seen.has(key)&&t.holes&&t.holes.length>0){
+        seen.add(key);
+        tees.push({
+          name:t.tee_name+' ('+t.total_yards+'y)',
+          pars:t.holes.map(h=>h.par),
+          yardages:t.holes.map(h=>h.yardage)
+        });
+      }
+    });
+
+    if(!tees.length){
+      el.querySelector('.cl').textContent='No scorecard data available';
+      return;
+    }
+
+    const course={
+      name:c.course_name,
+      city:c.location?.city||'',
+      state:c.location?.state||'',
+      tees:tees
+    };
+
+    el.querySelector('.cl').textContent=course.city+(course.state?', '+course.state:'')+' · '+tees[0].pars.length+' holes';
+    selectCourse(course,el);
+  } catch(e){
+    el.querySelector('.cl').textContent='Error loading – try again';
+    el.classList.remove('selected');
+  }
 }
 
 function selectCourse(course,el){
   document.querySelectorAll('.course-item').forEach(d=>d.classList.remove('selected'));
   el.classList.add('selected');
   selectedCourse=course;
+  // Fill input with selected course name and close dropdown
+  document.getElementById('course-input').value=course.name;
+  setTimeout(closeDropdown,150);
   selectedTee=course.tees[0];
   holes=course.tees[0].pars.length;
   document.querySelectorAll('.holes-btn').forEach(b=>b.classList.toggle('active',parseInt(b.dataset.holes)===holes));
