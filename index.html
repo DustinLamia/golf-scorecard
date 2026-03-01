@@ -488,6 +488,14 @@ function setupSpeech(){
       // Also allow tap-to-activate: if isListening was set by button tap, switch mode
       const wakeMatch=WAKE_TRIGGERS.find(w=>heard.includes(w));
       if(isListening||wakeMatch){
+        // Unlock speech synthesis on wake word (in case mic button was never tapped)
+        if(!window._speechUnlocked){
+          window._speechUnlocked=true;
+          const u=new SpeechSynthesisUtterance('');
+          u.volume=0;u.rate=1;
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(u);
+        }
         // Strip the wake phrase itself from what follows, so it's not parsed as a score
         let remainder=heard;
         if(wakeMatch){const idx=heard.indexOf(wakeMatch);remainder=heard.slice(idx+wakeMatch.length).trim();}
@@ -546,6 +554,18 @@ function setupSpeech(){
 
   recognition._killed=false;
   try{recognition.start();}catch(e){}
+
+  // Unlock speechSynthesis on iOS — requires a user gesture
+  // Fire a silent utterance on first mic tap to unblock audio
+  document.getElementById('voice-btn').addEventListener('click',function unlockSpeech(){
+    if(!window._speechUnlocked){
+      window._speechUnlocked=true;
+      const u=new SpeechSynthesisUtterance('');
+      u.volume=0;u.rate=1;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    }
+  });
 }
 
 // Manual tap handler — sets isListening so next onresult switches to score mode
@@ -583,7 +603,7 @@ function setListeningUI(on){
   }
 }
 
-const numWords={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,a:1,an:1};
+const numWords={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12};
 function w2n(str){str=str.trim().toLowerCase();if(!isNaN(parseInt(str)))return parseInt(str);return numWords[str]||null;}
 
 function scoreTermToStrokes(term,par){
@@ -658,17 +678,22 @@ function parseVoice(text){
 
   const par=pars[holeNum-1];
   const ps={};
+  const FILLERS=new Set(['got','a','an','with','made','gets','had','scored','makes','shot','hit','takes','for','the','his','her','get']);
   const words=corrected.replace(/[,\.!?]/g,' ').split(/\s+/).filter(Boolean);
 
   for(let i=0;i<words.length;i++){
+    if(FILLERS.has(words[i]))continue;
     const player=bestNameMatch(words[i],players);
     if(player){
-      const twoWord=words[i+1]&&words[i+2]?words[i+1]+' '+words[i+2]:null;
-      const oneWord=words[i+1]||null;
+      // Skip filler words between name and score
+      let j=i+1;
+      while(j<words.length&&FILLERS.has(words[j]))j++;
+      const twoWord=words[j]&&words[j+1]?words[j]+' '+words[j+1]:null;
+      const oneWord=words[j]||null;
       let sc=null;
       if(twoWord)sc=scoreTermToStrokes(twoWord,par);
       if(!sc&&oneWord)sc=scoreTermToStrokes(oneWord,par);
-      if(sc&&sc>0&&sc<=20){ps[player]=sc;i+=twoWord&&scoreTermToStrokes(twoWord,par)?2:1;}
+      if(sc&&sc>0&&sc<=20){ps[player]=sc;i=j+(twoWord&&scoreTermToStrokes(twoWord,par)?1:0);}
     }
   }
 
@@ -703,10 +728,13 @@ function applyScoresDirectly(hole,scoreMap){
   document.getElementById('voice-feedback').textContent='\u2713 '+readback;
   setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},5000);
   if(window.speechSynthesis){
-    window.speechSynthesis.cancel();
-    const utt=new SpeechSynthesisUtterance(readback);
-    utt.rate=1.05;utt.pitch=1;utt.volume=1;
-    window.speechSynthesis.speak(utt);
+    // Delay slightly — iOS needs a moment after recognition ends before speaking
+    setTimeout(()=>{
+      window.speechSynthesis.cancel();
+      const utt=new SpeechSynthesisUtterance(readback);
+      utt.rate=1.05;utt.pitch=1;utt.volume=1;
+      window.speechSynthesis.speak(utt);
+    },400);
   }
 }
 
