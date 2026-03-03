@@ -878,112 +878,309 @@ function applyScoresDirectly(hole,scoreMap){
 
 function exportScores(){
   const courseName=selectedCourse?selectedCourse.name:'Golf Round';
-  const teeLabel=selectedTee&&selectedCourse&&selectedCourse.tees&&selectedCourse.tees.length>1?' &middot; '+selectedTee.name+' Tees':'';
+  const teeLabel=selectedTee&&selectedCourse&&selectedCourse.tees&&selectedCourse.tees.length>1?' · '+selectedTee.name+' Tees':'';
   const location=selectedCourse?(selectedCourse.city+(selectedCourse.state?', '+selectedCourse.state:'')):'';
   const totalPar=pars.reduce((a,b)=>a+b,0);
   const totalYds=yardages.reduce((a,b)=>a+b,0);
   const today=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  function cellHTML(score,par){
-    if(score===null)return'<td class="sc empty">\u2014</td>';
-    const d=score-par;
-    let cls='sc';
-    if(d<=-2)cls+=' eagle';
-    else if(d===-1)cls+=' birdie';
-    else if(d===0)cls+=' par-cell';
-    else if(d===1)cls+=' bogey';
-    else cls+=' double';
-    return'<td class="'+cls+'">'+score+'</td>';
+
+  // Colors
+  const BG='#1a2e17', CARD='#233d1e', GOLD='#c9a84c', CREAM='#f5f0e8', TAN='#a89060';
+  const DARK_ROW='rgba(0,0,0,0.3)', MUTED='#7a6a4a';
+  const COL_EAGLE={bg:'#5a420e',text:'#f5d87a'};
+  const COL_BIRDIE={bg:'#0d3a55',text:'#7ec8f5'};
+  const COL_PAR={bg:'rgba(255,255,255,0.07)',text:'#d4c9b0'};
+  const COL_BOGEY={bg:'#4a1510',text:'#f0a090'};
+  const COL_DOUBLE={bg:'#6e1a13',text:'#ffb4a4'};
+
+  const DPR=window.devicePixelRatio||1;
+  const W=Math.min(window.innerWidth,900);
+  const COL_W=Math.max(26, Math.floor((W-130)/(holes+2)));
+  const NAME_W=120;
+  const DIFF_W=44;
+  const TOT_W=44;
+  const ROW_H=36;
+  const HEADER_H=56;
+  const PAR_ROW_H=28;
+  const YDS_ROW_H=22;
+  const CARD_PAD=20;
+  const TOP_H=110;
+  const LEGEND_H=52;
+
+  const hasYds=yardages.some(y=>y>0);
+  const tableRows=players.length+(hasYds?2:1); // par + optional yds + players
+  const totalH=TOP_H+HEADER_H+PAR_ROW_H+(hasYds?YDS_ROW_H:0)+(players.length*ROW_H)+LEGEND_H+CARD_PAD*2+20;
+  const totalW=NAME_W+COL_W*(holes)+TOT_W+DIFF_W+CARD_PAD*2;
+  const canvasW=Math.max(totalW,320);
+
+  const canvas=document.createElement('canvas');
+  canvas.width=canvasW*DPR;
+  canvas.height=totalH*DPR;
+  const ctx=canvas.getContext('2d');
+  ctx.scale(DPR,DPR);
+
+  // Background
+  const bgGrad=ctx.createLinearGradient(0,0,canvasW,totalH);
+  bgGrad.addColorStop(0,'#233d1e');
+  bgGrad.addColorStop(0.6,'#1a2e17');
+  bgGrad.addColorStop(1,'#162613');
+  ctx.fillStyle=bgGrad;
+  roundRect(ctx,0,0,canvasW,totalH,0);
+  ctx.fill();
+
+  // Subtle inner border
+  ctx.strokeStyle='rgba(201,168,76,0.2)';
+  ctx.lineWidth=1;
+  roundRect(ctx,1,1,canvasW-2,totalH-2,0);
+  ctx.stroke();
+
+  // ── Header ──
+  const headerBg=ctx.createLinearGradient(0,0,0,TOP_H);
+  headerBg.addColorStop(0,'rgba(0,0,0,0.4)');
+  headerBg.addColorStop(1,'rgba(0,0,0,0.1)');
+  ctx.fillStyle=headerBg;
+  ctx.fillRect(0,0,canvasW,TOP_H);
+
+  // Gold bottom border on header
+  ctx.strokeStyle='rgba(201,168,76,0.25)';
+  ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,TOP_H);ctx.lineTo(canvasW,TOP_H);ctx.stroke();
+
+  // Brand: VoiceScore
+  ctx.font='bold 36px "Bebas Neue", serif';
+  ctx.letterSpacing='4px';
+  ctx.fillStyle=CREAM;
+  ctx.fillText('VOICE',CARD_PAD,TOP_H-20);
+  const vw=ctx.measureText('VOICE').width;
+  ctx.fillStyle=GOLD;
+  ctx.fillText('SCORE',CARD_PAD+vw+2,TOP_H-20);
+
+  // Course info (right-aligned)
+  const rightX=canvasW-CARD_PAD;
+  ctx.textAlign='right';
+  ctx.font='bold 18px "Bebas Neue", serif';
+  ctx.fillStyle=GOLD;
+  ctx.fillText(courseName,rightX,TOP_H-64);
+  ctx.font='500 10px "DM Sans", sans-serif';
+  ctx.fillStyle=TAN;
+  const metaStr=(location?location:'')+(teeLabel?teeLabel:'')+(totalPar?' · Par '+totalPar:'')+( totalYds?' · '+totalYds+' yds':'');
+  ctx.fillText(metaStr,rightX,TOP_H-46);
+  ctx.font='400 10px "DM Sans", sans-serif';
+  ctx.fillStyle=MUTED;
+  ctx.fillText(today,rightX,TOP_H-28);
+  ctx.textAlign='left';
+
+  // ── Table ──
+  let y=TOP_H;
+  const tableX=CARD_PAD;
+
+  // Table header row
+  ctx.fillStyle='rgba(0,0,0,0.4)';
+  ctx.fillRect(0,y,canvasW,HEADER_H);
+  ctx.strokeStyle='rgba(201,168,76,0.2)';
+  ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(0,y+HEADER_H);ctx.lineTo(canvasW,y+HEADER_H);ctx.stroke();
+
+  ctx.font='bold 14px "Bebas Neue", serif';
+  ctx.fillStyle=GOLD;
+  // Player col
+  ctx.fillText('Player',tableX,y+HEADER_H/2+5);
+  // Hole numbers
+  for(let h=0;h<holes;h++){
+    const cx=tableX+NAME_W+h*COL_W+COL_W/2;
+    ctx.textAlign='center';
+    ctx.fillText(''+(h+1),cx,y+HEADER_H/2+5);
   }
-  const playerTotals=players.map((_,pi)=>{
-    const filled=scores[pi].filter(s=>s!==null);
-    if(!filled.length)return null;
-    const total=filled.reduce((a,b)=>a+b,0);
-    const parSoFar=scores[pi].map((s,hi)=>s!==null?pars[hi]:0).reduce((a,b)=>a+b,0);
-    return{total,diff:total-parSoFar,played:filled.length};
-  });
-  let scoreRows='';
+  // Tot
+  ctx.fillText('Tot',tableX+NAME_W+holes*COL_W+TOT_W/2,y+HEADER_H/2+5);
+  // +/-
+  ctx.fillText('+/-',tableX+NAME_W+holes*COL_W+TOT_W+DIFF_W/2,y+HEADER_H/2+5);
+  ctx.textAlign='left';
+  y+=HEADER_H;
+
+  // Par row
+  ctx.fillStyle='rgba(0,0,0,0.25)';
+  ctx.fillRect(0,y,canvasW,PAR_ROW_H);
+  ctx.font='400 10px "DM Sans", sans-serif';
+  ctx.fillStyle=TAN;
+  ctx.fillText('PAR',tableX+2,y+PAR_ROW_H/2+4);
+  for(let h=0;h<holes;h++){
+    const cx=tableX+NAME_W+h*COL_W+COL_W/2;
+    ctx.textAlign='center';
+    ctx.fillText(''+pars[h],cx,y+PAR_ROW_H/2+4);
+  }
+  ctx.textAlign='center';
+  ctx.fillText(''+totalPar,tableX+NAME_W+holes*COL_W+TOT_W/2,y+PAR_ROW_H/2+4);
+  ctx.textAlign='left';
+  rowDivider(ctx,y+PAR_ROW_H,canvasW);
+  y+=PAR_ROW_H;
+
+  // Yardage row
+  if(hasYds){
+    ctx.fillStyle='rgba(0,0,0,0.15)';
+    ctx.fillRect(0,y,canvasW,YDS_ROW_H);
+    ctx.font='400 9px "DM Sans", sans-serif';
+    ctx.fillStyle=MUTED;
+    ctx.fillText('YDS',tableX+2,y+YDS_ROW_H/2+3);
+    for(let h=0;h<holes;h++){
+      ctx.textAlign='center';
+      ctx.fillText(''+(yardages[h]||'—'),tableX+NAME_W+h*COL_W+COL_W/2,y+YDS_ROW_H/2+3);
+    }
+    ctx.textAlign='center';
+    ctx.fillText(''+(totalYds||'—'),tableX+NAME_W+holes*COL_W+TOT_W/2,y+YDS_ROW_H/2+3);
+    ctx.textAlign='left';
+    rowDivider(ctx,y+YDS_ROW_H,canvasW);
+    y+=YDS_ROW_H;
+  }
+
+  // Player rows
   players.forEach((name,pi)=>{
-    const t=playerTotals[pi];
-    const diffStr=t===null?'\u2014':t.diff===0?'E':t.diff>0?'+'+t.diff:''+t.diff;
-    const diffCls=t===null?'':t.diff<0?'under':t.diff>0?'over':'even';
-    scoreRows+='<tr><td class="player-name-cell">'+name+'</td>';
-    for(let h=0;h<holes;h++)scoreRows+=cellHTML(scores[pi][h],pars[h]);
-    scoreRows+='<td class="total-cell">'+(t?t.total:'\u2014')+'</td><td class="diff-cell '+diffCls+'">'+diffStr+'</td></tr>';
+    const isAlt=pi%2===1;
+    ctx.fillStyle=isAlt?'rgba(255,255,255,0.025)':'transparent';
+    ctx.fillRect(0,y,canvasW,ROW_H);
+
+    // Name
+    ctx.font='500 13px "DM Sans", sans-serif';
+    ctx.fillStyle=CREAM;
+    ctx.fillText(name,tableX,y+ROW_H/2+5);
+
+    // Scores
+    for(let h=0;h<holes;h++){
+      const sc=scores[pi][h];
+      const cx=tableX+NAME_W+h*COL_W+COL_W/2;
+      const cy=y+ROW_H/2;
+      const cellSize=Math.min(COL_W-6,28);
+
+      if(sc!==null){
+        const d=sc-pars[h];
+        let col;
+        if(d<=-2)col=COL_EAGLE;
+        else if(d===-1)col=COL_BIRDIE;
+        else if(d===0)col=COL_PAR;
+        else if(d===1)col=COL_BOGEY;
+        else col=COL_DOUBLE;
+
+        ctx.fillStyle=col.bg;
+        roundRect(ctx,cx-cellSize/2,cy-cellSize/2,cellSize,cellSize,5);
+        ctx.fill();
+
+        ctx.font='bold 13px "DM Sans", sans-serif';
+        ctx.fillStyle=col.text;
+        ctx.textAlign='center';
+        ctx.fillText(''+sc,cx,cy+5);
+      } else {
+        ctx.font='400 12px "DM Sans", sans-serif';
+        ctx.fillStyle='rgba(245,240,232,0.2)';
+        ctx.textAlign='center';
+        ctx.fillText('—',cx,cy+5);
+      }
+    }
+
+    // Total
+    const filled=scores[pi].filter(s=>s!==null);
+    const total=filled.length?filled.reduce((a,b)=>a+b,0):null;
+    const parSoFar=scores[pi].map((s,hi)=>s!==null?pars[hi]:0).reduce((a,b)=>a+b,0);
+    const diff=total!==null?total-parSoFar:null;
+    const totX=tableX+NAME_W+holes*COL_W+TOT_W/2;
+    ctx.font='bold 15px "Bebas Neue", serif';
+    ctx.fillStyle=CREAM;
+    ctx.textAlign='center';
+    ctx.fillText(total!==null?''+total:'—',totX,y+ROW_H/2+5);
+
+    // +/-
+    const diffX=tableX+NAME_W+holes*COL_W+TOT_W+DIFF_W/2;
+    let diffStr=diff===null?'—':diff===0?'E':diff>0?'+'+diff:''+diff;
+    ctx.font='bold 12px "DM Sans", sans-serif';
+    ctx.fillStyle=diff===null?MUTED:diff<0?'#7ec8f5':diff>0?'#f0a090':TAN;
+    ctx.fillText(diffStr,diffX,y+ROW_H/2+5);
+
+    ctx.textAlign='left';
+    rowDivider(ctx,y+ROW_H,canvasW);
+    y+=ROW_H;
   });
-  let holeHeaders='<th class="label-col">Player</th>';
-  for(let h=1;h<=holes;h++)holeHeaders+='<th>'+h+'</th>';
-  holeHeaders+='<th>Tot</th><th>+/-</th>';
-  let parCells='<td class="label-col" style="color:#a89060;font-size:.75rem;letter-spacing:1px;text-transform:uppercase;">Par</td>';
-  for(let h=0;h<holes;h++)parCells+='<td>'+pars[h]+'</td>';
-  parCells+='<td>'+totalPar+'</td><td></td>';
-  let ydCells='';
-  if(yardages.some(y=>y>0)){
-    ydCells='<tr class="yds-row"><td class="label-col" style="color:#8a7a5a;font-size:.72rem;text-transform:uppercase;letter-spacing:1px;">Yds</td>';
-    for(let h=0;h<holes;h++)ydCells+='<td>'+(yardages[h]||'\u2014')+'</td>';
-    ydCells+='<td>'+(totalYds||'\u2014')+'</td><td></td></tr>';
+
+  // ── Legend ──
+  ctx.strokeStyle='rgba(245,240,232,0.07)';
+  ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvasW,y);ctx.stroke();
+  y+=14;
+
+  const legendItems=[
+    {bg:'#5a420e',text:'#f5d87a',label:'Eagle+'},
+    {bg:'#0d3a55',text:'#7ec8f5',label:'Birdie'},
+    {bg:'rgba(255,255,255,0.1)',text:'#d4c9b0',label:'Par'},
+    {bg:'#4a1510',text:'#f0a090',label:'Bogey'},
+    {bg:'#6e1a13',text:'#ffb4a4',label:'Double+'},
+  ];
+  const dotSize=12, gap=8, legendItemW=70;
+  const totalLegendW=legendItems.length*(dotSize+gap+legendItemW);
+  let lx=(canvasW-Math.min(totalLegendW,canvasW-40))/2;
+  const itemSpacing=(canvasW-40)/(legendItems.length);
+  legendItems.forEach((item,i)=>{
+    const x=20+i*itemSpacing;
+    ctx.fillStyle=item.bg;
+    roundRect(ctx,x,y,dotSize,dotSize,3);
+    ctx.fill();
+    ctx.font='400 9px "DM Sans", sans-serif';
+    ctx.fillStyle=MUTED;
+    ctx.textAlign='left';
+    ctx.fillText(item.label,x+dotSize+5,y+dotSize-2);
+  });
+
+  // Convert to image and trigger save
+  canvas.toBlob(blob=>{
+    const url=URL.createObjectURL(blob);
+    const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if(isMobile&&navigator.share){
+      // iOS/Android share sheet — user can save to Photos from here
+      const file=new File([blob],'voicescore-'+courseName.replace(/\s+/g,'-').toLowerCase()+'.png',{type:'image/png'});
+      navigator.share({files:[file],title:'VoiceScore – '+courseName}).catch(()=>fallback(url));
+    } else {
+      fallback(url);
+    }
+  },'image/png');
+
+  function fallback(url){
+    // Show full-screen overlay with image — long press to save on mobile
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;';
+    const img=document.createElement('img');
+    img.src=url;
+    img.style.cssText='max-width:100%;max-height:75vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.8);';
+    const hint=document.createElement('p');
+    hint.style.cssText='color:#a89060;font-size:.8rem;letter-spacing:1px;text-transform:uppercase;text-align:center;font-family:"DM Sans",sans-serif;';
+    hint.textContent='Long-press image to save · Tap outside to close';
+    const dlBtn=document.createElement('a');
+    dlBtn.href=url;
+    dlBtn.download='voicescore.png';
+    dlBtn.style.cssText='padding:10px 28px;background:#c9a84c;border-radius:8px;color:#1a2e17;font-family:"Bebas Neue",cursive;font-size:1.1rem;letter-spacing:3px;text-decoration:none;';
+    dlBtn.textContent='Download PNG';
+    overlay.appendChild(img);
+    overlay.appendChild(hint);
+    overlay.appendChild(dlBtn);
+    overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+    document.body.appendChild(overlay);
   }
-  const html='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>VoiceScore \u2013 '+courseName+'</title>'
-    +'<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">'
-    +'<style>'
-    +'*{box-sizing:border-box;margin:0;padding:0;}'
-    +'body{background:#1a2e17;font-family:\'DM Sans\',sans-serif;color:#f5f0e8;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:32px 16px 48px;}'
-    +'.card{background:linear-gradient(160deg,#233d1e 0%,#1a2e17 60%,#162613 100%);border:1px solid rgba(201,168,76,.25);border-radius:20px;max-width:900px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(201,168,76,.15);}'
-    +'.card-header{padding:32px 36px 24px;border-bottom:1px solid rgba(201,168,76,.15);display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;}'
-    +'.brand{font-family:\'Bebas Neue\',cursive;font-size:2.4rem;letter-spacing:6px;color:#f5f0e8;text-shadow:2px 2px 0 rgba(0,0,0,.4);line-height:1;}'
-    +'.brand span{color:#c9a84c;}'
-    +'.course-info{text-align:right;}'
-    +'.course-info h2{font-family:\'Bebas Neue\',cursive;font-size:1.5rem;letter-spacing:2px;color:#c9a84c;line-height:1.1;}'
-    +'.course-info .meta{font-size:.72rem;color:#a89060;letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;}'
-    +'.date-line{font-size:.7rem;color:#7a6a4a;letter-spacing:1px;text-transform:uppercase;margin-top:6px;}'
-    +'.table-wrap{overflow-x:auto;padding:0 4px 4px;}'
-    +'table{width:100%;border-collapse:collapse;min-width:560px;}'
-    +'thead tr{background:rgba(0,0,0,.35);}'
-    +'th{padding:10px 6px;text-align:center;font-family:\'Bebas Neue\',cursive;font-size:.95rem;letter-spacing:1px;color:#c9a84c;border-bottom:2px solid rgba(201,168,76,.2);}'
-    +'th.label-col{text-align:left;padding-left:24px;min-width:110px;}'
-    +'td{padding:9px 6px;text-align:center;border-bottom:1px solid rgba(245,240,232,.06);font-size:.88rem;}'
-    +'.player-name-cell{text-align:left;padding-left:24px;font-weight:600;white-space:nowrap;color:#f5f0e8;}'
-    +'.par-row td{color:#a89060;font-size:.8rem;background:rgba(0,0,0,.2);}'
-    +'.yds-row td{color:#7a6a4a;font-size:.73rem;background:rgba(0,0,0,.12);}'
-    +'.sc{font-weight:600;border-radius:6px;}'
-    +'.empty{color:rgba(245,240,232,.25);font-weight:300;}'
-    +'.eagle{background:rgba(201,168,76,.45);color:#f5d87a;border:1px solid rgba(201,168,76,.6);}'
-    +'.birdie{background:rgba(41,128,185,.4);color:#7ec8f5;border:1px solid rgba(41,128,185,.55);}'
-    +'.par-cell{background:rgba(255,255,255,.07);color:#d4c9b0;}'
-    +'.bogey{background:rgba(192,57,43,.3);color:#f0a090;border:1px solid rgba(192,57,43,.45);}'
-    +'.double{background:rgba(192,57,43,.55);color:#ffb4a4;border:1px solid rgba(192,57,43,.7);}'
-    +'.total-cell{font-family:\'Bebas Neue\',cursive;font-size:1.05rem;letter-spacing:1px;color:#f5f0e8;}'
-    +'.diff-cell{font-weight:700;font-size:.82rem;}'
-    +'.diff-cell.under{color:#7ec8f5;}'
-    +'.diff-cell.over{color:#f0a090;}'
-    +'.diff-cell.even{color:#a89060;}'
-    +'.legend{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;padding:20px 24px 28px;border-top:1px solid rgba(245,240,232,.07);}'
-    +'.legend-item{display:flex;align-items:center;gap:7px;font-size:.68rem;color:#7a6a4a;text-transform:uppercase;letter-spacing:1px;}'
-    +'.legend-dot{width:14px;height:14px;border-radius:4px;}'
-    +'.print-btn{margin-top:24px;padding:12px 32px;background:#c9a84c;border:none;border-radius:10px;font-family:\'Bebas Neue\',cursive;font-size:1.1rem;letter-spacing:3px;color:#1a2e17;cursor:pointer;box-shadow:0 4px 20px rgba(201,168,76,.3);}'
-    +'@media print{body{background:#fff;padding:0;}.card{border:none;box-shadow:none;background:#fff;}.print-btn{display:none;}}'
-    +'</style></head><body>'
-    +'<div class="card">'
-    +'<div class="card-header">'
-    +'<div><div class="brand">Voice<span>Score</span></div></div>'
-    +'<div class="course-info"><h2>'+courseName+'</h2>'
-    +'<div class="meta">'+location+teeLabel+' &middot; Par '+totalPar+(totalYds?' &middot; '+totalYds+' yds':'')+'</div>'
-    +'<div class="date-line">'+today+'</div></div>'
-    +'</div>'
-    +'<div class="table-wrap"><table>'
-    +'<thead><tr>'+holeHeaders+'</tr></thead>'
-    +'<tbody><tr class="par-row">'+parCells+'</tr>'+ydCells+scoreRows+'</tbody>'
-    +'</table></div>'
-    +'<div class="legend">'
-    +'<div class="legend-item"><div class="legend-dot" style="background:rgba(201,168,76,.45);border:1px solid rgba(201,168,76,.6)"></div>Eagle or better</div>'
-    +'<div class="legend-item"><div class="legend-dot" style="background:rgba(41,128,185,.4);border:1px solid rgba(41,128,185,.55)"></div>Birdie</div>'
-    +'<div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,.07)"></div>Par</div>'
-    +'<div class="legend-item"><div class="legend-dot" style="background:rgba(192,57,43,.3);border:1px solid rgba(192,57,43,.45)"></div>Bogey</div>'
-    +'<div class="legend-item"><div class="legend-dot" style="background:rgba(192,57,43,.55);border:1px solid rgba(192,57,43,.7)"></div>Double+</div>'
-    +'</div></div>'
-    +'<button class="print-btn" onclick="window.print()">\uD83D\uDDA8 Print / Save PDF</button>'
-    +'</body></html>';
-  const win=window.open('','_blank');
-  if(win){win.document.write(html);win.document.close();}
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+function rowDivider(ctx,y,w){
+  ctx.strokeStyle='rgba(245,240,232,0.06)';
+  ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
 }
 
 function confirmReset(){
