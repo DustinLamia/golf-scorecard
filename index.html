@@ -133,6 +133,26 @@
   .round-card-score.over{color:#f0a090;}
   .round-card-score.even{color:var(--tan);}
   .round-card-meta{font-size:.72rem;color:var(--tan);letter-spacing:.5px;}
+  .rc-menu-btn{background:none;border:none;color:var(--tan);font-size:1.2rem;cursor:pointer;padding:0 0 0 10px;line-height:1;flex-shrink:0;opacity:.7;}
+  .rc-menu-btn:hover{opacity:1;color:var(--cream);}
+  .rc-menu-wrap{position:relative;}
+  .rc-menu-dropdown{position:absolute;right:0;top:24px;background:#1e2d1e;border:1px solid rgba(245,240,232,.2);border-radius:10px;z-index:99;min-width:130px;box-shadow:0 4px 16px rgba(0,0,0,.4);overflow:hidden;}
+  .rc-menu-dropdown button{display:block;width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;}
+  .rc-menu-dropdown button:hover{background:rgba(245,240,232,.1);}
+  .rc-menu-dropdown button.danger{color:#f0a090;}
+  .edit-round-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .edit-round-modal{background:#1a2e1a;border:1px solid rgba(245,240,232,.2);border-radius:16px;padding:24px;width:100%;max-width:400px;}
+  .edit-round-modal h3{font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px;color:var(--gold);margin-bottom:18px;}
+  .edit-round-modal label{display:block;font-size:.75rem;color:var(--tan);letter-spacing:.5px;margin-bottom:4px;margin-top:12px;}
+  .edit-round-modal input{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid rgba(245,240,232,.2);background:rgba(245,240,232,.07);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;}
+  .edit-round-modal .holes-toggle{display:flex;gap:8px;margin-top:4px;}
+  .edit-round-modal .holes-toggle button{flex:1;padding:8px;border-radius:8px;border:1px solid rgba(245,240,232,.2);background:rgba(245,240,232,.07);color:var(--tan);font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;}
+  .edit-round-modal .holes-toggle button.active{background:var(--gold);color:#1a2e1a;border-color:var(--gold);font-weight:700;}
+  .edit-round-modal .modal-btns{display:flex;gap:10px;margin-top:20px;}
+  .edit-round-modal .modal-btns button{flex:1;padding:12px;border-radius:10px;border:none;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;}
+  .edit-round-modal .btn-save-edit{background:var(--gold);color:#1a2e1a;}
+  .edit-round-modal .btn-cancel-edit{background:rgba(245,240,232,.1);color:var(--cream);}
+  .edit-round-modal .edit-error{font-size:.75rem;color:#f0a090;margin-top:8px;min-height:16px;}
   .history-empty{text-align:center;padding:60px 20px;color:var(--tan);font-size:.9rem;line-height:1.8;}
   .history-loading{text-align:center;padding:40px;color:var(--tan);font-size:.85rem;}
   .btn-finish{padding:10px 20px;border-radius:8px;border:none;background:var(--gold);color:var(--dark);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;}
@@ -2633,22 +2653,122 @@ async function loadHistory(){
     const roundId='rh-'+round.id;
     const card=document.createElement('div');
     card.className='round-card';
-    if(isLive)card.style.cursor='pointer';
+    card.dataset.roundId=round.id;
+    if(isLive)card.dataset.round=JSON.stringify(round);
     card.innerHTML=`
-      <div class="round-card-top" ${isLive?`onclick="toggleRoundScorecard('${roundId}')"`:''}> 
-        <div class="round-card-course">${round.course_name}${isLive?` <span style="font-size:.65rem;color:var(--gold);" id="${roundId}-chevron">&#9660;</span>`:''}</div>
-        <div class="round-card-score ${scoreClass}">${round.total_strokes||''}<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0;">${diffStr}</div></div>
+      <div style="display:flex;align-items:flex-start;gap:4px;">
+        <div style="flex:1;min-width:0;" ${isLive?`onclick="toggleRoundScorecard('${roundId}')"`:''}">
+          <div class="round-card-top">
+            <div class="round-card-course">${round.course_name}${isLive?` <span style="font-size:.65rem;color:var(--gold);" id="${roundId}-chevron">&#9660;</span>`:''}</div>
+            <div class="round-card-score ${scoreClass}">${round.total_strokes||''}<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0;">${diffStr}</div></div>
+          </div>
+          <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${playerNames}${round.tee_name?' &middot; '+round.tee_name:''} <span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;${isLive?'background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35);':'background:rgba(245,240,232,.07);color:var(--tan);border:1px solid rgba(245,240,232,.15);'}">${isLive?'LIVE':'MANUAL'}</span></div>
+          ${isLive?`<div id="${roundId}" style="display:none;margin-top:12px;"></div>`:''}
+        </div>
+        <div class="rc-menu-wrap">
+          <button class="rc-menu-btn" onclick="toggleRcMenu(event,'${round.id}')" title="Options">&#8943;</button>
+          <div class="rc-menu-dropdown" id="rcm-${round.id}" style="display:none;">
+            ${!isLive?`<button onclick="openEditRound('${round.id}')">&#9998;&nbsp;Edit</button>`:''}
+            <button class="danger" onclick="confirmDeleteRound('${round.id}')">&#128465;&nbsp;Delete</button>
+          </div>
+        </div>
       </div>
-      <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${playerNames}${round.tee_name?' &middot; '+round.tee_name:''} <span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;${isLive?'background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35);':'background:rgba(245,240,232,.07);color:var(--tan);border:1px solid rgba(245,240,232,.15);'}">${isLive?'LIVE':'MANUAL'}</span></div>
-      ${isLive?`<div id="${roundId}" style="display:none;margin-top:12px;"></div>`:''}
     `;
-
-    if(isLive){
-      // Store round data for use in toggle
-      card.dataset.round=JSON.stringify(round);
-    }
     list.appendChild(card);
   });
+}
+
+// ── Round Card Menu ──
+function toggleRcMenu(e,roundId){
+  e.stopPropagation();
+  const menu=document.getElementById('rcm-'+roundId);
+  if(!menu)return;
+  const isOpen=menu.style.display!=='none';
+  // Close all open menus
+  document.querySelectorAll('.rc-menu-dropdown').forEach(m=>m.style.display='none');
+  if(!isOpen)menu.style.display='block';
+}
+document.addEventListener('click',function(){
+  document.querySelectorAll('.rc-menu-dropdown').forEach(m=>m.style.display='none');
+});
+
+async function confirmDeleteRound(roundId){
+  document.querySelectorAll('.rc-menu-dropdown').forEach(m=>m.style.display='none');
+  if(!confirm('Delete this round? This cannot be undone.'))return;
+  const {error}=await supa.from('rounds').delete().eq('id',roundId).eq('user_id',currentUser.id);
+  if(error){alert('Error deleting round. Try again.');return;}
+  // Refresh history always; also refresh stats/compare if already loaded this session
+  loadHistory();
+  const statsEl=document.getElementById('stats-content');
+  if(statsEl&&statsEl.innerHTML&&!statsEl.innerHTML.includes('Loading'))loadStats();
+  const compareEl=document.getElementById('compare-screen');
+  if(compareEl&&compareEl.style.display==='block')loadCompare();
+}
+
+// Edit round (manual rounds only)
+let _editRoundId=null;
+let _editHoles=18;
+
+async function openEditRound(roundId){
+  document.querySelectorAll('.rc-menu-dropdown').forEach(m=>m.style.display='none');
+  // Fetch round data fresh
+  const {data,error}=await supa.from('rounds').select('*').eq('id',roundId).single();
+  if(error||!data){alert('Could not load round data.');return;}
+  _editRoundId=roundId;
+  _editHoles=data.holes||18;
+  document.getElementById('edit-course-val').value=data.course_name||'';
+  document.getElementById('edit-strokes-val').value=data.total_strokes||'';
+  document.getElementById('edit-par-val').value=(data.total_strokes-(data.score_vs_par||0))||'';
+  const d=new Date(data.played_at);
+  const ds=d.toISOString().split('T')[0];
+  document.getElementById('edit-date-val').value=ds;
+  document.getElementById('edit-holes-9').classList.toggle('active',_editHoles===9);
+  document.getElementById('edit-holes-18').classList.toggle('active',_editHoles===18);
+  document.getElementById('edit-error').textContent='';
+  document.getElementById('edit-round-overlay').style.display='flex';
+}
+
+function closeEditRound(){
+  document.getElementById('edit-round-overlay').style.display='none';
+  _editRoundId=null;
+}
+
+function setEditHoles(n){
+  _editHoles=n;
+  document.getElementById('edit-holes-9').classList.toggle('active',n===9);
+  document.getElementById('edit-holes-18').classList.toggle('active',n===18);
+}
+
+async function saveEditRound(){
+  const course=document.getElementById('edit-course-val').value.trim();
+  const strokes=parseInt(document.getElementById('edit-strokes-val').value);
+  const par=parseInt(document.getElementById('edit-par-val').value);
+  const date=document.getElementById('edit-date-val').value;
+  const errEl=document.getElementById('edit-error');
+  const btn=document.getElementById('btn-save-edit');
+  if(!course){errEl.textContent='Course name required.';return;}
+  if(!strokes||strokes<30){errEl.textContent='Enter a valid score.';return;}
+  if(!par||par<27){errEl.textContent='Enter a valid par.';return;}
+  if(!date){errEl.textContent='Date required.';return;}
+  const diff=strokes-par;
+  btn.disabled=true;btn.textContent='Saving...';
+  errEl.textContent='';
+  const {error}=await supa.from('rounds').update({
+    course_name:course,
+    total_strokes:strokes,
+    score_vs_par:diff,
+    holes:_editHoles,
+    pars:Array(_editHoles).fill(Math.round(par/_editHoles)),
+    played_at:new Date(date).toISOString()
+  }).eq('id',_editRoundId).eq('user_id',currentUser.id);
+  btn.disabled=false;btn.textContent='Save';
+  if(error){errEl.textContent='Error saving. Try again.';return;}
+  closeEditRound();
+  loadHistory();
+  const statsEl=document.getElementById('stats-content');
+  if(statsEl&&statsEl.innerHTML&&!statsEl.innerHTML.includes('Loading'))loadStats();
+  const compareEl=document.getElementById('compare-screen');
+  if(compareEl&&compareEl.style.display==='block')loadCompare();
 }
 
 // ── Supabase Auth ──
@@ -2845,6 +2965,31 @@ document.addEventListener('DOMContentLoaded', function(){
 
 
 <!-- Log Past Round Screen -->
+<!-- Edit Round Modal -->
+<div id="edit-round-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:20px;">
+  <div class="edit-round-modal">
+    <h3>Edit Round</h3>
+    <label>Course Name</label>
+    <input id="edit-course-val" type="text" placeholder="Course name" />
+    <label>Date Played</label>
+    <input id="edit-date-val" type="date" />
+    <label>Holes</label>
+    <div class="holes-toggle">
+      <button id="edit-holes-9" onclick="setEditHoles(9)">9</button>
+      <button id="edit-holes-18" class="active" onclick="setEditHoles(18)">18</button>
+    </div>
+    <label>Total Strokes</label>
+    <input id="edit-strokes-val" type="number" placeholder="e.g. 88" />
+    <label>Course Par</label>
+    <input id="edit-par-val" type="number" placeholder="e.g. 72" />
+    <div class="edit-error" id="edit-error"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel-edit" onclick="closeEditRound()">Cancel</button>
+      <button class="btn-save-edit" id="btn-save-edit" onclick="saveEditRound()">Save</button>
+    </div>
+  </div>
+</div>
+
 <div id="past-round-screen" style="display:none;">
   <div class="past-round-card">
     <h2>Log Past Round</h2>
