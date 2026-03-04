@@ -1785,19 +1785,44 @@ async function submitPastRound(){
 }
 
 
+let pastSearchTimer=null;
+function debouncedPastSearch(){clearTimeout(pastSearchTimer);pastSearchTimer=setTimeout(searchPastCourse,300);}
+
 async function searchPastCourse(){
   const query=document.getElementById('past-course-input').value.trim();
   const results=document.getElementById('past-course-results');
-  results.innerHTML='';
   document.getElementById('past-course-name').value='';
-  if(!query){return;}
-  results.innerHTML='<div style="font-size:.78rem;color:var(--tan);padding:6px 0;">Searching...</div>';
+  if(!query){results.style.display='none';results.innerHTML='';return;}
+  results.style.display='block';
+  results.innerHTML='<div style="font-size:.78rem;color:var(--tan);padding:10px 14px;">Searching...</div>';
 
   const localMatches=COURSES
     .map(c=>({course:c,score:fuzzyMatch(query,c)}))
     .filter(x=>x.score<999).sort((a,b)=>a.score-b.score).slice(0,5).map(x=>x.course);
 
-  results.innerHTML='';
+  function renderPastResults(combined){
+    results.innerHTML='';
+    if(!combined.length){
+      results.innerHTML='<div style="font-size:.78rem;color:var(--tan);padding:10px 14px;">No courses found.</div>';
+      return;
+    }
+    combined.forEach(c=>{
+      const div=document.createElement('div');
+      div.className='course-item';
+      div.innerHTML='<div class="cn">'+c.name+'</div><div class="cl">'+c.location+'</div>';
+      div.onclick=()=>{
+        document.getElementById('past-course-name').value=c.name;
+        document.getElementById('past-course-input').value=c.name;
+        results.style.display='none';
+        results.innerHTML='';
+      };
+      results.appendChild(div);
+    });
+  }
+
+  // Show local matches immediately
+  const localCombined=localMatches.map(c=>({name:c.name,location:(c.city||'')+(c.state?', '+c.state:'')}));
+  if(localCombined.length) renderPastResults(localCombined);
 
   try{
     const resp=await fetch(API_BASE+'/search?search_query='+encodeURIComponent(query)+'&per_page=10',{headers:{'Authorization':'Key '+API_KEY}});
@@ -1805,37 +1830,13 @@ async function searchPastCourse(){
     const apiCourses=(data.courses||[]).filter(c=>c.location?.country==='United States').slice(0,8);
     const localNames=new Set(localMatches.map(c=>c.name.toLowerCase()));
     const combined=[
-      ...localMatches.map(c=>({name:c.name,location:(c.city||'')+(c.state?', '+c.state:'')})),
+      ...localCombined,
       ...apiCourses.filter(c=>!localNames.has(c.course_name.toLowerCase())).map(c=>({name:c.course_name,location:(c.location?.city||'')+(c.location?.state?', '+c.location.state:'')}))
     ];
-    if(!combined.length){results.innerHTML='<div style="font-size:.78rem;color:var(--tan);padding:6px 0;">No courses found.</div>';return;}
-    combined.forEach(c=>{
-      const div=document.createElement('div');
-      div.className='course-item';
-      div.style.cssText='padding:10px 12px;border-radius:8px;cursor:pointer;margin-bottom:4px;';
-      div.innerHTML='<div class="cn">'+c.name+'</div><div class="cl">'+c.location+'</div>';
-      div.onclick=()=>{
-        document.getElementById('past-course-name').value=c.name;
-        document.getElementById('past-course-input').value=c.name;
-        results.innerHTML='<div style="font-size:.78rem;color:#4caf82;padding:4px 0;">&#10003; '+c.name+'</div>';
-      };
-      results.appendChild(div);
-    });
+    renderPastResults(combined);
   }catch(e){
-    if(localMatches.length){
-      localMatches.forEach(c=>{
-        const div=document.createElement('div');
-        div.className='course-item';
-        div.innerHTML='<div class="cn">'+c.name+'</div><div class="cl">'+(c.city||'')+(c.state?', '+c.state:'')+'</div>';
-        div.onclick=()=>{
-          document.getElementById('past-course-name').value=c.name;
-          document.getElementById('past-course-input').value=c.name;
-          results.innerHTML='<div style="font-size:.78rem;color:#4caf82;padding:4px 0;">&#10003; '+c.name+'</div>';
-        };
-        results.appendChild(div);
-      });
-    }else{
-      results.innerHTML='<div style="font-size:.78rem;color:var(--tan);padding:6px 0;">No courses found offline.</div>';
+    if(!localCombined.length){
+      results.innerHTML='<div style="font-size:.78rem;color:var(--tan);padding:10px 14px;">Offline – check connection.</div>';
     }
   }
 }
@@ -2107,6 +2108,15 @@ restoreSession();
 
 // Wire up welcome screen buttons after DOM is ready
 document.addEventListener('DOMContentLoaded', function(){
+  // Close past course dropdown when clicking outside
+  document.addEventListener('click', function(e){
+    const input=document.getElementById('past-course-input');
+    const results=document.getElementById('past-course-results');
+    if(results && input && !input.contains(e.target) && !results.contains(e.target)){
+      results.style.display='none';
+    }
+  });
+
   var btnFree=document.getElementById('btn-free-signup');
   var btnPro=document.getElementById('btn-pro-signup');
   var btnSignin=document.getElementById('btn-welcome-signin');
@@ -2145,13 +2155,13 @@ document.addEventListener('DOMContentLoaded', function(){
     <h2>Log Past Round</h2>
     <p>Add a round you played before using VoiceScore.</p>
 
-    <div class="past-field">
+    <div class="past-field" style="position:relative;">
       <label>Course Name</label>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="past-course-input" placeholder="Search course name or city..." style="flex:1;background:rgba(0,0,0,.25);border:1px solid rgba(245,240,232,.2);border-radius:8px;padding:10px 14px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.95rem;outline:none;">
-        <button onclick="searchPastCourse()" style="padding:10px 16px;background:var(--gold);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;color:var(--dark);cursor:pointer;">Search</button>
-      </div>
-      <div id="past-course-results" style="margin-top:6px;"></div>
+      <input type="text" id="past-course-input" placeholder="Search course name or city..." autocomplete="off"
+        oninput="debouncedPastSearch()"
+        onkeydown="if(event.key==='Enter'){clearTimeout(pastSearchTimer);searchPastCourse();}"
+        style="width:100%;background:rgba(0,0,0,.25);border:1px solid rgba(245,240,232,.2);border-radius:8px;padding:10px 14px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.95rem;outline:none;">
+      <div id="past-course-results" style="position:absolute;left:0;right:0;z-index:200;background:#1e3d1a;border:1px solid rgba(201,168,76,.3);border-radius:8px;margin-top:4px;max-height:220px;overflow-y:auto;display:none;"></div>
       <input type="hidden" id="past-course-name">
     </div>
 
