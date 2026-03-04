@@ -215,6 +215,7 @@
   .course-row-score.under{color:#7ec8f5;}
   .course-row-score.over{color:#f0a090;}
   .course-row-score.even{color:var(--tan);}
+  .course-row-clickable:hover{background:rgba(201,168,76,.07);border-radius:8px;margin:0 -8px;padding:10px 8px;}
   .btn-compare{width:100%;padding:13px;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.4);border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;color:var(--gold);cursor:pointer;margin-top:4px;}
 
   /* ── Log Past Round ── */
@@ -2011,7 +2012,8 @@ async function loadCompare(){
     const h=Math.max(3,Math.round((Math.abs(d)/maxAbs)*70));
     const cls=d<0?'negative':d>0?'positive':'zero';
     const lbl=fmtDate(r.played_at);
-    return `<div class="compare-bar-col"><div class="compare-bar ${cls}" style="height:${h}px;"></div><div class="compare-val">${fmtD(d)}</div><div class="compare-label">${lbl}</div></div>`;
+    const strokes=r.total_strokes||'';
+    return `<div class="compare-bar-col"><div class="compare-bar ${cls}" style="height:${h}px;"></div><div class="compare-val">${fmtD(d)}</div><div class="compare-val" style="color:var(--tan);">${strokes}</div><div class="compare-label">${lbl}</div></div>`;
   }).join('');
 
   // ── 2. Handicap over time ──
@@ -2034,21 +2036,27 @@ async function loadCompare(){
       const lbl=fmtDate(p.date);
       // Lower handicap = better = blue
       const normPos=(p.h-hMin)/hRange; // 0=best, 1=worst
-      const clr=normPos<0.33?'#7ec8f5':normPos<0.66?'var(--tan)':'#f0a090';
+      const clr='var(--gold)';
       return `<div class="compare-bar-col"><div class="compare-bar" style="height:${barH}px;background:${clr};"></div><div class="compare-val" style="font-size:.55rem;">${fmtHandicap(p.h)}</div><div class="compare-label">${lbl}</div></div>`;
     }).join('');
-    hcpHTML=`<div class="compare-chart">${hBars}</div><div style="font-size:.62rem;color:var(--tan);margin-top:2px;">Blue = lower (better) &middot; Red = higher</div>`;
+    hcpHTML=`<div class="compare-chart">${hBars}</div><div style="font-size:.62rem;color:var(--tan);margin-top:2px;">Taller bar = higher index at that point in time</div>`;
   }
 
   // ── 3. Course breakdown ──
   const courseMap={};
   data.forEach(r=>{
     const name=r.course_name||'Unknown Course';
-    if(!courseMap[name])courseMap[name]={rounds:0,totalDiff:0,best:Infinity,strokes:[]};
+    if(!courseMap[name])courseMap[name]={rounds:0,totalDiff:0,totalStrokes:0,best:Infinity,roundList:[]};
     courseMap[name].rounds++;
     courseMap[name].totalDiff+=r.score_vs_par||0;
+    courseMap[name].totalStrokes+=r.total_strokes||0;
     if((r.score_vs_par||0)<courseMap[name].best)courseMap[name].best=r.score_vs_par||0;
+    courseMap[name].roundList.push(r);
   });
+
+  // Store for use in showCourseDetail
+  window._courseMap=courseMap;
+
   const courseRows=Object.entries(courseMap)
     .sort((a,b)=>b[1].rounds-a[1].rounds)
     .map(([name,c])=>{
@@ -2056,12 +2064,18 @@ async function loadCompare(){
       const avgStr=avg===0?'E':avg>0?'+'+avg.toFixed(1):avg.toFixed(1);
       const cls=avg<0?'under':avg>0?'over':'even';
       const bestStr=c.best===Infinity?'-':fmtD(c.best);
-      return `<div class="course-row">
-        <div style="flex:1;padding-right:12px;">
-          <div class="course-row-name">${name}</div>
-          <div class="course-row-meta">${c.rounds} round${c.rounds>1?'s':''} &middot; Best: ${bestStr}</div>
+      const avgStrokes=Math.round(c.totalStrokes/c.rounds);
+      const clickable=c.rounds>=2;
+      const safeId='course-'+name.replace(/[^a-z0-9]/gi,'_');
+      return `<div>
+        <div class="course-row${clickable?' course-row-clickable':''}" ${clickable?`onclick="toggleCourseDetail('${safeId}','${name.replace(/'/g,"\\'")}')" `:''}style="${clickable?'cursor:pointer;':''}">
+          <div style="flex:1;padding-right:12px;">
+            <div class="course-row-name">${name}${clickable?' <span style="font-size:.65rem;color:var(--gold);">&#9660;</span>':''}</div>
+            <div class="course-row-meta">${c.rounds} round${c.rounds>1?'s':''} &middot; Best: ${bestStr}</div>
+          </div>
+          <div class="course-row-score ${cls}">${avgStrokes}<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0;">${avgStr}</div></div>
         </div>
-        <div class="course-row-score ${cls}">${avgStr}<div style="font-size:.6rem;font-family:'DM Sans',sans-serif;color:var(--tan);font-weight:400;letter-spacing:0;">avg</div></div>
+        <div id="${safeId}" style="display:none;padding:12px 0 4px;"></div>
       </div>`;
     }).join('');
 
@@ -2080,6 +2094,50 @@ async function loadCompare(){
       ${courseRows}
     </div>
   `;
+}
+
+function toggleCourseDetail(safeId, name){
+  const el=document.getElementById(safeId);
+  if(!el)return;
+  if(el.style.display!=='none'){el.style.display='none';return;}
+
+  const c=window._courseMap[name];
+  if(!c)return;
+
+  const fmtD=d=>d===0?'E':d>0?'+'+d:''+d;
+  const fmtDate=s=>{const d=new Date(s);return(d.getMonth()+1)+'/'+(d.getDate());};
+  const goalStrokes=parseInt(localStorage.getItem('vs_goal_strokes'))||null;
+
+  // Up to last 10 rounds at this course, chronological
+  const rounds=[...c.roundList].sort((a,b)=>new Date(a.played_at)-new Date(b.played_at)).slice(-10);
+  const diffs=rounds.map(r=>r.score_vs_par||0);
+  const maxAbs=Math.max(...diffs.map(d=>Math.abs(d)),1);
+
+  const bars=rounds.map((r,i)=>{
+    const d=diffs[i];
+    const strokes=r.total_strokes||0;
+    const h=Math.max(3,Math.round((Math.abs(d)/maxAbs)*60));
+    let color;
+    if(goalStrokes){
+      color=strokes>0&&strokes<goalStrokes?'#4caf82':'#c0392b';
+    } else {
+      color=d<0?'#4caf82':d>0?'#c0392b':'var(--tan)';
+    }
+    return `<div class="compare-bar-col"><div class="compare-bar" style="height:${h}px;background:${color};"></div><div class="compare-val">${fmtD(d)}</div><div class="compare-val" style="color:var(--tan);">${strokes||''}</div><div class="compare-label">${fmtDate(r.played_at)}</div></div>`;
+  }).join('');
+
+  const legendText=goalStrokes
+    ?`Green = under ${goalStrokes} strokes &middot; Red = over`
+    :'Green = under par &middot; Red = over par';
+
+  el.innerHTML=`
+    <div style="background:rgba(0,0,0,.2);border-radius:8px;padding:12px;">
+      <div style="font-size:.65rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Last ${rounds.length} rounds here</div>
+      <div class="compare-chart" style="height:70px;">${bars}</div>
+      <div style="font-size:.6rem;color:var(--tan);margin-top:4px;">${legendText}</div>
+    </div>
+  `;
+  el.style.display='block';
 }
 
 // ── Bottom Nav ──
