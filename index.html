@@ -193,6 +193,30 @@
   .btn-save-goals{width:100%;padding:10px;background:var(--gold);border:none;border-radius:8px;font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;color:var(--dark);cursor:pointer;margin-top:4px;}
 
 
+  /* ── Compare Screen ── */
+  #compare-screen{display:none;padding:20px;max-width:600px;margin:0 auto;padding-bottom:80px;}
+  .compare-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .compare-header h2{font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);}
+  .compare-section{background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:16px;margin-bottom:14px;}
+  .compare-section-title{font-size:.7rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;}
+  .compare-chart{display:flex;align-items:flex-end;gap:4px;height:80px;margin-bottom:6px;}
+  .compare-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-end;}
+  .compare-bar{width:100%;border-radius:3px;min-height:3px;}
+  .compare-bar.positive{background:#f0a090;}
+  .compare-bar.negative{background:#7ec8f5;}
+  .compare-bar.zero{background:var(--tan);height:3px;}
+  .compare-val{font-size:.58rem;color:var(--cream);text-align:center;}
+  .compare-label{font-size:.52rem;color:var(--tan);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .course-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(245,240,232,.07);}
+  .course-row:last-child{border-bottom:none;}
+  .course-row-name{font-size:.85rem;color:var(--cream);font-weight:500;flex:1;padding-right:12px;}
+  .course-row-meta{font-size:.72rem;color:var(--tan);margin-top:2px;}
+  .course-row-score{font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:1px;text-align:right;}
+  .course-row-score.under{color:#7ec8f5;}
+  .course-row-score.over{color:#f0a090;}
+  .course-row-score.even{color:var(--tan);}
+  .btn-compare{width:100%;padding:13px;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.4);border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;color:var(--gold);cursor:pointer;margin-top:4px;}
+
   /* ── Log Past Round ── */
   #past-round-screen{display:none;padding:20px;max-width:500px;margin:0 auto;}
   .past-round-card{background:rgba(245,240,232,.08);border:1px solid rgba(245,240,232,.15);border-radius:16px;padding:24px;margin-bottom:16px;}
@@ -1711,6 +1735,8 @@ async function loadStats(){
         <button class="btn-save-goals" onclick="saveGoals()">Save Goals</button>
       </div>
 
+      <button class="btn-compare" onclick="navTo('compare')">Compare Rounds &#8594;</button>
+
     </div>
   `;
 
@@ -1964,6 +1990,98 @@ function populateGoalInputs(goals, avgStrokes, avgPars, avgBirdies){
 }
 
 
+// ── Compare Rounds ──
+async function loadCompare(){
+  const el=document.getElementById('compare-content');
+  el.innerHTML='<div class="stats-loading">Loading...</div>';
+  const {data,error}=await supa.from('rounds').select('*').order('played_at',{ascending:true}).limit(100);
+  if(error||!data||data.length<2){
+    el.innerHTML='<div class="stats-empty">Play at least 2 rounds to compare.</div>';
+    return;
+  }
+
+  const fmtD=d=>d===0?'E':d>0?'+'+d:''+d;
+  const fmtDate=s=>{const d=new Date(s);return(d.getMonth()+1)+'/'+(d.getDate());};
+
+  // ── 1. Score vs par trend (all rounds chronological) ──
+  const diffs=data.map(r=>r.score_vs_par||0);
+  const maxAbs=Math.max(...diffs.map(d=>Math.abs(d)),1);
+  const trendBars=data.map((r,i)=>{
+    const d=diffs[i];
+    const h=Math.max(3,Math.round((Math.abs(d)/maxAbs)*70));
+    const cls=d<0?'negative':d>0?'positive':'zero';
+    const lbl=fmtDate(r.played_at);
+    return `<div class="compare-bar-col"><div class="compare-bar ${cls}" style="height:${h}px;"></div><div class="compare-val">${fmtD(d)}</div><div class="compare-label">${lbl}</div></div>`;
+  }).join('');
+
+  // ── 2. Handicap over time ──
+  // For each round index, calc handicap using rounds up to that point (min 3)
+  const hcpPoints=[];
+  for(let i=2;i<data.length;i++){
+    const subset=data.slice(0,i+1).reverse(); // newest first for calcHandicap
+    const h=calcHandicap(subset);
+    if(h!==null)hcpPoints.push({date:data[i].played_at,h});
+  }
+  let hcpHTML='<div style="font-size:.78rem;color:var(--tan);font-style:italic;">Need 3+ rounds to show handicap trend.</div>';
+  if(hcpPoints.length>=2){
+    const hVals=hcpPoints.map(p=>p.h);
+    const hMin=Math.min(...hVals);
+    const hMax=Math.max(...hVals);
+    const hRange=Math.max(hMax-hMin,1);
+    const hBars=hcpPoints.map(p=>{
+      const pct=Math.round(((p.h-hMin)/hRange)*65);
+      const barH=Math.max(3,pct+5);
+      const lbl=fmtDate(p.date);
+      // Lower handicap = better = blue
+      const normPos=(p.h-hMin)/hRange; // 0=best, 1=worst
+      const clr=normPos<0.33?'#7ec8f5':normPos<0.66?'var(--tan)':'#f0a090';
+      return `<div class="compare-bar-col"><div class="compare-bar" style="height:${barH}px;background:${clr};"></div><div class="compare-val" style="font-size:.55rem;">${fmtHandicap(p.h)}</div><div class="compare-label">${lbl}</div></div>`;
+    }).join('');
+    hcpHTML=`<div class="compare-chart">${hBars}</div><div style="font-size:.62rem;color:var(--tan);margin-top:2px;">Blue = lower (better) &middot; Red = higher</div>`;
+  }
+
+  // ── 3. Course breakdown ──
+  const courseMap={};
+  data.forEach(r=>{
+    const name=r.course_name||'Unknown Course';
+    if(!courseMap[name])courseMap[name]={rounds:0,totalDiff:0,best:Infinity,strokes:[]};
+    courseMap[name].rounds++;
+    courseMap[name].totalDiff+=r.score_vs_par||0;
+    if((r.score_vs_par||0)<courseMap[name].best)courseMap[name].best=r.score_vs_par||0;
+  });
+  const courseRows=Object.entries(courseMap)
+    .sort((a,b)=>b[1].rounds-a[1].rounds)
+    .map(([name,c])=>{
+      const avg=Math.round(c.totalDiff/c.rounds*10)/10;
+      const avgStr=avg===0?'E':avg>0?'+'+avg.toFixed(1):avg.toFixed(1);
+      const cls=avg<0?'under':avg>0?'over':'even';
+      const bestStr=c.best===Infinity?'-':fmtD(c.best);
+      return `<div class="course-row">
+        <div style="flex:1;padding-right:12px;">
+          <div class="course-row-name">${name}</div>
+          <div class="course-row-meta">${c.rounds} round${c.rounds>1?'s':''} &middot; Best: ${bestStr}</div>
+        </div>
+        <div class="course-row-score ${cls}">${avgStr}<div style="font-size:.6rem;font-family:'DM Sans',sans-serif;color:var(--tan);font-weight:400;letter-spacing:0;">avg</div></div>
+      </div>`;
+    }).join('');
+
+  el.innerHTML=`
+    <div class="compare-section">
+      <div class="compare-section-title">Score vs Par — All Rounds</div>
+      <div class="compare-chart">${trendBars}</div>
+      <div style="font-size:.62rem;color:var(--tan);margin-top:2px;">Blue = under par &middot; Red = over par</div>
+    </div>
+    <div class="compare-section">
+      <div class="compare-section-title">Handicap Trend</div>
+      ${hcpHTML}
+    </div>
+    <div class="compare-section">
+      <div class="compare-section-title">Course Breakdown</div>
+      ${courseRows}
+    </div>
+  `;
+}
+
 // ── Bottom Nav ──
 function showBottomNav(){
   document.getElementById('bottom-nav').style.display='block';
@@ -1980,7 +2098,7 @@ function setActiveNav(id){
 }
 function navTo(screen){
   // Hide all screens
-  ['setup-screen','scorecard-screen','history-screen','stats-screen','past-round-screen','profile-screen'].forEach(id=>{
+  ['setup-screen','scorecard-screen','history-screen','stats-screen','past-round-screen','profile-screen','compare-screen'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.style.display='none';
   });
@@ -1998,6 +2116,9 @@ function navTo(screen){
     document.getElementById('profile-screen').style.display='block';
     const emailEl=document.getElementById('profile-email');
     if(emailEl&&currentUser)emailEl.textContent=currentUser.email;
+  } else if(screen==='compare'){
+    document.getElementById('compare-screen').style.display='block';
+    loadCompare();
   }
 }
 
@@ -2309,6 +2430,16 @@ document.addEventListener('DOMContentLoaded', function(){
     <button class="btn-log-round" id="btn-log-round" onclick="submitPastRound()">Save Round</button>
   </div>
   <button class="btn-back" onclick="closePastRound()" style="margin:0 auto;display:block;">&#8592; Back to History</button>
+</div>
+
+
+<!-- Compare Screen -->
+<div id="compare-screen" style="display:none;">
+  <div class="compare-header">
+    <h2>Compare Rounds</h2>
+    <button class="btn-back" onclick="navTo('stats')">&#8592; Back</button>
+  </div>
+  <div id="compare-content"><div class="stats-loading">Loading...</div></div>
 </div>
 
 
