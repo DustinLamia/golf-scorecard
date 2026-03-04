@@ -1370,17 +1370,26 @@ const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 let currentUser=null;
 let authMode='signin'; // 'signin' | 'signup'
 
+// Listen for auth changes — this fires on load too, including after email confirmation redirect
+supa.auth.onAuthStateChange((event,session)=>{
+  if(session){
+    setUser(session.user);
+  } else {
+    // Only show welcome if we've finished initializing (avoid flash on load)
+    if(window._authReady){clearUser();}
+  }
+});
+
 // Init: check existing session
 (async()=>{
   const {data:{session}}=await supa.auth.getSession();
-  if(session){setUser(session.user);}
+  window._authReady=true;
+  if(session){
+    setUser(session.user);
+  } else {
+    showWelcomeScreen();
+  }
 })();
-
-// Listen for auth changes
-supa.auth.onAuthStateChange((_event,session)=>{
-  if(session){setUser(session.user);}
-  else{clearUser();}
-});
 
 function setUser(user){
   currentUser=user;
@@ -1400,7 +1409,7 @@ function clearUser(){
   const startBtn=document.getElementById('start-btn');
   if(btn){btn.textContent='Sign In';btn.classList.remove('signed-in');}
   if(startBtn){startBtn.textContent='Sign In to Start';}
-  showWelcomeScreen();
+  if(window._authReady){showWelcomeScreen();}
 }
 
 
@@ -1424,6 +1433,10 @@ function showWelcomeScreen(){
 function hideWelcomeScreen(){
   document.getElementById('welcome-screen').style.display='none';
   document.querySelector('header').style.display='block';
+  // Only show setup screen if we're not mid-round
+  if(document.getElementById('scorecard-screen').style.display!=='block'){
+    document.getElementById('setup-screen').style.display='block';
+  }
 }
 
 function openAuthModal(){
@@ -1493,12 +1506,8 @@ document.addEventListener('click',e=>{
   }
 });
 
-// Show welcome screen initially — hideWelcomeScreen() called if session exists
-(function(){
-  const b=document.getElementById('start-btn');if(b)b.textContent='Sign In to Start';
-  // Will be hidden by setUser() if session is found, otherwise stays visible
-  showWelcomeScreen();
-})();
+// Set initial button state
+(function(){const b=document.getElementById('start-btn');if(b)b.textContent='Sign In to Start';})();
 // Restore session on page load (survives refresh)
 restoreSession();
 </script>
