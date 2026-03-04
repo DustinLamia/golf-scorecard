@@ -1789,7 +1789,9 @@ async function loadStats(){
   if(chartEl){
     const diffs=last10.map(r=>r.score_vs_par||0);
     const strokes=last10.map(r=>r.total_strokes||0);
-    const maxAbs=Math.max(...diffs.map(d=>Math.abs(d)),1);
+    const minD=Math.min(...diffs);
+    const maxD=Math.max(...diffs);
+    const range=Math.max(maxD-minD,1);
     chartEl.innerHTML='';
     last10.forEach((round,i)=>{
       const diff=diffs[i];
@@ -1797,12 +1799,11 @@ async function loadStats(){
       const date=new Date(round.played_at);
       const label=(date.getMonth()+1)+'/'+(date.getDate());
       const diffStr=diff===0?'E':diff>0?'+'+diff:''+diff;
-      const barHeightPct=Math.round((Math.abs(diff)/maxAbs)*100);
-      const barH=Math.min(60,Math.max(3,Math.round(barHeightPct*0.6)));
+      const barH=Math.min(60,Math.max(6,Math.round(((diff-minD)/range)*54)+6));
       // Color based on score goal if set, otherwise vs par
       const hitGoal=goals.strokes?stroke<goals.strokes:diff<0;
       const missedGoal=goals.strokes?stroke>=goals.strokes:diff>0;
-      const barColor=hitGoal?'#4caf82':missedGoal?'#f0a090':goals.strokes?'var(--tan)':'var(--tan)';
+      const barColor=hitGoal?'#4caf82':missedGoal?'#c0392b':goals.strokes?'var(--tan)':'var(--tan)';
       const col=document.createElement('div');
       col.className='chart-bar-col';
       col.innerHTML=`
