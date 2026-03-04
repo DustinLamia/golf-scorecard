@@ -1969,7 +1969,7 @@ async function loadStats(){
         <button class="btn-save-goals" onclick="saveGoals()">Save Goals</button>
       </div>
 
-      <div class="goals-card" onclick="navTo('compare')" style="cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;min-height:200px;">
+      <div class="goals-card" onclick="navTo('compare')" style="cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;">
         <div>
           <div class="stat-label" style="margin-bottom:14px;">Compare Rounds</div>
           <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;">
@@ -1987,11 +1987,11 @@ async function loadStats(){
         <button class="btn-save-goals" style="margin-top:20px;">Compare Rounds &#8594;</button>
       </div>
 
-      <div style="padding:8px 0 16px;display:flex;justify-content:center;">
-        <button onclick="shareStats()" style="padding:14px 36px;border-radius:12px;border:1px solid rgba(201,168,76,.5);background:rgba(201,168,76,.1);color:var(--gold);font-family:'Bebas Neue',cursive;font-size:1.15rem;letter-spacing:3px;cursor:pointer;">📊 Share My Stats</button>
-      </div>
-
     </div>
+  </div>
+  <div style="display:flex;justify-content:center;padding:12px 20px 20px;">
+    <button onclick="shareStats()" style="padding:14px 36px;border-radius:12px;border:1px solid rgba(201,168,76,.5);background:rgba(201,168,76,.1);color:var(--gold);font-family:'Bebas Neue',cursive;font-size:1.15rem;letter-spacing:3px;cursor:pointer;">📊 Share My Stats</button>
+  </div>
   `;
 
   // Store stats globally for canvas export
