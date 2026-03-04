@@ -210,6 +210,15 @@
   .btn-log-round:disabled{opacity:.5;cursor:not-allowed;}
   .past-error{font-size:.78rem;color:#f0a090;margin-top:8px;text-align:center;min-height:18px;}
 
+
+  /* ── Bottom Nav ── */
+  #bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#1a2e17;border-top:1px solid rgba(201,168,76,.2);z-index:1000;padding:8px 0 max(8px,env(safe-area-inset-bottom));}.bottom-nav-inner{display:flex;justify-content:space-around;align-items:center;max-width:600px;margin:0 auto;}
+  .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;background:none;border:none;cursor:pointer;color:var(--tan);font-family:'DM Sans',sans-serif;font-size:.6rem;letter-spacing:.5px;text-transform:uppercase;transition:color .15s;}
+  .nav-btn.active{color:var(--gold);}
+  .nav-btn .nav-icon{font-size:1.3rem;line-height:1;}
+  /* Push content above nav */
+  body.has-nav #setup-screen,body.has-nav #scorecard-screen,body.has-nav #history-screen,body.has-nav #stats-screen,body.has-nav #past-round-screen{padding-bottom:80px;}
+
   /* ── Auth ── */
   .auth-btn{position:absolute;top:18px;right:16px;padding:7px 14px;border-radius:8px;border:1px solid rgba(245,240,232,.3);background:rgba(245,240,232,.1);color:var(--cream);font-family:"DM Sans",sans-serif;font-size:.78rem;cursor:pointer;backdrop-filter:blur(10px);transition:all .2s;}
   .auth-btn:hover{background:rgba(245,240,232,.2);}
@@ -281,8 +290,6 @@
   <button class="auth-btn" id="auth-btn" onclick="toggleUserMenu()">Sign In</button>
   <div class="user-menu" id="user-menu">
     <div class="user-menu-email" id="user-menu-email"></div>
-    <button class="user-menu-item" onclick="openHistory()">&#9654; Round History</button>
-    <button class="user-menu-item" onclick="openStats()">&#9654; My Stats</button>
     <button class="user-menu-item danger" onclick="signOut()">Sign Out</button>
   </div>
 </header>
@@ -1458,19 +1465,9 @@ function confirmReset(){
 
 
 // ── Stats Dashboard ──
-async function openStats(){
-  closeUserMenu();
-  document.getElementById('setup-screen').style.display='none';
-  document.getElementById('scorecard-screen').style.display='none';
-  document.getElementById('history-screen').style.display='none';
-  document.getElementById('stats-screen').style.display='block';
-  await loadStats();
-}
+async function openStats(){navTo('stats');}
 
-function showSetupFromStats(){
-  document.getElementById('stats-screen').style.display='none';
-  document.getElementById('setup-screen').style.display='block';
-}
+function showSetupFromStats(){navTo('play');}
 
 async function loadStats(){
   const el=document.getElementById('stats-content');
@@ -1483,7 +1480,7 @@ async function loadStats(){
 
   // Aggregate stats
   const roundCount=data.length;
-  let totalDiff=0,bestDiff=Infinity,worstDiff=-Infinity;
+  let totalDiff=0,bestDiff=Infinity,worstDiff=-Infinity,bestStrokes=null,worstStrokes=null;
   let eagles=0,birdies=0,pars=0,bogeys=0,doubles=0,totalHoles=0;
   let par3scores=[],par4scores=[],par5scores=[];
 
@@ -1491,8 +1488,8 @@ async function loadStats(){
     // Use score_vs_par directly — works for both live and past rounds
     const roundDiff=round.score_vs_par||0;
     totalDiff+=roundDiff;
-    if(roundDiff<bestDiff)bestDiff=roundDiff;
-    if(roundDiff>worstDiff)worstDiff=roundDiff;
+    if(roundDiff<bestDiff){bestDiff=roundDiff;bestStrokes=round.total_strokes||null;}
+    if(roundDiff>worstDiff){worstDiff=roundDiff;worstStrokes=round.total_strokes||null;}
 
     // Hole-by-hole breakdown only for live rounds (past rounds have null scores)
     const sc=round.scores;
@@ -1550,11 +1547,13 @@ async function loadStats(){
       </div>
       <div class="stat-card">
         <div class="stat-label">Best Round</div>
-        <div class="stat-value under">${bestStr}</div>
+        <div class="stat-value under">${bestStrokes||bestStr}</div>
+        <div class="stat-sub">${bestStrokes?bestStr:''}</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Worst Round</div>
-        <div class="stat-value over">${worstStr}</div>
+        <div class="stat-value over">${worstStrokes||worstStr}</div>
+        <div class="stat-sub">${worstStrokes?worstStr:''}</div>
       </div>
 
       <div class="stat-card full">
@@ -1738,11 +1737,7 @@ function openPastRound(){
   document.getElementById('past-error').textContent='';
 }
 
-function closePastRound(){
-  document.getElementById('past-round-screen').style.display='none';
-  document.getElementById('history-screen').style.display='block';
-  loadHistory();
-}
+function closePastRound(){navTo('history');}
 
 function setPastHoles(n){
   window._pastHoles=n;
@@ -1903,6 +1898,44 @@ function populateGoalInputs(goals, avgStrokes, avgPars, avgBirdies){
   if(ab&&avgBirdies!==null)ab.textContent='Your avg: '+avgBirdies+' per round';
 }
 
+
+// ── Bottom Nav ──
+function showBottomNav(){
+  document.getElementById('bottom-nav').style.display='block';
+  document.body.classList.add('has-nav');
+}
+function hideBottomNav(){
+  document.getElementById('bottom-nav').style.display='none';
+  document.body.classList.remove('has-nav');
+}
+function setActiveNav(id){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('nav-'+id);
+  if(btn)btn.classList.add('active');
+}
+function navTo(screen){
+  // Hide all screens
+  ['setup-screen','scorecard-screen','history-screen','stats-screen','past-round-screen','profile-screen'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.style.display='none';
+  });
+  setActiveNav(screen);
+  sessionStorage.setItem('vs_screen',screen);
+  if(screen==='play'){
+    document.getElementById('setup-screen').style.display='block';
+  } else if(screen==='history'){
+    document.getElementById('history-screen').style.display='block';
+    loadHistory();
+  } else if(screen==='stats'){
+    document.getElementById('stats-screen').style.display='block';
+    loadStats();
+  } else if(screen==='profile'){
+    document.getElementById('profile-screen').style.display='block';
+    const emailEl=document.getElementById('profile-email');
+    if(emailEl&&currentUser)emailEl.textContent=currentUser.email;
+  }
+}
+
 // ── Round History ──
 async function finishRound(){
   if(!currentUser){
@@ -1943,18 +1976,9 @@ async function finishRound(){
   if(confirm('Round saved! Start a new round?')){confirmReset();}
 }
 
-async function openHistory(){
-  closeUserMenu();
-  document.getElementById('setup-screen').style.display='none';
-  document.getElementById('scorecard-screen').style.display='none';
-  document.getElementById('history-screen').style.display='block';
-  await loadHistory();
-}
+async function openHistory(){navTo('history');}
 
-function showSetupFromHistory(){
-  document.getElementById('history-screen').style.display='none';
-  document.getElementById('setup-screen').style.display='block';
-}
+function showSetupFromHistory(){navTo('play');}
 
 async function loadHistory(){
   const list=document.getElementById('history-list');
@@ -2023,6 +2047,7 @@ function setUser(user){
   if(startBtn){startBtn.textContent='Start Round';}
   hideWelcomeScreen();
   closeAuthModal();
+  showBottomNav();
 }
 
 function clearUser(){
@@ -2031,7 +2056,7 @@ function clearUser(){
   const startBtn=document.getElementById('start-btn');
   if(btn){btn.textContent='Sign In';btn.classList.remove('signed-in');}
   if(startBtn){startBtn.textContent='Sign In to Start';}
-  if(window._authReady){showWelcomeScreen();}
+  if(window._authReady){showWelcomeScreen();hideBottomNav();}
 }
 
 
@@ -2050,15 +2075,15 @@ function showWelcomeScreen(){
   document.getElementById('setup-screen').style.display='none';
   document.getElementById('scorecard-screen').style.display='none';
   document.getElementById('main-header').style.display='none';
+  hideBottomNav();
 }
 
 function hideWelcomeScreen(){
   document.getElementById('welcome-screen').style.display='none';
   document.getElementById('main-header').style.display='block';
-  // Only show setup screen if we're not mid-round
-  if(document.getElementById('scorecard-screen').style.display!=='block'){
-    document.getElementById('setup-screen').style.display='block';
-  }
+  showBottomNav();
+  const lastScreen=sessionStorage.getItem('vs_screen')||'play';
+  navTo(lastScreen);
 }
 
 function openAuthModal(){
@@ -2219,6 +2244,46 @@ document.addEventListener('DOMContentLoaded', function(){
     <button class="btn-log-round" id="btn-log-round" onclick="submitPastRound()">Save Round</button>
   </div>
   <button class="btn-back" onclick="closePastRound()" style="margin:0 auto;display:block;">&#8592; Back to History</button>
+</div>
+
+
+<!-- Bottom Nav -->
+<div id="bottom-nav">
+  <div class="bottom-nav-inner">
+    <button class="nav-btn active" id="nav-play" onclick="navTo('play')">
+      <span class="nav-icon">🏌️</span>
+      <span>Play</span>
+    </button>
+    <button class="nav-btn" id="nav-history" onclick="navTo('history')">
+      <span class="nav-icon">📋</span>
+      <span>Round History</span>
+    </button>
+    <button class="nav-btn" id="nav-stats" onclick="navTo('stats')">
+      <span class="nav-icon">📊</span>
+      <span>My Stats</span>
+    </button>
+    <button class="nav-btn" id="nav-profile" onclick="navTo('profile')">
+      <span class="nav-icon">👤</span>
+      <span>Profile</span>
+    </button>
+  </div>
+</div>
+
+
+<!-- Profile Screen -->
+<div id="profile-screen" style="display:none;padding:20px;max-width:600px;margin:0 auto;padding-bottom:80px;">
+  <h2 style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:20px;">Profile</h2>
+  <div style="background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:20px;margin-bottom:12px;">
+    <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Account</div>
+    <div id="profile-email" style="font-size:.95rem;color:var(--cream);margin-bottom:16px;"></div>
+    <button onclick="signOut()" style="padding:10px 20px;border-radius:8px;border:1px solid rgba(192,57,43,.5);background:transparent;color:rgba(192,57,43,.8);font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;">Sign Out</button>
+  </div>
+  <div style="background:rgba(245,240,232,.06);border:1px solid rgba(201,168,76,.25);border-radius:12px;padding:20px;">
+    <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Plan</div>
+    <div style="font-size:.95rem;color:var(--cream);margin-bottom:4px;">Free</div>
+    <div style="font-size:.78rem;color:var(--tan);margin-bottom:16px;">Upgrade to Pro for stats, handicap tracking, and Versus mode.</div>
+    <button style="padding:10px 20px;border-radius:8px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
+  </div>
 </div>
 
 </body>
