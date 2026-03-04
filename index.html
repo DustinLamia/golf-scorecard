@@ -118,6 +118,97 @@
   .welcome-signin span{color:var(--gold);cursor:pointer;text-decoration:underline;}
   @media(max-width:480px){.welcome-tiers{flex-direction:column;}.tier-pro{margin-top:16px;}}
 
+
+  /* ── Round History ── */
+  #history-screen{display:none;padding:20px;max-width:600px;margin:0 auto;}
+  .history-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .history-header h2{font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);}
+  .btn-back{padding:8px 16px;border-radius:8px;border:1px solid rgba(245,240,232,.3);background:rgba(245,240,232,.1);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;}
+  .round-card{background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:16px 18px;margin-bottom:12px;cursor:pointer;transition:background .15s;}
+  .round-card:hover{background:rgba(245,240,232,.1);}
+  .round-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+  .round-card-course{font-size:.95rem;font-weight:600;color:var(--cream);}
+  .round-card-score{font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:1px;}
+  .round-card-score.under{color:#7ec8f5;}
+  .round-card-score.over{color:#f0a090;}
+  .round-card-score.even{color:var(--tan);}
+  .round-card-meta{font-size:.72rem;color:var(--tan);letter-spacing:.5px;}
+  .history-empty{text-align:center;padding:60px 20px;color:var(--tan);font-size:.9rem;line-height:1.8;}
+  .history-loading{text-align:center;padding:40px;color:var(--tan);font-size:.85rem;}
+  .btn-finish{padding:10px 20px;border-radius:8px;border:none;background:var(--gold);color:var(--dark);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;}
+
+
+  /* ── Stats Dashboard ── */
+  #stats-screen{display:none;padding:20px;max-width:600px;margin:0 auto;}
+  .stats-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .stats-header h2{font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);}
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .stat-card{background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:16px;}
+  .stat-card.full{grid-column:1/-1;}
+  .stat-card.gold-border{border-color:rgba(201,168,76,.35);}
+  .stat-label{font-size:.7rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;}
+  .stat-value{font-family:'Bebas Neue',cursive;font-size:2rem;letter-spacing:1px;color:var(--cream);line-height:1;}
+  .stat-value.under{color:#7ec8f5;}
+  .stat-value.over{color:#f0a090;}
+  .stat-value.gold{color:var(--gold);}
+  .stat-sub{font-size:.72rem;color:var(--tan);margin-top:4px;}
+  .breakdown-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .breakdown-label{font-size:.78rem;color:var(--cream);width:80px;flex-shrink:0;}
+  .breakdown-bar-wrap{flex:1;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;}
+  .breakdown-bar{height:100%;border-radius:4px;transition:width .4s ease;}
+  .breakdown-pct{font-size:.72rem;color:var(--tan);width:36px;text-align:right;flex-shrink:0;}
+  .par-type-row{display:flex;justify-content:space-between;gap:8px;}
+  .par-type-cell{flex:1;text-align:center;}
+  .par-type-cell .stat-value{font-size:1.4rem;}
+  .stats-loading{text-align:center;padding:40px;color:var(--tan);font-size:.85rem;}
+  .stats-empty{text-align:center;padding:60px 20px;color:var(--tan);font-size:.9rem;line-height:1.8;}
+
+
+  /* ── Round Chart ── */
+  .chart-wrap{display:flex;align-items:flex-end;gap:6px;height:80px;margin:14px 0 8px;}
+  .chart-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .chart-bar-above{flex:1;display:flex;align-items:flex-end;width:100%;}
+  .chart-bar-below{flex:1;display:flex;align-items:flex-start;width:100%;}
+  .chart-bar{width:100%;border-radius:3px;min-height:3px;position:relative;}
+  .chart-bar.positive{background:#f0a090;}
+  .chart-bar.negative{background:#7ec8f5;}
+  .chart-bar.zero{background:var(--tan);height:3px;}
+  .chart-baseline{height:1px;background:rgba(245,240,232,.2);margin:0 -4px;}
+  .chart-label{font-size:.6rem;color:var(--tan);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .chart-val{font-size:.62rem;color:var(--cream);text-align:center;}
+  .chart-strokes{font-size:.58rem;color:var(--tan);text-align:center;}
+
+
+  /* ── Goals ── */
+  .goals-card{background:rgba(245,240,232,.06);border:1px solid rgba(201,168,76,.25);border-radius:12px;padding:18px;margin-bottom:12px;}
+  .goals-card .stat-label{margin-bottom:14px;}
+  .goal-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .goal-row:last-child{margin-bottom:0;}
+  .goal-text{font-size:.82rem;color:var(--cream);flex:1;}
+  .goal-avg{font-size:.72rem;color:var(--tan);margin-top:2px;}
+  .goal-input-wrap{display:flex;align-items:center;gap:8px;}
+  .goal-input{width:56px;background:rgba(0,0,0,.3);border:1px solid rgba(245,240,232,.2);border-radius:8px;padding:7px 10px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;text-align:center;outline:none;}
+  .goal-input:focus{border-color:var(--gold);}
+  .goal-unit{font-size:.75rem;color:var(--tan);}
+  .btn-save-goals{width:100%;padding:10px;background:var(--gold);border:none;border-radius:8px;font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;color:var(--dark);cursor:pointer;margin-top:4px;}
+
+
+  /* ── Log Past Round ── */
+  #past-round-screen{display:none;padding:20px;max-width:500px;margin:0 auto;}
+  .past-round-card{background:rgba(245,240,232,.08);border:1px solid rgba(245,240,232,.15);border-radius:16px;padding:24px;margin-bottom:16px;}
+  .past-round-card h2{font-family:'Bebas Neue',cursive;font-size:1.5rem;letter-spacing:3px;color:var(--gold);margin-bottom:4px;}
+  .past-round-card p{font-size:.78rem;color:var(--tan);margin-bottom:20px;}
+  .past-field{margin-bottom:14px;}
+  .past-field label{display:block;font-size:.75rem;color:var(--tan);margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase;}
+  .past-field input,.past-field select{width:100%;background:rgba(0,0,0,.25);border:1px solid rgba(245,240,232,.2);border-radius:8px;padding:10px 14px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.95rem;outline:none;}
+  .past-field input:focus,.past-field select:focus{border-color:var(--gold);}
+  .past-field select option{background:#1e3d1a;color:var(--cream);}
+  .past-field-row{display:flex;gap:12px;}
+  .past-field-row .past-field{flex:1;}
+  .btn-log-round{width:100%;padding:14px;background:var(--gold);border:none;border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:2px;color:var(--dark);cursor:pointer;margin-top:4px;}
+  .btn-log-round:disabled{opacity:.5;cursor:not-allowed;}
+  .past-error{font-size:.78rem;color:#f0a090;margin-top:8px;text-align:center;min-height:18px;}
+
   /* ── Auth ── */
   .auth-btn{position:absolute;top:18px;right:16px;padding:7px 14px;border-radius:8px;border:1px solid rgba(245,240,232,.3);background:rgba(245,240,232,.1);color:var(--cream);font-family:"DM Sans",sans-serif;font-size:.78rem;cursor:pointer;backdrop-filter:blur(10px);transition:all .2s;}
   .auth-btn:hover{background:rgba(245,240,232,.2);}
@@ -189,8 +280,8 @@
   <button class="auth-btn" id="auth-btn" onclick="toggleUserMenu()">Sign In</button>
   <div class="user-menu" id="user-menu">
     <div class="user-menu-email" id="user-menu-email"></div>
-    <button class="user-menu-item" onclick="closeUserMenu()">&#9654; My Stats <span style="font-size:.7rem;color:var(--gold);margin-left:4px;">PRO</span></button>
-    <button class="user-menu-item" onclick="closeUserMenu()">&#9654; Round History <span style="font-size:.7rem;color:var(--gold);margin-left:4px;">PRO</span></button>
+    <button class="user-menu-item" onclick="openHistory()">&#9654; Round History</button>
+    <button class="user-menu-item" onclick="openStats()">&#9654; My Stats</button>
     <button class="user-menu-item danger" onclick="signOut()">Sign Out</button>
   </div>
 </header>
@@ -280,6 +371,7 @@
   </div>
   <div class="bottom-controls">
     <button class="btn-sm" onclick="exportScores()">Export</button>
+    <button class="btn-finish" onclick="finishRound()">Finish Round</button>
     <button class="btn-sm danger" onclick="confirmReset()">New Round</button>
   </div>
 </div>
@@ -1362,6 +1454,450 @@ function confirmReset(){
   }
 }
 
+
+
+// ── Stats Dashboard ──
+async function openStats(){
+  closeUserMenu();
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('scorecard-screen').style.display='none';
+  document.getElementById('history-screen').style.display='none';
+  document.getElementById('stats-screen').style.display='block';
+  await loadStats();
+}
+
+function showSetupFromStats(){
+  document.getElementById('stats-screen').style.display='none';
+  document.getElementById('setup-screen').style.display='block';
+}
+
+async function loadStats(){
+  const el=document.getElementById('stats-content');
+  el.innerHTML='<div class="stats-loading">Loading...</div>';
+  const {data,error}=await supa.from('rounds').select('*').order('played_at',{ascending:false}).limit(100);
+  if(error||!data||!data.length){
+    el.innerHTML='<div class="stats-empty">No rounds saved yet.<br>Finish a round to start tracking your stats.</div>';
+    return;
+  }
+
+  // Aggregate stats
+  const roundCount=data.length;
+  let totalDiff=0,bestDiff=Infinity,worstDiff=-Infinity;
+  let eagles=0,birdies=0,pars=0,bogeys=0,doubles=0,totalHoles=0;
+  let par3scores=[],par4scores=[],par5scores=[];
+
+  data.forEach(round=>{
+    const sc=round.scores;
+    const pa=round.pars;
+    const playerScores=Array.isArray(sc[0])?sc[0]:sc;
+    const roundPars=Array.isArray(pa)?pa:JSON.parse(pa);
+    const roundScores=Array.isArray(playerScores)?playerScores:JSON.parse(playerScores);
+
+    let roundDiff=0,roundHoles=0;
+    roundScores.forEach((s,hi)=>{
+      if(s===null||s===undefined)return;
+      const p=roundPars[hi];
+      const d=s-p;
+      roundDiff+=d;
+      roundHoles++;
+      totalHoles++;
+      if(d<=-2)eagles++;
+      else if(d===-1)birdies++;
+      else if(d===0)pars++;
+      else if(d===1)bogeys++;
+      else doubles++;
+      if(p===3)par3scores.push(s-p);
+      else if(p===4)par4scores.push(s-p);
+      else if(p===5)par5scores.push(s-p);
+    });
+    totalDiff+=roundDiff;
+    if(roundDiff<bestDiff)bestDiff=roundDiff;
+    if(roundDiff>worstDiff)worstDiff=roundDiff;
+  });
+
+  const avgDiff=totalHoles>0?(totalDiff/roundCount).toFixed(1):0;
+  const avgDiffNum=parseFloat(avgDiff);
+  const avgClass=avgDiffNum<0?'under':avgDiffNum>0?'over':'';
+
+  const avgPar3=par3scores.length?(par3scores.reduce((a,b)=>a+b,0)/par3scores.length).toFixed(2):'-';
+  const avgPar4=par4scores.length?(par4scores.reduce((a,b)=>a+b,0)/par4scores.length).toFixed(2):'-';
+  const avgPar5=par5scores.length?(par5scores.reduce((a,b)=>a+b,0)/par5scores.length).toFixed(2):'-';
+
+  const eaglePct=totalHoles?Math.round(eagles/totalHoles*100):0;
+  const birdiePct=totalHoles?Math.round(birdies/totalHoles*100):0;
+  const parPct=totalHoles?Math.round(pars/totalHoles*100):0;
+  const bogeyPct=totalHoles?Math.round(bogeys/totalHoles*100):0;
+  const doublePct=totalHoles?Math.round(doubles/totalHoles*100):0;
+
+  const fmtDiff=d=>d===0?'E':d>0?'+'+d:''+d;
+  const bestStr=bestDiff===Infinity?'-':fmtDiff(bestDiff);
+  const worstStr=worstDiff===-Infinity?'-':fmtDiff(worstDiff);
+
+  el.innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Rounds Played</div>
+        <div class="stat-value gold">${roundCount}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Scoring Average</div>
+        <div class="stat-value ${avgClass}">${avgDiffNum>0?'+'+avgDiff:avgDiff}</div>
+        <div class="stat-sub">vs par per round</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Best Round</div>
+        <div class="stat-value under">${bestStr}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Worst Round</div>
+        <div class="stat-value over">${worstStr}</div>
+      </div>
+
+      <div class="stat-card full">
+        <div class="stat-label" style="margin-bottom:4px;">Last 10 Rounds</div>
+        <div class="chart-wrap" id="rounds-chart"></div>
+        <div id="chart-legend" style="display:flex;gap:16px;margin-top:2px;"></div>
+      </div>
+
+      <div class="stat-card full">
+        <div class="stat-label" style="margin-bottom:14px;">Avg Score by Hole Type</div>
+        <div class="par-type-row">
+          <div class="par-type-cell">
+            <div class="stat-label">Par 3</div>
+            <div class="stat-value ${parseFloat(avgPar3)<0?'under':parseFloat(avgPar3)>0?'over':''}">${avgPar3!=='-'&&parseFloat(avgPar3)>0?'+'+avgPar3:avgPar3}</div>
+          </div>
+          <div class="par-type-cell">
+            <div class="stat-label">Par 4</div>
+            <div class="stat-value ${parseFloat(avgPar4)<0?'under':parseFloat(avgPar4)>0?'over':''}">${avgPar4!=='-'&&parseFloat(avgPar4)>0?'+'+avgPar4:avgPar4}</div>
+          </div>
+          <div class="par-type-cell">
+            <div class="stat-label">Par 5</div>
+            <div class="stat-value ${parseFloat(avgPar5)<0?'under':parseFloat(avgPar5)>0?'over':''}">${avgPar5!=='-'&&parseFloat(avgPar5)>0?'+'+avgPar5:avgPar5}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card full">
+        <div class="stat-label" style="margin-bottom:14px;">Score Breakdown</div>
+        <div class="breakdown-row">
+          <div class="breakdown-label">Eagle+</div>
+          <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${eaglePct}%;background:#c9a84c;"></div></div>
+          <div class="breakdown-pct">${eaglePct}%</div>
+        </div>
+        <div class="breakdown-row">
+          <div class="breakdown-label">Birdie</div>
+          <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${birdiePct}%;background:#2980b9;"></div></div>
+          <div class="breakdown-pct">${birdiePct}%</div>
+        </div>
+        <div class="breakdown-row">
+          <div class="breakdown-label">Par</div>
+          <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${parPct}%;background:rgba(255,255,255,0.3);"></div></div>
+          <div class="breakdown-pct">${parPct}%</div>
+        </div>
+        <div class="breakdown-row">
+          <div class="breakdown-label">Bogey</div>
+          <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${bogeyPct}%;background:#c0392b;"></div></div>
+          <div class="breakdown-pct">${bogeyPct}%</div>
+        </div>
+        <div class="breakdown-row">
+          <div class="breakdown-label">Double+</div>
+          <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${doublePct}%;background:#8e1e14;"></div></div>
+          <div class="breakdown-pct">${doublePct}%</div>
+        </div>
+      </div>
+
+      <div class="goals-card">
+        <div class="stat-label">My Goals (per round)</div>
+        <div class="goal-row">
+          <div>
+            <div class="goal-text">Break</div>
+            <div class="goal-avg" id="goal-avg-strokes"></div>
+          </div>
+          <div class="goal-input-wrap">
+            <input class="goal-input" type="number" id="goal-strokes" min="50" max="150" placeholder="--">
+            <span class="goal-unit">strokes</span>
+          </div>
+        </div>
+        <div class="goal-row">
+          <div>
+            <div class="goal-text">Make at least</div>
+            <div class="goal-avg" id="goal-avg-pars"></div>
+          </div>
+          <div class="goal-input-wrap">
+            <input class="goal-input" type="number" id="goal-pars" min="0" max="18" placeholder="--">
+            <span class="goal-unit">pars or better</span>
+          </div>
+        </div>
+        <div class="goal-row">
+          <div>
+            <div class="goal-text">Make at least</div>
+            <div class="goal-avg" id="goal-avg-birdies"></div>
+          </div>
+          <div class="goal-input-wrap">
+            <input class="goal-input" type="number" id="goal-birdies" min="0" max="18" placeholder="--">
+            <span class="goal-unit">birdies</span>
+          </div>
+        </div>
+        <button class="btn-save-goals" onclick="saveGoals()">Save Goals</button>
+      </div>
+
+    </div>
+  \`;
+
+  // Compute averages for goal hints
+  const totalStrokesAll=data.reduce((a,r)=>a+(r.total_strokes||0),0);
+  const avgStrokesAll=data.length?Math.round(totalStrokesAll/data.length):null;
+
+  // Avg pars+better and birdies per round
+  let totalParsPerRound=0,totalBirdiesPerRound=0;
+  data.forEach(round=>{
+    const sc=round.scores;
+    const pa=round.pars;
+    const playerScores=Array.isArray(sc[0])?sc[0]:sc;
+    const roundPars=Array.isArray(pa)?pa:JSON.parse(pa);
+    const roundScores=Array.isArray(playerScores)?playerScores:JSON.parse(playerScores);
+    roundScores.forEach((s,hi)=>{
+      if(s===null||s===undefined)return;
+      const p=roundPars[hi];
+      if(s<=p)totalParsPerRound++;
+      if(s<=p-1)totalBirdiesPerRound++;
+    });
+  });
+  const avgParsPerRound=data.length?(totalParsPerRound/data.length).toFixed(1):null;
+  const avgBirdiesPerRound=data.length?(totalBirdiesPerRound/data.length).toFixed(1):null;
+
+  // Load and populate goals
+  const goals=loadGoals();
+  populateGoalInputs(goals,avgStrokesAll,avgParsPerRound,avgBirdiesPerRound);
+
+  // Render last 10 rounds chart
+  const last10=data.slice(0,10).reverse();
+  const chartEl=document.getElementById('rounds-chart');
+  if(chartEl){
+    const diffs=last10.map(r=>r.score_vs_par||0);
+    const strokes=last10.map(r=>r.total_strokes||0);
+    const maxAbs=Math.max(...diffs.map(d=>Math.abs(d)),1);
+    chartEl.innerHTML='';
+    last10.forEach((round,i)=>{
+      const diff=diffs[i];
+      const stroke=strokes[i];
+      const date=new Date(round.played_at);
+      const label=(date.getMonth()+1)+'/'+(date.getDate());
+      const diffStr=diff===0?'E':diff>0?'+'+diff:''+diff;
+      const barHeightPct=Math.round((Math.abs(diff)/maxAbs)*100);
+      const barH=Math.max(3,Math.round(barHeightPct*0.7));
+      // Color based on score goal if set, otherwise vs par
+      const hitGoal=goals.strokes?stroke<goals.strokes:diff<0;
+      const missedGoal=goals.strokes?stroke>=goals.strokes:diff>0;
+      const barColor=hitGoal?'#4caf82':missedGoal?'#f0a090':goals.strokes?'var(--tan)':'var(--tan)';
+      const col=document.createElement('div');
+      col.className='chart-bar-col';
+      col.innerHTML=`
+        <div class="chart-val">${diffStr}</div>
+        <div class="chart-strokes">${stroke}</div>
+        <div style="flex:1;display:flex;align-items:flex-end;width:100%;">
+          <div style="width:100%;height:${barH}px;background:${barColor};border-radius:3px;min-height:3px;"></div>
+        </div>
+        <div class="chart-label">${label}</div>
+      `;
+      chartEl.appendChild(col);
+    });
+    // Dynamic legend
+    const legendEl=document.getElementById('chart-legend');
+    if(legendEl){
+      if(goals.strokes){
+        legendEl.innerHTML=`
+          <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--tan);"><div style="width:8px;height:8px;border-radius:2px;background:#4caf82;"></div>Beat goal (under ${goals.strokes})</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--tan);"><div style="width:8px;height:8px;border-radius:2px;background:#f0a090;"></div>Missed goal</div>
+        `;
+      } else {
+        legendEl.innerHTML=`<div style="font-size:.65rem;color:var(--tan);font-style:italic;">Set a score goal below to track progress</div>`;
+      }
+    }
+  }
+}
+
+
+
+// ── Log Past Round ──
+function openPastRound(){
+  document.getElementById('history-screen').style.display='none';
+  document.getElementById('past-round-screen').style.display='block';
+  // Default date to today
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('past-date').value=today;
+  document.getElementById('past-error').textContent='';
+}
+
+function closePastRound(){
+  document.getElementById('past-round-screen').style.display='none';
+  document.getElementById('history-screen').style.display='block';
+  loadHistory();
+}
+
+async function submitPastRound(){
+  const course=document.getElementById('past-course').value.trim();
+  const date=document.getElementById('past-date').value;
+  const holes=parseInt(document.getElementById('past-holes').value);
+  const strokes=parseInt(document.getElementById('past-strokes').value);
+  const par=parseInt(document.getElementById('past-par').value);
+  const errEl=document.getElementById('past-error');
+  const btn=document.getElementById('btn-log-round');
+
+  if(!course){errEl.textContent='Please enter a course name.';return;}
+  if(!date){errEl.textContent='Please select a date.';return;}
+  if(!strokes||strokes<30){errEl.textContent='Please enter a valid score.';return;}
+  if(!par||par<27){errEl.textContent='Please enter a valid course par.';return;}
+
+  const diff=strokes-par;
+
+  // Build minimal round — no hole-by-hole data
+  const roundData={
+    user_id:currentUser.id,
+    course_name:course,
+    tee_name:null,
+    holes:holes,
+    pars:Array(holes).fill(Math.round(par/holes)),
+    yardages:Array(holes).fill(0),
+    players:[currentUser.email.split('@')[0]],
+    scores:[Array(holes).fill(null)], // no hole-by-hole
+    total_strokes:strokes,
+    score_vs_par:diff,
+    played_at:new Date(date).toISOString(),
+  };
+
+  btn.disabled=true;btn.textContent='Saving...';
+  errEl.textContent='';
+
+  const {error}=await supa.from('rounds').insert(roundData);
+  btn.disabled=false;btn.textContent='Save Round';
+
+  if(error){errEl.textContent='Error saving round. Try again.';return;}
+
+  // Clear form
+  document.getElementById('past-course').value='';
+  document.getElementById('past-strokes').value='';
+  document.getElementById('past-par').value='';
+
+  closePastRound();
+}
+
+// ── Goals ──
+function loadGoals(){
+  return {
+    strokes: parseInt(localStorage.getItem('vs_goal_strokes'))||null,
+    pars: parseInt(localStorage.getItem('vs_goal_pars'))||null,
+    birdies: parseInt(localStorage.getItem('vs_goal_birdies'))||null,
+  };
+}
+
+function saveGoals(){
+  const s=document.getElementById('goal-strokes').value;
+  const p=document.getElementById('goal-pars').value;
+  const b=document.getElementById('goal-birdies').value;
+  if(s)localStorage.setItem('vs_goal_strokes',s); else localStorage.removeItem('vs_goal_strokes');
+  if(p)localStorage.setItem('vs_goal_pars',p); else localStorage.removeItem('vs_goal_pars');
+  if(b)localStorage.setItem('vs_goal_birdies',b); else localStorage.removeItem('vs_goal_birdies');
+  const btn=document.querySelector('.btn-save-goals');
+  if(btn){btn.textContent='Saved!';setTimeout(()=>btn.textContent='Save Goals',1500);}
+}
+
+function populateGoalInputs(goals, avgStrokes, avgPars, avgBirdies){
+  const gs=document.getElementById('goal-strokes');
+  const gp=document.getElementById('goal-pars');
+  const gb=document.getElementById('goal-birdies');
+  if(gs&&goals.strokes)gs.value=goals.strokes;
+  if(gp&&goals.pars)gp.value=goals.pars;
+  if(gb&&goals.birdies)gb.value=goals.birdies;
+  const as=document.getElementById('goal-avg-strokes');
+  const ap=document.getElementById('goal-avg-pars');
+  const ab=document.getElementById('goal-avg-birdies');
+  if(as&&avgStrokes)as.textContent='Your avg: '+avgStrokes+' strokes';
+  if(ap&&avgPars!==null)ap.textContent='Your avg: '+avgPars+' per round';
+  if(ab&&avgBirdies!==null)ab.textContent='Your avg: '+avgBirdies+' per round';
+}
+
+// ── Round History ──
+async function finishRound(){
+  if(!currentUser){
+    document.getElementById('voice-feedback').textContent='Sign in to save your round.';
+    setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
+    return;
+  }
+  const hasScores=scores.some(playerScores=>playerScores.some(s=>s!==null));
+  if(!hasScores){
+    document.getElementById('voice-feedback').textContent='No scores to save yet.';
+    setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
+    return;
+  }
+  // Build round data
+  const roundData={
+    user_id:currentUser.id,
+    course_name:selectedCourse?selectedCourse.name:'Unknown Course',
+    tee_name:selectedTee?selectedTee.name:null,
+    holes:holes,
+    pars:pars,
+    yardages:yardages,
+    players:players,
+    scores:scores,
+    total_strokes:scores[0].filter(s=>s!==null).reduce((a,b)=>a+b,0),
+    score_vs_par:scores[0].filter(s=>s!==null).reduce((a,b)=>a+b,0) - scores[0].map((s,hi)=>s!==null?pars[hi]:0).reduce((a,b)=>a+b,0),
+  };
+  const btn=document.querySelector('.btn-finish');
+  if(btn){btn.textContent='Saving...';btn.disabled=true;}
+  const {error}=await supa.from('rounds').insert(roundData);
+  if(btn){btn.textContent='Finish Round';btn.disabled=false;}
+  if(error){
+    document.getElementById('voice-feedback').textContent='Error saving round. Try again.';
+    setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},4000);
+    return;
+  }
+  document.getElementById('voice-feedback').textContent='Round saved!';
+  setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
+  if(confirm('Round saved! Start a new round?')){confirmReset();}
+}
+
+async function openHistory(){
+  closeUserMenu();
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('scorecard-screen').style.display='none';
+  document.getElementById('history-screen').style.display='block';
+  await loadHistory();
+}
+
+function showSetupFromHistory(){
+  document.getElementById('history-screen').style.display='none';
+  document.getElementById('setup-screen').style.display='block';
+}
+
+async function loadHistory(){
+  const list=document.getElementById('history-list');
+  list.innerHTML='<div class="history-loading">Loading...</div>';
+  const {data,error}=await supa.from('rounds').select('*').order('played_at',{ascending:false}).limit(50);
+  if(error||!data||!data.length){
+    list.innerHTML='<div class="history-empty">No rounds saved yet.<br>Finish a round to see your history here.</div>';
+    return;
+  }
+  list.innerHTML='';
+  data.forEach(round=>{
+    const date=new Date(round.played_at).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+    const diff=round.score_vs_par;
+    const diffStr=diff===0?'E':diff>0?'+'+diff:''+diff;
+    const scoreClass=diff<0?'under':diff>0?'over':'even';
+    const players=Array.isArray(round.players)?round.players.join(', '):round.players;
+    const card=document.createElement('div');
+    card.className='round-card';
+    card.innerHTML=`
+      <div class="round-card-top">
+        <div class="round-card-course">${round.course_name}</div>
+        <div class="round-card-score ${scoreClass}">${diffStr}</div>
+      </div>
+      <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${players}${round.tee_name?' &middot; '+round.tee_name:''}</div>
+    `;
+    list.appendChild(card);
+  });
+}
+
 // ── Supabase Auth ──
 const SUPA_URL='https://lzthrmmwalesunzsqjvh.supabase.co';
 const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6dGhybW13YWxlc3VuenNxanZoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MDYzNTgsImV4cCI6MjA4ODA4MjM1OH0.Rp1w3BdihG3wCJuyWj0QeFmJRe_wn55JFdkhm9bZBbM';
@@ -1511,5 +2047,71 @@ document.addEventListener('click',e=>{
 // Restore session on page load (survives refresh)
 restoreSession();
 </script>
+
+<!-- History Screen -->
+<div id="history-screen">
+  <div class="history-header">
+    <h2>Round History</h2>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-sm" onclick="openPastRound()" style="font-size:.75rem;padding:7px 12px;">+ Log Past Round</button>
+      <button class="btn-back" onclick="showSetupFromHistory()">&#8592; Back</button>
+    </div>
+  </div>
+  <div id="history-list"><div class="history-loading">Loading...</div></div>
+</div>
+
+
+<!-- Stats Screen -->
+<div id="stats-screen">
+  <div class="stats-header">
+    <h2>My Stats</h2>
+    <button class="btn-back" onclick="showSetupFromStats()">&#8592; Back</button>
+  </div>
+  <div id="stats-content"><div class="stats-loading">Loading...</div></div>
+</div>
+
+
+<!-- Log Past Round Screen -->
+<div id="past-round-screen">
+  <div class="past-round-card">
+    <h2>Log Past Round</h2>
+    <p>Add a round you played before using VoiceScore.</p>
+
+    <div class="past-field">
+      <label>Course Name</label>
+      <input type="text" id="past-course" placeholder="e.g. Pebble Beach Golf Links">
+    </div>
+
+    <div class="past-field-row">
+      <div class="past-field">
+        <label>Date Played</label>
+        <input type="date" id="past-date">
+      </div>
+      <div class="past-field">
+        <label>Holes</label>
+        <select id="past-holes">
+          <option value="18">18 holes</option>
+          <option value="9">9 holes</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="past-field-row">
+      <div class="past-field">
+        <label>Your Score</label>
+        <input type="number" id="past-strokes" placeholder="e.g. 88" min="30" max="180">
+      </div>
+      <div class="past-field">
+        <label>Course Par</label>
+        <input type="number" id="past-par" placeholder="e.g. 72" min="27" max="74">
+      </div>
+    </div>
+
+    <div class="past-error" id="past-error"></div>
+    <button class="btn-log-round" id="btn-log-round" onclick="submitPastRound()">Save Round</button>
+  </div>
+  <button class="btn-back" onclick="closePastRound()" style="margin:0 auto;display:block;">&#8592; Back to History</button>
+</div>
+
 </body>
 </html>
