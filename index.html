@@ -254,7 +254,7 @@
         <li>Up to 4 players per round</li>
         <li>Export and share your scorecard</li>
       </ul>
-      <button class="btn-tier-free" onclick="openWelcomeAuth('signup')">Create Free Account</button>
+      <button class="btn-tier-free" id="btn-free-signup">Create Free Account</button>
     </div>
     <div class="tier-card tier-pro">
       <div class="tier-badge">Most Popular</div>
@@ -268,10 +268,10 @@
         <li>Multi-round comparison</li>
         <li>Skins and Match Play</li>
       </ul>
-      <button class="btn-tier-pro" onclick="openWelcomeAuth('signup')">Go Pro</button>
+      <button class="btn-tier-pro" id="btn-pro-signup">Go Pro</button>
     </div>
   </div>
-  <div class="welcome-signin">Already have an account? <span onclick="openWelcomeAuth('signin')">Sign In</span></div>
+  <div class="welcome-signin">Already have an account? <span id="btn-welcome-signin">Sign In</span></div>
 </div>
 
 <header style="position:relative;display:none;" id="main-header">
@@ -2046,6 +2046,16 @@ document.addEventListener('click',e=>{
 (function(){const b=document.getElementById('start-btn');if(b)b.textContent='Sign In to Start';})();
 // Restore session on page load (survives refresh)
 restoreSession();
+
+// Wire up welcome screen buttons after DOM is ready
+document.addEventListener('DOMContentLoaded', function(){
+  var btnFree=document.getElementById('btn-free-signup');
+  var btnPro=document.getElementById('btn-pro-signup');
+  var btnSignin=document.getElementById('btn-welcome-signin');
+  if(btnFree)btnFree.addEventListener('click',function(){openWelcomeAuth('signup');});
+  if(btnPro)btnPro.addEventListener('click',function(){openWelcomeAuth('signup');});
+  if(btnSignin)btnSignin.addEventListener('click',function(){openWelcomeAuth('signin');});
+});
 </script>
 
 <!-- History Screen -->
