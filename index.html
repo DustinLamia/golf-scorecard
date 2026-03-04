@@ -203,7 +203,7 @@
   .past-field input,.past-field select{width:100%;background:rgba(0,0,0,.25);border:1px solid rgba(245,240,232,.2);border-radius:8px;padding:10px 14px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.95rem;outline:none;}
   .past-field input:focus,.past-field select:focus{border-color:var(--gold);}
   .past-field select option{background:#1e3d1a;color:var(--cream);}
-  .past-field-row{display:flex;gap:12px;flex-wrap:wrap;}  .past-field-row .past-field{min-width:140px;}
+  .past-field-row{display:flex;gap:12px;flex-wrap:wrap;} .past-field-row .past-field{flex:1;min-width:0;} @media(max-width:480px){.past-field-row{flex-direction:column;}}
   .past-field-row .past-field{flex:1;}
   .btn-log-round{width:100%;padding:14px;background:var(--gold);border:none;border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:2px;color:var(--dark);cursor:pointer;margin-top:4px;}
   .btn-log-round:disabled{opacity:.5;cursor:not-allowed;}
