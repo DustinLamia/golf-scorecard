@@ -199,7 +199,7 @@
   .compare-header h2{font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);}
   .compare-section{background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:16px;margin-bottom:14px;}
   .compare-section-title{font-size:.7rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;}
-  .compare-chart{display:flex;align-items:flex-end;gap:4px;height:80px;margin-bottom:6px;}
+  .compare-chart{display:flex;align-items:flex-end;gap:4px;height:80px;margin-bottom:6px;overflow:hidden;}
   .compare-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-end;}
   .compare-bar{width:100%;border-radius:3px;min-height:3px;}
   .compare-bar.positive{background:#f0a090;}
@@ -1736,7 +1736,23 @@ async function loadStats(){
         <button class="btn-save-goals" onclick="saveGoals()">Save Goals</button>
       </div>
 
-      <button class="btn-compare" onclick="navTo('compare')">Compare Rounds &#8594;</button>
+      <div class="goals-card" onclick="navTo('compare')" style="cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;min-height:200px;">
+        <div>
+          <div class="stat-label" style="margin-bottom:14px;">Compare Rounds</div>
+          <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;">
+            <li style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--cream);">
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block;"></span>Score vs Par
+            </li>
+            <li style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--cream);">
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block;"></span>Handicap Trend
+            </li>
+            <li style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--cream);">
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block;"></span>Course Breakdowns
+            </li>
+          </ul>
+        </div>
+        <div style="font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;color:var(--gold);margin-top:20px;">Compare Rounds &#8594;</div>
+      </div>
 
     </div>
   `;
@@ -2009,7 +2025,7 @@ async function loadCompare(){
   const maxAbs=Math.max(...diffs.map(d=>Math.abs(d)),1);
   const trendBars=data.map((r,i)=>{
     const d=diffs[i];
-    const h=Math.max(3,Math.round((Math.abs(d)/maxAbs)*70));
+    const h=Math.min(60,Math.max(3,Math.round((Math.abs(d)/maxAbs)*60)));
     const cls=d<0?'negative':d>0?'positive':'zero';
     const lbl=fmtDate(r.played_at);
     const strokes=r.total_strokes||'';
@@ -2031,8 +2047,8 @@ async function loadCompare(){
     const hMax=Math.max(...hVals);
     const hRange=Math.max(hMax-hMin,1);
     const hBars=hcpPoints.map(p=>{
-      const pct=Math.round(((p.h-hMin)/hRange)*65);
-      const barH=Math.max(3,pct+5);
+      const pct=Math.round(((p.h-hMin)/hRange)*55);
+      const barH=Math.min(60,Math.max(3,pct+5));
       const lbl=fmtDate(p.date);
       // Lower handicap = better = blue
       const normPos=(p.h-hMin)/hRange; // 0=best, 1=worst
@@ -2116,7 +2132,7 @@ function toggleCourseDetail(safeId, name){
   const bars=rounds.map((r,i)=>{
     const d=diffs[i];
     const strokes=r.total_strokes||0;
-    const h=Math.max(3,Math.round((Math.abs(d)/maxAbs)*60));
+    const h=Math.min(55,Math.max(3,Math.round((Math.abs(d)/maxAbs)*55)));
     let color;
     if(goalStrokes){
       color=strokes>0&&strokes<goalStrokes?'#4caf82':'#c0392b';
