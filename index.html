@@ -203,7 +203,7 @@
   .past-field input,.past-field select{width:100%;background:rgba(0,0,0,.25);border:1px solid rgba(245,240,232,.2);border-radius:8px;padding:10px 14px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.95rem;outline:none;}
   .past-field input:focus,.past-field select:focus{border-color:var(--gold);}
   .past-field select option{background:#1e3d1a;color:var(--cream);}
-  .past-field-row{display:flex;gap:12px;}
+  .past-field-row{display:flex;gap:12px;flex-wrap:wrap;}  .past-field-row .past-field{min-width:140px;}
   .past-field-row .past-field{flex:1;}
   .btn-log-round{width:100%;padding:14px;background:var(--gold);border:none;border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:2px;color:var(--dark);cursor:pointer;margin-top:4px;}
   .btn-log-round:disabled{opacity:.5;cursor:not-allowed;}
@@ -1813,6 +1813,9 @@ async function searchPastCourse(){
       div.onclick=()=>{
         document.getElementById('past-course-name').value=c.name;
         document.getElementById('past-course-input').value=c.name;
+        if(c.par){
+          document.getElementById('past-par').value=c.par;
+        }
         results.style.display='none';
         results.innerHTML='';
       };
@@ -1821,7 +1824,11 @@ async function searchPastCourse(){
   }
 
   // Show local matches immediately
-  const localCombined=localMatches.map(c=>({name:c.name,location:(c.city||'')+(c.state?', '+c.state:'')}));
+  const localCombined=localMatches.map(c=>{
+    const tee=c.tees&&c.tees[0];
+    const par=tee?tee.pars.reduce((a,b)=>a+b,0):null;
+    return {name:c.name,location:(c.city||'')+(c.state?', '+c.state:''),par};
+  });
   if(localCombined.length) renderPastResults(localCombined);
 
   try{
@@ -1831,7 +1838,12 @@ async function searchPastCourse(){
     const localNames=new Set(localMatches.map(c=>c.name.toLowerCase()));
     const combined=[
       ...localCombined,
-      ...apiCourses.filter(c=>!localNames.has(c.course_name.toLowerCase())).map(c=>({name:c.course_name,location:(c.location?.city||'')+(c.location?.state?', '+c.location.state:'')}))
+      ...apiCourses.filter(c=>!localNames.has(c.course_name.toLowerCase())).map(c=>{
+        const tees=[...(c.tees?.male||[]),(c.tees?.female||[])];
+        const firstTee=tees[0];
+        const par=firstTee&&firstTee.holes?firstTee.holes.reduce((a,h)=>a+(h.par||0),0):null;
+        return {name:c.course_name,location:(c.location?.city||'')+(c.location?.state?', '+c.location.state:''),par};
+      })
     ];
     renderPastResults(combined);
   }catch(e){
@@ -2168,11 +2180,11 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="past-field-row">
       <div class="past-field">
         <label>Date Played</label>
-        <input type="date" id="past-date">
+        <input type="date" id="past-date" style="width:100%;box-sizing:border-box;">
       </div>
       <div class="past-field">
         <label>Holes</label>
-        <select id="past-holes">
+        <select id="past-holes" style="width:100%;box-sizing:border-box;">
           <option value="18">18 holes</option>
           <option value="9">9 holes</option>
         </select>
