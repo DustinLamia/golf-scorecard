@@ -1747,7 +1747,7 @@ async function loadStats(){
               <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block;"></span>Handicap Trend
             </li>
             <li style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--cream);">
-              <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block;"></span>Course Breakdowns
+              <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block;"></span>Course by Course Breakdown
             </li>
           </ul>
         </div>
@@ -2106,7 +2106,7 @@ async function loadCompare(){
       ${hcpHTML}
     </div>
     <div class="compare-section">
-      <div class="compare-section-title">Course Breakdown</div>
+      <div class="compare-section-title">Course by Course Breakdown</div>
       ${courseRows}
     </div>
   `;
@@ -2240,6 +2240,88 @@ async function openHistory(){navTo('history');}
 
 function showSetupFromHistory(){navTo('play');}
 
+function toggleRoundScorecard(roundId){
+  const el=document.getElementById(roundId);
+  if(!el)return;
+  const chevron=document.getElementById(roundId+'-chevron');
+  if(el.style.display!=='none'){
+    el.style.display='none';
+    if(chevron)chevron.innerHTML='&#9660;';
+    return;
+  }
+  if(chevron)chevron.innerHTML='&#9650;';
+
+  // Find round data from parent card
+  const card=el.closest('.round-card');
+  if(!card||!card.dataset.round)return;
+  const round=JSON.parse(card.dataset.round);
+
+  try{
+    const sc=round.scores;
+    const pa=round.pars;
+    const yd=round.yardages;
+    const roundPlayers=Array.isArray(round.players)?round.players:JSON.parse(round.players);
+    const roundPars=Array.isArray(pa)?pa:JSON.parse(pa);
+    const roundYards=Array.isArray(yd)?yd:JSON.parse(yd);
+    const allScores=Array.isArray(sc[0])?sc:[sc]; // normalize to 2D
+    const holeCount=roundPars.length;
+
+    // Build compact scorecard table
+    let thead='<tr><th style="text-align:left;padding-left:8px;font-size:.75rem;">Player</th>';
+    for(let h=1;h<=holeCount;h++)thead+=`<th style="font-size:.72rem;">${h}</th>`;
+    thead+='<th style="font-size:.72rem;">Tot</th></tr>';
+
+    // Par row
+    let parRow='<tr><td style="text-align:left;padding-left:8px;font-size:.7rem;color:var(--tan);">Par</td>';
+    roundPars.forEach(p=>parRow+=`<td style="font-size:.7rem;color:var(--tan);">${p}</td>`);
+    parRow+=`<td style="font-size:.7rem;color:var(--tan);">${roundPars.reduce((a,b)=>a+b,0)}</td></tr>`;
+
+    // Yardage row if available
+    let ydRow='';
+    if(roundYards&&roundYards.some(y=>y>0)){
+      ydRow='<tr><td style="text-align:left;padding-left:8px;font-size:.65rem;color:rgba(212,201,176,.5);">Yds</td>';
+      roundYards.forEach(y=>ydRow+=`<td style="font-size:.65rem;color:rgba(212,201,176,.5);">${y||'-'}</td>`);
+      ydRow+=`<td style="font-size:.65rem;color:rgba(212,201,176,.5);">${roundYards.reduce((a,b)=>a+b,0)}</td></tr>`;
+    }
+
+    // Player score rows
+    let playerRows='';
+    roundPlayers.forEach((name,pi)=>{
+      const playerScores=Array.isArray(allScores[pi])?allScores[pi]:[];
+      const total=playerScores.filter(s=>s!==null).reduce((a,b)=>a+b,0);
+      const vspar=total-(playerScores.map((s,hi)=>s!==null?roundPars[hi]:0).reduce((a,b)=>a+b,0));
+      const vspStr=vspar===0?'E':vspar>0?'+'+vspar:''+vspar;
+      playerRows+=`<tr><td style="text-align:left;padding-left:8px;font-size:.78rem;font-weight:500;white-space:nowrap;">${name}</td>`;
+      playerScores.forEach((s,hi)=>{
+        const p=roundPars[hi];
+        const d=s!==null?s-p:null;
+        let bg='';
+        if(d!==null){
+          if(d<=-2)bg='background:rgba(201,168,76,.35);';
+          else if(d===-1)bg='background:rgba(41,128,185,.3);';
+          else if(d===0)bg='background:rgba(255,255,255,.07);';
+          else if(d===1)bg='background:rgba(192,57,43,.25);';
+          else bg='background:rgba(192,57,43,.45);';
+        }
+        playerRows+=`<td style="font-size:.78rem;"><span style="display:inline-block;width:24px;height:24px;line-height:24px;border-radius:4px;${bg}text-align:center;">${s!==null?s:'-'}</span></td>`;
+      });
+      playerRows+=`<td style="font-size:.82rem;font-family:'Bebas Neue',cursive;letter-spacing:1px;">${total}<div style="font-size:.6rem;font-family:'DM Sans',sans-serif;color:var(--tan);font-weight:400;">${vspStr}</div></td></tr>`;
+    });
+
+    el.innerHTML=`
+      <div style="overflow-x:auto;border-radius:8px;background:rgba(0,0,0,.2);border:1px solid rgba(245,240,232,.1);">
+        <table style="width:100%;border-collapse:collapse;min-width:${holeCount*32+80}px;">
+          <thead style="background:rgba(0,0,0,.25);">${thead}</thead>
+          <tbody>${parRow}${ydRow}${playerRows}</tbody>
+        </table>
+      </div>
+    `;
+  }catch(e){
+    el.innerHTML='<div style="font-size:.78rem;color:var(--tan);padding:8px;">Could not load scorecard.</div>';
+  }
+  el.style.display='block';
+}
+
 async function loadHistory(){
   const list=document.getElementById('history-list');
   list.innerHTML='<div class="history-loading">Loading...</div>';
@@ -2254,16 +2336,34 @@ async function loadHistory(){
     const diff=round.score_vs_par;
     const diffStr=diff===0?'E':diff>0?'+'+diff:''+diff;
     const scoreClass=diff<0?'under':diff>0?'over':'even';
-    const players=Array.isArray(round.players)?round.players.join(', '):round.players;
+    const playerNames=Array.isArray(round.players)?round.players.join(', '):round.players;
+
+    // Detect if live round: scores array contains actual numbers
+    let isLive=false;
+    try{
+      const sc=round.scores;
+      const playerScores=Array.isArray(sc[0])?sc[0]:sc;
+      const roundScores=Array.isArray(playerScores)?playerScores:JSON.parse(playerScores);
+      isLive=roundScores.some(s=>s!==null&&s!==undefined);
+    }catch(e){}
+
+    const roundId='rh-'+round.id;
     const card=document.createElement('div');
     card.className='round-card';
+    if(isLive)card.style.cursor='pointer';
     card.innerHTML=`
-      <div class="round-card-top">
-        <div class="round-card-course">${round.course_name}</div>
-        <div class="round-card-score ${scoreClass}">${diffStr}</div>
+      <div class="round-card-top" ${isLive?`onclick="toggleRoundScorecard('${roundId}')"`:''}> 
+        <div class="round-card-course">${round.course_name}${isLive?` <span style="font-size:.65rem;color:var(--gold);" id="${roundId}-chevron">&#9660;</span>`:''}</div>
+        <div class="round-card-score ${scoreClass}">${round.total_strokes||''}<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0;">${diffStr}</div></div>
       </div>
-      <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${players}${round.tee_name?' &middot; '+round.tee_name:''}</div>
+      <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${playerNames}${round.tee_name?' &middot; '+round.tee_name:''}</div>
+      ${isLive?`<div id="${roundId}" style="display:none;margin-top:12px;"></div>`:''}
     `;
+
+    if(isLive){
+      // Store round data for use in toggle
+      card.dataset.round=JSON.stringify(round);
+    }
     list.appendChild(card);
   });
 }
