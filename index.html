@@ -1573,10 +1573,16 @@ function shareStats(){
   const GOLD='#c9a84c',CREAM='#f5f0e8',TAN='#a89060',MUTED='#7a6a4a';
   const GREEN='#4caf82',RED='#c0392b';
 
-  // Calculate dynamic height
+  // Calculate exact height needed
   const hasHoles=s.totalHoles>0;
-  let H=80+20+100+20+80+20+(s.last10&&s.last10.length?110:0)+20+(hasHoles?90:0)+20+(hasHoles?130:0)+40;
-  H=Math.max(H,580);
+  const headerH=64+12; // header + gap
+  const handicapH=86+10; // card + gap
+  const boxRowH=68+10; // boxes + gap
+  const chartH=(s.last10&&s.last10.length)?110+10:0;
+  const parTypeH=hasHoles?78+10:0;
+  const breakdownH=hasHoles?120+10:0;
+  const footerH=36;
+  const H=headerH+handicapH+boxRowH+chartH+parTypeH+breakdownH+footerH;
 
   const canvas=document.createElement('canvas');
   canvas.width=W*DPR; canvas.height=H*DPR;
@@ -1732,10 +1738,11 @@ function shareStats(){
   }
 
   // Footer
+  y+=8;
   ctx.strokeStyle='rgba(201,168,76,0.1)'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(PAD,y+8); ctx.lineTo(W-PAD,y+8); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
   ctx.font='500 10px "DM Sans",sans-serif'; ctx.fillStyle=CREAM; ctx.textAlign='center';
-  ctx.fillText('voicescore.app',W/2,y+24);
+  ctx.fillText('voicescore.app',W/2,y+18);
 
   canvas.toBlob(blob=>{
     const url=URL.createObjectURL(blob);
