@@ -284,17 +284,10 @@
   <div class="welcome-signin">Already have an account? <span id="btn-welcome-signin">Sign In</span></div>
 </div>
 
-<header style="display:none;" id="main-header">
-  <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px;width:100%;box-sizing:border-box;">
-    <div style="width:80px;"></div>
-    <div style="text-align:center;">
-      <h1 style="font-family:'Bebas Neue',cursive;font-size:clamp(2.2rem,8vw,4.2rem);letter-spacing:6px;color:var(--cream);text-shadow:2px 3px 0 rgba(0,0,0,.35),0 0 30px rgba(255,220,100,.15);margin:0 0 2px;">VoiceScore</h1>
-      <p style="font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;">Hands Free &middot; Golf Scorecard</p>
-    </div>
-    <div style="width:80px;display:flex;justify-content:flex-end;">
-      <button class="auth-btn" id="auth-btn" onclick="toggleUserMenu()" style="position:static;">Sign In</button>
-    </div>
-  </div>
+<header style="display:none;text-align:center;" id="main-header">
+  <h1 style="font-family:'Bebas Neue',cursive;font-size:clamp(2.8rem,10vw,4.2rem);letter-spacing:6px;color:var(--cream);text-shadow:2px 3px 0 rgba(0,0,0,.35),0 0 30px rgba(255,220,100,.15);margin:0 0 2px;">VoiceScore</h1>
+  <p style="font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;">Hands Free &middot; Golf Scorecard</p>
+  <button class="auth-btn" id="auth-btn" onclick="toggleUserMenu()" style="display:none;">Sign In</button>
   <div class="user-menu" id="user-menu">
     <div class="user-menu-email" id="user-menu-email"></div>
     <button class="user-menu-item danger" onclick="signOut()">Sign Out</button>
