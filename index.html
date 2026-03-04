@@ -1724,6 +1724,9 @@ function openPastRound(){
   document.getElementById('history-screen').style.display='none';
   document.getElementById('past-round-screen').style.display='block';
   // Default date to today
+  window._pastHoles=18;
+  document.getElementById('past-holes-9').classList.remove('active');
+  document.getElementById('past-holes-18').classList.add('active');
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('past-date').value=today;
   document.getElementById('past-error').textContent='';
@@ -1735,10 +1738,16 @@ function closePastRound(){
   loadHistory();
 }
 
+function setPastHoles(n){
+  window._pastHoles=n;
+  document.getElementById('past-holes-9').classList.toggle('active',n===9);
+  document.getElementById('past-holes-18').classList.toggle('active',n===18);
+}
+
 async function submitPastRound(){
   const course=document.getElementById('past-course-name').value.trim();
   const date=document.getElementById('past-date').value;
-  const holes=parseInt(document.getElementById('past-holes').value);
+  const holes=window._pastHoles||18;
   const strokes=parseInt(document.getElementById('past-strokes').value);
   const par=parseInt(document.getElementById('past-par').value);
   const errEl=document.getElementById('past-error');
@@ -2177,17 +2186,15 @@ document.addEventListener('DOMContentLoaded', function(){
       <input type="hidden" id="past-course-name">
     </div>
 
-    <div class="past-field-row">
-      <div class="past-field">
-        <label>Date Played</label>
-        <input type="date" id="past-date" style="width:100%;box-sizing:border-box;">
-      </div>
-      <div class="past-field">
-        <label>Holes</label>
-        <select id="past-holes" style="width:100%;box-sizing:border-box;">
-          <option value="18">18 holes</option>
-          <option value="9">9 holes</option>
-        </select>
+    <div class="past-field">
+      <label>Date Played</label>
+      <input type="date" id="past-date" style="width:100%;box-sizing:border-box;">
+    </div>
+    <div class="past-field">
+      <label>Holes</label>
+      <div class="holes-btn-group">
+        <button class="holes-btn" id="past-holes-9" data-holes="9" onclick="setPastHoles(9)">9</button>
+        <button class="holes-btn active" id="past-holes-18" data-holes="18" onclick="setPastHoles(18)">18</button>
       </div>
     </div>
 
