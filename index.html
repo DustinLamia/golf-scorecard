@@ -91,7 +91,7 @@
 
 
   /* ── Welcome Screen ── */
-  #welcome-screen{display:none;min-height:100vh;padding:40px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  #welcome-screen{display:none;min-height:100vh;padding:40px 20px;flex-direction:column;align-items:center;justify-content:center;}
   .welcome-logo{text-align:center;margin-bottom:8px;}
   .welcome-logo h1{font-family:'Bebas Neue',cursive;font-size:clamp(3.5rem,14vw,5.5rem);letter-spacing:8px;color:var(--cream);text-shadow:2px 3px 0 rgba(0,0,0,.35),0 0 30px rgba(255,220,100,.15);margin:0;}
   .welcome-logo p{font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;margin-bottom:40px;}
@@ -239,7 +239,7 @@
 <body>
 
 <!-- Welcome Screen -->
-<div id="welcome-screen">
+<div id="welcome-screen" style="display:flex;">
   <div class="welcome-logo">
     <h1>VoiceScore</h1>
     <p>Hands Free &middot; Golf Scorecard</p>
@@ -274,7 +274,7 @@
   <div class="welcome-signin">Already have an account? <span onclick="openWelcomeAuth('signin')">Sign In</span></div>
 </div>
 
-<header style="position:relative;">
+<header style="position:relative;display:none;" id="main-header">
   <h1 style="font-family:'Bebas Neue',cursive;font-size:clamp(2.8rem,10vw,4.2rem);letter-spacing:6px;color:var(--cream);text-shadow:2px 3px 0 rgba(0,0,0,.35),0 0 30px rgba(255,220,100,.15);margin:0 0 2px;">VoiceScore</h1>
   <p style="font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;">Hands Free &middot; Golf Scorecard</p>
   <button class="auth-btn" id="auth-btn" onclick="toggleUserMenu()">Sign In</button>
@@ -1963,12 +1963,12 @@ function showWelcomeScreen(){
   document.getElementById('welcome-screen').style.display='flex';
   document.getElementById('setup-screen').style.display='none';
   document.getElementById('scorecard-screen').style.display='none';
-  document.querySelector('header').style.display='none';
+  document.getElementById('main-header').style.display='none';
 }
 
 function hideWelcomeScreen(){
   document.getElementById('welcome-screen').style.display='none';
-  document.querySelector('header').style.display='block';
+  document.getElementById('main-header').style.display='block';
   // Only show setup screen if we're not mid-round
   if(document.getElementById('scorecard-screen').style.display!=='block'){
     document.getElementById('setup-screen').style.display='block';
