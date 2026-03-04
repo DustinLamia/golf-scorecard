@@ -89,6 +89,35 @@
   .legend-dot{width:10px;height:10px;border-radius:2px;}
   @media(max-width:400px){header h1{font-size:2rem;}}
 
+
+  /* ── Welcome Screen ── */
+  #welcome-screen{display:none;min-height:100vh;padding:40px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .welcome-logo{text-align:center;margin-bottom:8px;}
+  .welcome-logo h1{font-family:'Bebas Neue',cursive;font-size:clamp(3.5rem,14vw,5.5rem);letter-spacing:8px;color:var(--cream);text-shadow:2px 3px 0 rgba(0,0,0,.35),0 0 30px rgba(255,220,100,.15);margin:0;}
+  .welcome-logo p{font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;margin-bottom:40px;}
+  .welcome-tiers{display:flex;gap:16px;width:100%;max-width:600px;margin-bottom:24px;}
+  .tier-card{flex:1;border-radius:16px;padding:24px 20px;display:flex;flex-direction:column;}
+  .tier-free{background:rgba(245,240,232,.08);border:1px solid rgba(245,240,232,.2);}
+  .tier-pro{background:rgba(201,168,76,.08);border:2px solid rgba(201,168,76,.5);position:relative;}
+  .tier-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:.8rem;letter-spacing:2px;padding:3px 14px;border-radius:20px;white-space:nowrap;}
+  .tier-card h3{font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:2px;margin-bottom:4px;}
+  .tier-free h3{color:var(--cream);}
+  .tier-pro h3{color:var(--gold);}
+  .tier-price{font-size:.78rem;color:var(--tan);margin-bottom:16px;}
+  .tier-pro .tier-price{color:var(--gold);font-weight:600;}
+  .tier-features{list-style:none;flex:1;margin-bottom:20px;}
+  .tier-features li{font-size:.82rem;color:var(--cream);padding:5px 0;border-bottom:1px solid rgba(245,240,232,.07);display:flex;align-items:flex-start;gap:8px;}
+  .tier-features li:last-child{border-bottom:none;}
+  .tier-features li::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--tan);flex-shrink:0;margin-top:6px;}
+  .tier-pro .tier-features li::before{background:var(--gold);}
+  .btn-tier-free{width:100%;padding:12px;background:rgba(245,240,232,.15);border:1px solid rgba(245,240,232,.3);border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;color:var(--cream);cursor:pointer;transition:all .2s;}
+  .btn-tier-free:hover{background:rgba(245,240,232,.25);}
+  .btn-tier-pro{width:100%;padding:12px;background:var(--gold);border:none;border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;color:var(--dark);cursor:pointer;box-shadow:0 4px 20px rgba(201,168,76,.3);transition:all .2s;}
+  .btn-tier-pro:hover{box-shadow:0 4px 30px rgba(201,168,76,.5);}
+  .welcome-signin{font-size:.82rem;color:var(--tan);text-align:center;}
+  .welcome-signin span{color:var(--gold);cursor:pointer;text-decoration:underline;}
+  @media(max-width:480px){.welcome-tiers{flex-direction:column;}.tier-pro{margin-top:16px;}}
+
   /* ── Auth ── */
   .auth-btn{position:absolute;top:18px;right:16px;padding:7px 14px;border-radius:8px;border:1px solid rgba(245,240,232,.3);background:rgba(245,240,232,.1);color:var(--cream);font-family:"DM Sans",sans-serif;font-size:.78rem;cursor:pointer;backdrop-filter:blur(10px);transition:all .2s;}
   .auth-btn:hover{background:rgba(245,240,232,.2);}
@@ -117,6 +146,43 @@
 </style>
 </head>
 <body>
+
+<!-- Welcome Screen -->
+<div id="welcome-screen">
+  <div class="welcome-logo">
+    <h1>VoiceScore</h1>
+    <p>Hands Free &middot; Golf Scorecard</p>
+  </div>
+  <div class="welcome-tiers">
+    <div class="tier-card tier-free">
+      <h3>Free</h3>
+      <div class="tier-price">Free forever</div>
+      <ul class="tier-features">
+        <li>Score by voice, never touch your phone</li>
+        <li>Real course data loaded automatically</li>
+        <li>Up to 4 players per round</li>
+        <li>Export and share your scorecard</li>
+      </ul>
+      <button class="btn-tier-free" onclick="openWelcomeAuth('signup')">Create Free Account</button>
+    </div>
+    <div class="tier-card tier-pro">
+      <div class="tier-badge">Most Popular</div>
+      <h3>Pro</h3>
+      <div class="tier-price">$6.99 &mdash; one time</div>
+      <ul class="tier-features">
+        <li>Everything in Free</li>
+        <li>Every round saved to your account</li>
+        <li>Stats dashboard</li>
+        <li>Automatic handicap tracking</li>
+        <li>Multi-round comparison</li>
+        <li>Skins and Match Play</li>
+      </ul>
+      <button class="btn-tier-pro" onclick="openWelcomeAuth('signup')">Go Pro</button>
+    </div>
+  </div>
+  <div class="welcome-signin">Already have an account? <span onclick="openWelcomeAuth('signin')">Sign In</span></div>
+</div>
+
 <header style="position:relative;">
   <h1 style="font-family:'Bebas Neue',cursive;font-size:clamp(2.8rem,10vw,4.2rem);letter-spacing:6px;color:var(--cream);text-shadow:2px 3px 0 rgba(0,0,0,.35),0 0 30px rgba(255,220,100,.15);margin:0 0 2px;">VoiceScore</h1>
   <p style="font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;">Hands Free &middot; Golf Scorecard</p>
@@ -1324,6 +1390,8 @@ function setUser(user){
   if(btn){btn.textContent=user.email.split('@')[0];btn.classList.add('signed-in');}
   if(emailEl){emailEl.textContent=user.email;}
   if(startBtn){startBtn.textContent='Start Round';}
+  hideWelcomeScreen();
+  closeAuthModal();
 }
 
 function clearUser(){
@@ -1332,6 +1400,30 @@ function clearUser(){
   const startBtn=document.getElementById('start-btn');
   if(btn){btn.textContent='Sign In';btn.classList.remove('signed-in');}
   if(startBtn){startBtn.textContent='Sign In to Start';}
+  showWelcomeScreen();
+}
+
+
+function openWelcomeAuth(mode){
+  authMode=mode;
+  document.getElementById('auth-title').textContent=mode==='signin'?'Sign In':'Create Free Account';
+  document.getElementById('auth-subtitle').textContent=mode==='signin'?'Welcome back.':'Sign up free to start your round and save your scores.';
+  document.getElementById('auth-submit').textContent=mode==='signin'?'Sign In':'Create Account';
+  document.getElementById('auth-toggle').innerHTML=mode==='signin'?'No account? <span onclick="toggleAuthMode()">Create one free</span>':'Already have one? <span onclick="toggleAuthMode()">Sign in</span>';
+  document.getElementById('auth-error').textContent='';
+  document.getElementById('auth-overlay').classList.add('open');
+}
+
+function showWelcomeScreen(){
+  document.getElementById('welcome-screen').style.display='flex';
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('scorecard-screen').style.display='none';
+  document.querySelector('header').style.display='none';
+}
+
+function hideWelcomeScreen(){
+  document.getElementById('welcome-screen').style.display='none';
+  document.querySelector('header').style.display='block';
 }
 
 function openAuthModal(){
@@ -1401,8 +1493,12 @@ document.addEventListener('click',e=>{
   }
 });
 
-// Set initial start button state (before session resolves)
-(function(){const b=document.getElementById('start-btn');if(b)b.textContent='Sign In to Start';})();
+// Show welcome screen initially — hideWelcomeScreen() called if session exists
+(function(){
+  const b=document.getElementById('start-btn');if(b)b.textContent='Sign In to Start';
+  // Will be hidden by setUser() if session is found, otherwise stays visible
+  showWelcomeScreen();
+})();
 // Restore session on page load (survives refresh)
 restoreSession();
 </script>
