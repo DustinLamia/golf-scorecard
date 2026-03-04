@@ -1464,6 +1464,43 @@ function confirmReset(){
 
 
 
+// ── Handicap Calculator ──
+function calcHandicap(rounds){
+  // rounds: array of {score_vs_par, holes} sorted newest first
+  // Use last 20 rounds, differentials = score_vs_par (adjusted to 18-hole equivalent)
+  const last20=rounds.slice(0,20);
+  if(last20.length<3)return null;
+
+  // Normalize 9-hole rounds to 18-hole equivalent differential
+  const diffs=last20.map(r=>{
+    const d=r.score_vs_par||0;
+    return r.holes===9?d*2:d;
+  });
+
+  // How many of the best to use (WHS-style scaling)
+  const n=diffs.length;
+  let useCount;
+  if(n<6)useCount=1;
+  else if(n<9)useCount=2;
+  else if(n<12)useCount=3;
+  else if(n<15)useCount=4;
+  else if(n<17)useCount=5;
+  else if(n<19)useCount=6;
+  else if(n===19)useCount=7;
+  else useCount=8;
+
+  const sorted=[...diffs].sort((a,b)=>a-b);
+  const best=sorted.slice(0,useCount);
+  const avg=best.reduce((a,b)=>a+b,0)/best.length;
+  return Math.round(avg*0.96*10)/10; // one decimal
+}
+
+function fmtHandicap(h){
+  if(h===null)return null;
+  if(h<0)return '+'+Math.abs(h).toFixed(1);  // scratch/plus handicap
+  return h.toFixed(1);
+}
+
 // ── Stats Dashboard ──
 async function openStats(){navTo('stats');}
 
@@ -1534,8 +1571,36 @@ async function loadStats(){
   const bestStr=bestDiff===Infinity?'-':fmtDiff(bestDiff);
   const worstStr=worstDiff===-Infinity?'-':fmtDiff(worstDiff);
 
+  // Handicap
+  const handicap=calcHandicap(data);
+  const handicapDisplay=fmtHandicap(handicap);
+
+  // Trend: compare handicap from last 5 vs prior 5
+  let trendHTML='';
+  if(handicap!==null&&data.length>=6){
+    const hNow=calcHandicap(data.slice(0,5));
+    const hPrev=calcHandicap(data.slice(5,10));
+    if(hNow!==null&&hPrev!==null){
+      const delta=Math.round((hNow-hPrev)*10)/10;
+      if(delta<0)trendHTML=`<div class="stat-sub" style="color:#7ec8f5;">&#9650; Improving (${delta.toFixed(1)})</div>`;
+      else if(delta>0)trendHTML=`<div class="stat-sub" style="color:#f0a090;">&#9660; Up ${delta.toFixed(1)} recently</div>`;
+      else trendHTML=`<div class="stat-sub">Steady</div>`;
+    }
+  }
+
   el.innerHTML=`
     <div class="stats-grid">
+      ${handicap!==null?`
+      <div class="stat-card full gold-border" style="text-align:center;padding:20px;">
+        <div class="stat-label" style="font-size:.7rem;letter-spacing:2px;">Handicap Index</div>
+        <div class="stat-value gold" style="font-size:3rem;margin:6px 0;">${handicapDisplay}</div>
+        ${trendHTML}
+        <div style="font-size:.65rem;color:rgba(245,240,232,.35);margin-top:8px;">Based on best ${data.slice(0,20).length<6?1:data.slice(0,20).length<9?2:data.slice(0,20).length<12?3:data.slice(0,20).length<15?4:data.slice(0,20).length<17?5:data.slice(0,20).length<19?6:data.slice(0,20).length===19?7:8} of last ${Math.min(data.length,20)} rounds</div>
+      </div>`:`
+      <div class="stat-card full" style="text-align:center;padding:18px;">
+        <div class="stat-label">Handicap Index</div>
+        <div style="font-size:.88rem;color:var(--tan);margin-top:6px;">Play ${3-Math.min(data.length,3)} more round${3-Math.min(data.length,3)===1?'':'s'} to establish your handicap</div>
+      </div>`}
       <div class="stat-card">
         <div class="stat-label">Rounds Played</div>
         <div class="stat-value gold">${roundCount}</div>
