@@ -1272,10 +1272,7 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
   ctx.font='bold 36px "Bebas Neue", serif';
   ctx.letterSpacing='4px';
   ctx.fillStyle=CREAM;
-  ctx.fillText('VOICE',CARD_PAD,TOP_H-20);
-  const vw=ctx.measureText('VOICE').width;
-  ctx.fillStyle=GOLD;
-  ctx.fillText('SCORE',CARD_PAD+vw+2,TOP_H-20);
+  ctx.fillText('VOICESCORE',CARD_PAD,TOP_H-20);
 
   // Course info (right-aligned)
   const rightX=canvasW-CARD_PAD;
@@ -1566,6 +1563,174 @@ async function openStats(){navTo('stats');}
 
 function showSetupFromStats(){navTo('play');}
 
+function shareStats(){
+  const s=window._statsSnapshot;
+  if(!s){return;}
+
+  const DPR=window.devicePixelRatio||2;
+  const W=Math.min(window.innerWidth,480);
+  const H=680;
+  const PAD=24;
+  const GOLD='#c9a84c', CREAM='#f5f0e8', TAN='#a89060', MUTED='#7a6a4a';
+  const GREEN='#4caf82', RED='#c0392b';
+
+  const canvas=document.createElement('canvas');
+  canvas.width=W*DPR; canvas.height=H*DPR;
+  const ctx=canvas.getContext('2d');
+  ctx.scale(DPR,DPR);
+
+  // Background gradient
+  const bg=ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#233d1e'); bg.addColorStop(0.6,'#1a2e17'); bg.addColorStop(1,'#162613');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  // Gold border
+  ctx.strokeStyle='rgba(201,168,76,0.25)'; ctx.lineWidth=1;
+  roundRect(ctx,1,1,W-2,H-2,0); ctx.stroke();
+
+  // Header
+  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(0,0,W,80);
+  ctx.strokeStyle='rgba(201,168,76,0.2)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,80); ctx.lineTo(W,80); ctx.stroke();
+
+  // VOICESCORE
+  ctx.font='bold 32px "Bebas Neue",serif'; ctx.letterSpacing='4px';
+  ctx.fillStyle=CREAM; ctx.textAlign='left';
+  ctx.fillText('VOICESCORE',PAD,54);
+
+  // "My Stats" right
+  ctx.font='500 11px "DM Sans",sans-serif'; ctx.letterSpacing='1px';
+  ctx.fillStyle=GOLD; ctx.textAlign='right';
+  ctx.fillText('MY STATS',W-PAD,54);
+  ctx.letterSpacing='0px';
+
+  let y=100;
+
+  // ── Handicap Index ──
+  if(s.handicapDisplay){
+    ctx.textAlign='center';
+    ctx.font='700 11px "DM Sans",sans-serif'; ctx.fillStyle=TAN;
+    ctx.fillText('HANDICAP INDEX',W/2,y); y+=6;
+    ctx.font='bold 64px "Bebas Neue",serif'; ctx.fillStyle=GOLD;
+    ctx.fillText(s.handicapDisplay,W/2,y+54); y+=68;
+    ctx.font='400 10px "DM Sans",sans-serif'; ctx.fillStyle=MUTED;
+    y+=4;
+  }
+
+  // Divider
+  ctx.strokeStyle='rgba(201,168,76,0.15)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
+  y+=20;
+
+  // ── Key stats row: Rounds / Avg / Best / Worst ──
+  const cols=[
+    {label:'ROUNDS',val:''+s.roundCount,color:GOLD},
+    {label:'AVG SCORE',val:(s.avgDiffNum>0?'+':'')+s.avgDiff,color:s.avgDiffNum<0?GREEN:s.avgDiffNum>0?RED:TAN},
+    {label:'BEST',val:s.bestStrokes||(s.bestStr==='-'?'-':s.bestStr),color:GREEN},
+    {label:'WORST',val:s.worstStrokes||(s.worstStr==='-'?'-':s.worstStr),color:RED},
+  ];
+  const colW=(W-PAD*2)/4;
+  cols.forEach((c,i)=>{
+    const cx=PAD+i*colW+colW/2;
+    ctx.textAlign='center';
+    ctx.font='700 9px "DM Sans",sans-serif'; ctx.fillStyle=TAN;
+    ctx.fillText(c.label,cx,y);
+    ctx.font='bold 26px "Bebas Neue",serif'; ctx.fillStyle=c.color;
+    ctx.fillText(c.val,cx,y+22);
+  });
+  y+=42;
+
+  if(s.totalHoles>0){
+    // Divider
+    ctx.strokeStyle='rgba(201,168,76,0.15)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
+    y+=18;
+
+    // ── Par type row ──
+    ctx.textAlign='center';
+    ctx.font='700 10px "DM Sans",sans-serif'; ctx.fillStyle=TAN;
+    ctx.fillText('AVG SCORE BY HOLE TYPE',W/2,y); y+=16;
+    const ptypes=[{l:'PAR 3',v:s.avgPar3},{l:'PAR 4',v:s.avgPar4},{l:'PAR 5',v:s.avgPar5}];
+    const pW=(W-PAD*2)/3;
+    ptypes.forEach((p,i)=>{
+      const cx=PAD+i*pW+pW/2;
+      const num=parseFloat(p.v);
+      const col=isNaN(num)?TAN:num<0?GREEN:num>0?RED:TAN;
+      const display=isNaN(num)?'-':(num>0?'+':'')+p.v;
+      ctx.font='700 9px "DM Sans",sans-serif'; ctx.fillStyle=TAN;
+      ctx.fillText(p.l,cx,y);
+      ctx.font='bold 22px "Bebas Neue",serif'; ctx.fillStyle=col;
+      ctx.fillText(display,cx,y+18);
+    });
+    y+=36;
+
+    // Divider
+    ctx.strokeStyle='rgba(201,168,76,0.15)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
+    y+=18;
+
+    // ── Score breakdown bars ──
+    ctx.textAlign='left';
+    ctx.font='700 10px "DM Sans",sans-serif'; ctx.fillStyle=TAN;
+    ctx.textAlign='center'; ctx.fillText('SCORE BREAKDOWN',W/2,y); y+=14;
+
+    const breakdown=[
+      {l:'Eagle+',pct:s.eaglePct,color:GOLD},
+      {l:'Birdie',pct:s.birdiePct,color:'#2980b9'},
+      {l:'Par',pct:s.parPct,color:'rgba(255,255,255,0.4)'},
+      {l:'Bogey',pct:s.bogeyPct,color:RED},
+      {l:'Double+',pct:s.doublePct,color:'#8e1e14'},
+    ];
+    const barMaxW=W-PAD*2-52;
+    breakdown.forEach(b=>{
+      ctx.textAlign='left';
+      ctx.font='400 10px "DM Sans",sans-serif'; ctx.fillStyle=TAN;
+      ctx.fillText(b.l,PAD,y+9);
+      const bx=PAD+52; const bw=Math.max(2,Math.round(b.pct/100*barMaxW));
+      ctx.fillStyle=b.color;
+      roundRect(ctx,bx,y,bw,12,3); ctx.fill();
+      ctx.font='400 9px "DM Sans",sans-serif'; ctx.fillStyle=MUTED;
+      ctx.textAlign='left';
+      ctx.fillText(b.pct+'%',bx+bw+6,y+10);
+      y+=20;
+    });
+  }
+
+  // Footer
+  y=H-32;
+  ctx.strokeStyle='rgba(201,168,76,0.1)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
+  ctx.font='400 9px "DM Sans",sans-serif'; ctx.fillStyle=MUTED; ctx.textAlign='center';
+  ctx.fillText('voicescore.app',W/2,y+18);
+
+  // Export
+  canvas.toBlob(blob=>{
+    const url=URL.createObjectURL(blob);
+    const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if(isMobile&&navigator.share){
+      const file=new File([blob],'voicescore-stats.png',{type:'image/png'});
+      navigator.share({files:[file],title:'My VoiceScore Stats'}).catch(()=>statsFallback(url));
+    } else { statsFallback(url); }
+  },'image/png');
+
+  function statsFallback(url){
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:20px;';
+    const img=document.createElement('img');
+    img.src=url; img.style.cssText='max-width:100%;max-height:75vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.8);';
+    const hint=document.createElement('p');
+    hint.style.cssText='color:#a89060;font-size:.8rem;letter-spacing:1px;text-transform:uppercase;text-align:center;font-family:"DM Sans",sans-serif;';
+    hint.textContent='Long-press image to save · Tap outside to close';
+    const dlBtn=document.createElement('a');
+    dlBtn.href=url; dlBtn.download='voicescore-stats.png';
+    dlBtn.style.cssText='padding:10px 28px;background:#c9a84c;border-radius:8px;color:#1a2e17;font-family:"Bebas Neue",cursive;font-size:1.1rem;letter-spacing:3px;text-decoration:none;';
+    dlBtn.textContent='Download PNG';
+    overlay.appendChild(img); overlay.appendChild(hint); overlay.appendChild(dlBtn);
+    overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+    document.body.appendChild(overlay);
+  }
+}
+
 async function loadStats(){
   const el=document.getElementById('stats-content');
   el.innerHTML='<div class="stats-loading">Loading...</div>';
@@ -1789,8 +1954,21 @@ async function loadStats(){
         <div style="font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;color:var(--gold);margin-top:20px;">Compare Rounds &#8594;</div>
       </div>
 
+      <div style="padding:4px 0 12px;">
+        <button onclick="shareStats()" style="width:100%;padding:14px;border-radius:12px;border:1px solid rgba(201,168,76,.4);background:transparent;color:var(--gold);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:3px;cursor:pointer;">&#8679; Share My Stats</button>
+      </div>
+
     </div>
   `;
+
+  // Store stats globally for canvas export
+  window._statsSnapshot={
+    handicapDisplay,trendHTML,roundCount,avgDiff,avgDiffNum,
+    bestStrokes,bestStr,worstStrokes,worstStr,
+    avgPar3,avgPar4,avgPar5,
+    eaglePct,birdiePct,parPct,bogeyPct,doublePct,
+    totalHoles,
+  };
 
   // Compute averages for goal hints
   const totalStrokesAll=data.reduce((a,r)=>a+(r.total_strokes||0),0);
