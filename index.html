@@ -1167,9 +1167,44 @@ function exportScores(){
   const courseName=selectedCourse?selectedCourse.name:'Golf Round';
   const teeLabel=selectedTee&&selectedCourse&&selectedCourse.tees&&selectedCourse.tees.length>1?' · '+selectedTee.name+' Tees':'';
   const location=selectedCourse?(selectedCourse.city+(selectedCourse.state?', '+selectedCourse.state:'')):'';
+  const today=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores});
+}
+
+function exportRoundFromHistory(roundId){
+  // Find round data from the card's dataset
+  const el=document.getElementById('rh-'+roundId+'-exportbtn');
+  if(!el)return;
+  const card=el.closest('.round-card');
+  if(!card||!card.dataset.round)return;
+  const round=JSON.parse(card.dataset.round);
+  try{
+    const sc=round.scores;
+    const pa=round.pars;
+    const yd=round.yardages;
+    const roundPlayers=Array.isArray(round.players)?round.players:JSON.parse(round.players);
+    const roundPars=Array.isArray(pa)?pa:JSON.parse(pa);
+    const roundYards=Array.isArray(yd)?yd:JSON.parse(yd);
+    const allScores=Array.isArray(sc[0])?sc:[sc];
+    const holeCount=roundPars.length;
+    const playedDate=new Date(round.played_at).toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    drawScorecard({
+      courseName:round.course_name||'Golf Round',
+      teeLabel:round.tee_name?' · '+round.tee_name+' Tees':'',
+      location:'',
+      today:playedDate,
+      pars:roundPars,
+      yardages:roundYards,
+      holes:holeCount,
+      players:roundPlayers,
+      scores:allScores,
+    });
+  }catch(e){console.error('Export error',e);}
+}
+
+function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores}){
   const totalPar=pars.reduce((a,b)=>a+b,0);
   const totalYds=yardages.reduce((a,b)=>a+b,0);
-  const today=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
   // Colors
   const BG='#1a2e17', CARD='#233d1e', GOLD='#c9a84c', CREAM='#f5f0e8', TAN='#a89060';
@@ -2340,6 +2375,9 @@ function toggleRoundScorecard(roundId){
           <tbody>${parRow}${ydRow}${playerRows}</tbody>
         </table>
       </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+        <button id="rh-${round.id}-exportbtn" onclick="exportRoundFromHistory('${round.id}')" style="padding:6px 14px;border-radius:6px;border:1px solid rgba(201,168,76,.4);background:transparent;color:var(--gold);font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;">&#8659; Export Scorecard</button>
+      </div>
     `;
   }catch(e){
     el.innerHTML='<div style="font-size:.78rem;color:var(--tan);padding:8px;">Could not load scorecard.</div>';
@@ -2381,7 +2419,7 @@ async function loadHistory(){
         <div class="round-card-course">${round.course_name}${isLive?` <span style="font-size:.65rem;color:var(--gold);" id="${roundId}-chevron">&#9660;</span>`:''}</div>
         <div class="round-card-score ${scoreClass}">${round.total_strokes||''}<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0;">${diffStr}</div></div>
       </div>
-      <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${playerNames}${round.tee_name?' &middot; '+round.tee_name:''}</div>
+      <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${playerNames}${round.tee_name?' &middot; '+round.tee_name:''} <span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;${isLive?'background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35);':'background:rgba(245,240,232,.07);color:var(--tan);border:1px solid rgba(245,240,232,.15);'}">${isLive?'LIVE':'MANUAL'}</span></div>
       ${isLive?`<div id="${roundId}" style="display:none;margin-top:12px;"></div>`:''}
     `;
 
