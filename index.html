@@ -165,8 +165,8 @@
 
 
   /* ── Round Chart ── */
-  .chart-wrap{display:flex;align-items:flex-end;gap:6px;height:80px;margin:14px 0 8px;}
-  .chart-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .chart-wrap{display:flex;align-items:flex-end;gap:6px;height:90px;margin:14px 0 4px;}
+  .chart-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-end;}
   .chart-bar-above{flex:1;display:flex;align-items:flex-end;width:100%;}
   .chart-bar-below{flex:1;display:flex;align-items:flex-start;width:100%;}
   .chart-bar{width:100%;border-radius:3px;min-height:3px;position:relative;}
@@ -1488,35 +1488,38 @@ async function loadStats(){
   let par3scores=[],par4scores=[],par5scores=[];
 
   data.forEach(round=>{
-    const sc=round.scores;
-    const pa=round.pars;
-    const playerScores=Array.isArray(sc[0])?sc[0]:sc;
-    const roundPars=Array.isArray(pa)?pa:JSON.parse(pa);
-    const roundScores=Array.isArray(playerScores)?playerScores:JSON.parse(playerScores);
-
-    let roundDiff=0,roundHoles=0;
-    roundScores.forEach((s,hi)=>{
-      if(s===null||s===undefined)return;
-      const p=roundPars[hi];
-      const d=s-p;
-      roundDiff+=d;
-      roundHoles++;
-      totalHoles++;
-      if(d<=-2)eagles++;
-      else if(d===-1)birdies++;
-      else if(d===0)pars++;
-      else if(d===1)bogeys++;
-      else doubles++;
-      if(p===3)par3scores.push(s-p);
-      else if(p===4)par4scores.push(s-p);
-      else if(p===5)par5scores.push(s-p);
-    });
+    // Use score_vs_par directly — works for both live and past rounds
+    const roundDiff=round.score_vs_par||0;
     totalDiff+=roundDiff;
     if(roundDiff<bestDiff)bestDiff=roundDiff;
     if(roundDiff>worstDiff)worstDiff=roundDiff;
+
+    // Hole-by-hole breakdown only for live rounds (past rounds have null scores)
+    const sc=round.scores;
+    const pa=round.pars;
+    if(!sc||!pa)return;
+    try{
+      const playerScores=Array.isArray(sc[0])?sc[0]:sc;
+      const roundPars=Array.isArray(pa)?pa:JSON.parse(pa);
+      const roundScores=Array.isArray(playerScores)?playerScores:JSON.parse(playerScores);
+      roundScores.forEach((s,hi)=>{
+        if(s===null||s===undefined)return;
+        const p=roundPars[hi];
+        const d=s-p;
+        totalHoles++;
+        if(d<=-2)eagles++;
+        else if(d===-1)birdies++;
+        else if(d===0)pars++;
+        else if(d===1)bogeys++;
+        else doubles++;
+        if(p===3)par3scores.push(d);
+        else if(p===4)par4scores.push(d);
+        else if(p===5)par5scores.push(d);
+      });
+    }catch(e){}
   });
 
-  const avgDiff=totalHoles>0?(totalDiff/roundCount).toFixed(1):0;
+  const avgDiff=roundCount>0?(totalDiff/roundCount).toFixed(1):0;
   const avgDiffNum=parseFloat(avgDiff);
   const avgClass=avgDiffNum<0?'under':avgDiffNum>0?'over':'';
 
@@ -1562,6 +1565,7 @@ async function loadStats(){
 
       <div class="stat-card full">
         <div class="stat-label" style="margin-bottom:14px;">Avg Score by Hole Type</div>
+        ${totalHoles===0?'<div style="font-size:.78rem;color:var(--tan);font-style:italic;">Available after completing live rounds with VoiceScore.</div>':`
         <div class="par-type-row">
           <div class="par-type-cell">
             <div class="stat-label">Par 3</div>
@@ -1575,11 +1579,12 @@ async function loadStats(){
             <div class="stat-label">Par 5</div>
             <div class="stat-value ${parseFloat(avgPar5)<0?'under':parseFloat(avgPar5)>0?'over':''}">${avgPar5!=='-'&&parseFloat(avgPar5)>0?'+'+avgPar5:avgPar5}</div>
           </div>
-        </div>
+        </div>`}
       </div>
 
       <div class="stat-card full">
         <div class="stat-label" style="margin-bottom:14px;">Score Breakdown</div>
+        ${totalHoles===0?'<div style="font-size:.78rem;color:var(--tan);font-style:italic;margin-bottom:8px;">Available after completing live rounds with VoiceScore.</div>':''}
         <div class="breakdown-row">
           <div class="breakdown-label">Eagle+</div>
           <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${eaglePct}%;background:#c9a84c;"></div></div>
@@ -1694,11 +1699,11 @@ async function loadStats(){
       const col=document.createElement('div');
       col.className='chart-bar-col';
       col.innerHTML=`
-        <div class="chart-val">${diffStr}</div>
-        <div class="chart-strokes">${stroke}</div>
         <div style="flex:1;display:flex;align-items:flex-end;width:100%;">
           <div style="width:100%;height:${barH}px;background:${barColor};border-radius:3px;min-height:3px;"></div>
         </div>
+        <div class="chart-val">${diffStr}</div>
+        <div class="chart-strokes">${stroke}</div>
         <div class="chart-label">${label}</div>
       `;
       chartEl.appendChild(col);
