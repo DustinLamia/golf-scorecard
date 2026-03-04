@@ -165,7 +165,7 @@
 
 
   /* ── Round Chart ── */
-  .chart-wrap{display:flex;align-items:flex-end;gap:6px;height:90px;margin:14px 0 4px;}
+  .chart-wrap{display:flex;align-items:flex-end;gap:6px;height:90px;margin:14px 0 4px;overflow:hidden;}
   .chart-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-end;}
   .chart-bar-above{flex:1;display:flex;align-items:flex-end;width:100%;}
   .chart-bar-below{flex:1;display:flex;align-items:flex-start;width:100%;}
@@ -1798,7 +1798,7 @@ async function loadStats(){
       const label=(date.getMonth()+1)+'/'+(date.getDate());
       const diffStr=diff===0?'E':diff>0?'+'+diff:''+diff;
       const barHeightPct=Math.round((Math.abs(diff)/maxAbs)*100);
-      const barH=Math.max(3,Math.round(barHeightPct*0.7));
+      const barH=Math.min(60,Math.max(3,Math.round(barHeightPct*0.6)));
       // Color based on score goal if set, otherwise vs par
       const hitGoal=goals.strokes?stroke<goals.strokes:diff<0;
       const missedGoal=goals.strokes?stroke>=goals.strokes:diff>0;
