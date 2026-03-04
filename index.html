@@ -220,7 +220,7 @@
   body.has-nav #setup-screen,body.has-nav #scorecard-screen,body.has-nav #history-screen,body.has-nav #stats-screen,body.has-nav #past-round-screen{padding-bottom:80px;}
 
   /* ── Auth ── */
-  .auth-btn{position:absolute;top:18px;right:16px;padding:7px 14px;border-radius:8px;border:1px solid rgba(245,240,232,.3);background:rgba(245,240,232,.1);color:var(--cream);font-family:"DM Sans",sans-serif;font-size:.78rem;cursor:pointer;backdrop-filter:blur(10px);transition:all .2s;}
+  .auth-btn{padding:7px 14px;border-radius:8px;border:1px solid rgba(245,240,232,.3);background:rgba(245,240,232,.1);color:var(--cream);font-family:"DM Sans",sans-serif;font-size:.78rem;cursor:pointer;backdrop-filter:blur(10px);transition:all .2s;white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis;}
   .auth-btn:hover{background:rgba(245,240,232,.2);}
   .auth-btn.signed-in{border-color:rgba(201,168,76,.4);color:var(--gold);}
   .auth-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;padding:20px;}
@@ -284,10 +284,17 @@
   <div class="welcome-signin">Already have an account? <span id="btn-welcome-signin">Sign In</span></div>
 </div>
 
-<header style="position:relative;display:none;" id="main-header">
-  <h1 style="font-family:'Bebas Neue',cursive;font-size:clamp(2.8rem,10vw,4.2rem);letter-spacing:6px;color:var(--cream);text-shadow:2px 3px 0 rgba(0,0,0,.35),0 0 30px rgba(255,220,100,.15);margin:0 0 2px;">VoiceScore</h1>
-  <p style="font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;">Hands Free &middot; Golf Scorecard</p>
-  <button class="auth-btn" id="auth-btn" onclick="toggleUserMenu()">Sign In</button>
+<header style="display:none;" id="main-header">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:0 4px;width:100%;box-sizing:border-box;">
+    <div style="width:80px;"></div>
+    <div style="text-align:center;">
+      <h1 style="font-family:'Bebas Neue',cursive;font-size:clamp(2.2rem,8vw,4.2rem);letter-spacing:6px;color:var(--cream);text-shadow:2px 3px 0 rgba(0,0,0,.35),0 0 30px rgba(255,220,100,.15);margin:0 0 2px;">VoiceScore</h1>
+      <p style="font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;">Hands Free &middot; Golf Scorecard</p>
+    </div>
+    <div style="width:80px;display:flex;justify-content:flex-end;">
+      <button class="auth-btn" id="auth-btn" onclick="toggleUserMenu()" style="position:static;">Sign In</button>
+    </div>
+  </div>
   <div class="user-menu" id="user-menu">
     <div class="user-menu-email" id="user-menu-email"></div>
     <button class="user-menu-item danger" onclick="signOut()">Sign Out</button>
