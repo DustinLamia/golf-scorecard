@@ -2017,60 +2017,22 @@ async function loadCompare(){
     return;
   }
 
+  // Store globally for re-rendering on toggle
+  window._compareData=data;
+
   const fmtD=d=>d===0?'E':d>0?'+'+d:''+d;
-  const fmtDate=s=>{const d=new Date(s);return(d.getMonth()+1)+'/'+(d.getDate());};
 
-  // ── 1. Score vs par trend (all rounds chronological) ──
-  const diffs=data.map(r=>r.score_vs_par||0);
-  const maxAbs=Math.max(...diffs.map(d=>Math.abs(d)),1);
-  const trendBars=data.map((r,i)=>{
-    const d=diffs[i];
-    const h=Math.min(60,Math.max(3,Math.round((Math.abs(d)/maxAbs)*60)));
-    const cls=d<0?'negative':d>0?'positive':'zero';
-    const lbl=fmtDate(r.played_at);
-    const strokes=r.total_strokes||'';
-    return `<div class="compare-bar-col"><div class="compare-bar ${cls}" style="height:${h}px;"></div><div class="compare-val">${fmtD(d)}</div><div class="compare-val" style="color:var(--tan);">${strokes}</div><div class="compare-label">${lbl}</div></div>`;
-  }).join('');
-
-  // ── 2. Handicap over time ──
-  // For each round index, calc handicap using rounds up to that point (min 3)
-  const hcpPoints=[];
-  for(let i=2;i<data.length;i++){
-    const subset=data.slice(0,i+1).reverse(); // newest first for calcHandicap
-    const h=calcHandicap(subset);
-    if(h!==null)hcpPoints.push({date:data[i].played_at,h});
-  }
-  let hcpHTML='<div style="font-size:.78rem;color:var(--tan);font-style:italic;">Need 3+ rounds to show handicap trend.</div>';
-  if(hcpPoints.length>=2){
-    const hVals=hcpPoints.map(p=>p.h);
-    const hMin=Math.min(...hVals);
-    const hMax=Math.max(...hVals);
-    const hRange=Math.max(hMax-hMin,1);
-    const hBars=hcpPoints.map(p=>{
-      const pct=Math.round(((p.h-hMin)/hRange)*55);
-      const barH=Math.min(60,Math.max(3,pct+5));
-      const lbl=fmtDate(p.date);
-      // Lower handicap = better = blue
-      const normPos=(p.h-hMin)/hRange; // 0=best, 1=worst
-      const clr='var(--gold)';
-      return `<div class="compare-bar-col"><div class="compare-bar" style="height:${barH}px;background:${clr};"></div><div class="compare-val" style="font-size:.55rem;">${fmtHandicap(p.h)}</div><div class="compare-label">${lbl}</div></div>`;
-    }).join('');
-    hcpHTML=`<div class="compare-chart">${hBars}</div><div style="font-size:.62rem;color:var(--tan);margin-top:2px;">Taller bar = higher index at that point in time</div>`;
-  }
-
-  // ── 3. Course breakdown ──
+  // ── 3. Course breakdown (built once) ──
   const courseMap={};
   data.forEach(r=>{
     const name=r.course_name||'Unknown Course';
-    if(!courseMap[name])courseMap[name]={rounds:0,totalDiff:0,totalStrokes:0,best:Infinity,roundList:[]};
+    if(!courseMap[name])courseMap[name]={rounds:0,totalDiff:0,totalStrokes:0,best:Infinity,bestStrokes:null,roundList:[]};
     courseMap[name].rounds++;
     courseMap[name].totalDiff+=r.score_vs_par||0;
     courseMap[name].totalStrokes+=r.total_strokes||0;
-    if((r.score_vs_par||0)<courseMap[name].best)courseMap[name].best=r.score_vs_par||0;
+    if((r.score_vs_par||0)<courseMap[name].best){courseMap[name].best=r.score_vs_par||0;courseMap[name].bestStrokes=r.total_strokes||null;}
     courseMap[name].roundList.push(r);
   });
-
-  // Store for use in showCourseDetail
   window._courseMap=courseMap;
 
   const courseRows=Object.entries(courseMap)
@@ -2079,7 +2041,7 @@ async function loadCompare(){
       const avg=Math.round(c.totalDiff/c.rounds*10)/10;
       const avgStr=avg===0?'E':avg>0?'+'+avg.toFixed(1):avg.toFixed(1);
       const cls=avg<0?'under':avg>0?'over':'even';
-      const bestStr=c.best===Infinity?'-':fmtD(c.best);
+      const bestStr=c.best===Infinity?'-':`${c.bestStrokes||''}${c.bestStrokes?' (':''}${fmtD(c.best)}${c.bestStrokes?')':''}`;
       const avgStrokes=Math.round(c.totalStrokes/c.rounds);
       const clickable=c.rounds>=2;
       const safeId='course-'+name.replace(/[^a-z0-9]/gi,'_');
@@ -2095,21 +2057,91 @@ async function loadCompare(){
       </div>`;
     }).join('');
 
+  const toggleBtns=(active)=>[5,10,20].map(n=>`<button onclick="renderCompareCharts(${n})" id="ctoggle-${n}" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(201,168,76,.4);background:${active===n?'var(--gold)':'transparent'};color:${active===n?'var(--dark)':'var(--gold)'};font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;">Last ${n}</button>`).join('');
+
   el.innerHTML=`
-    <div class="compare-section">
-      <div class="compare-section-title">Score vs Par — All Rounds</div>
-      <div class="compare-chart">${trendBars}</div>
-      <div style="font-size:.62rem;color:var(--tan);margin-top:2px;">Blue = under par &middot; Red = over par</div>
+    <div class="compare-section" id="compare-trend-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="compare-section-title" style="margin-bottom:0;">Score vs Par</div>
+        <div style="display:flex;gap:6px;" id="trend-toggles">${toggleBtns(10)}</div>
+      </div>
+      <div id="compare-trend-chart"></div>
+      <div style="font-size:.62rem;color:var(--tan);margin-top:2px;">Green = under par &middot; Red = over par</div>
     </div>
-    <div class="compare-section">
-      <div class="compare-section-title">Handicap Trend</div>
-      ${hcpHTML}
+    <div class="compare-section" id="compare-hcp-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="compare-section-title" style="margin-bottom:0;">Handicap Trend</div>
+        <div style="display:flex;gap:6px;" id="hcp-toggles">${toggleBtns(10)}</div>
+      </div>
+      <div id="compare-hcp-chart"></div>
+      <div style="font-size:.62rem;color:var(--tan);margin-top:4px;">Taller bar = higher index at that point in time</div>
     </div>
     <div class="compare-section">
       <div class="compare-section-title">Course by Course Breakdown</div>
       ${courseRows}
     </div>
   `;
+
+  renderCompareCharts(10);
+}
+
+function renderCompareCharts(n){
+  const data=window._compareData;
+  if(!data)return;
+
+  const fmtD=d=>d===0?'E':d>0?'+'+d:''+d;
+  const fmtDate=s=>{const d=new Date(s);return(d.getMonth()+1)+'/'+(d.getDate());};
+
+  // Update toggle button styles
+  [5,10,20].forEach(x=>{
+    const btn=document.getElementById('ctoggle-'+x);
+    if(btn){
+      btn.style.background=x===n?'var(--gold)':'transparent';
+      btn.style.color=x===n?'var(--dark)':'var(--gold)';
+    }
+  });
+
+  // Slice to last n rounds (data is ascending, so take from end)
+  const slice=data.slice(-n);
+
+  // ── Score vs par trend ──
+  const diffs=slice.map(r=>r.score_vs_par||0);
+  const maxAbs=Math.max(...diffs.map(d=>Math.abs(d)),1);
+  const trendBars=slice.map((r,i)=>{
+    const d=diffs[i];
+    const h=Math.min(60,Math.max(3,Math.round((Math.abs(d)/maxAbs)*60)));
+    const color=d<0?'#4caf82':d>0?'#c0392b':'var(--tan)';
+    const strokes=r.total_strokes||'';
+    return `<div class="compare-bar-col"><div class="compare-bar" style="height:${h}px;background:${color};"></div><div class="compare-val">${fmtD(d)}</div><div class="compare-val" style="color:var(--tan);">${strokes}</div><div class="compare-label">${fmtDate(r.played_at)}</div></div>`;
+  }).join('');
+  const trendEl=document.getElementById('compare-trend-chart');
+  if(trendEl)trendEl.innerHTML=`<div class="compare-chart">${trendBars}</div>`;
+
+  // ── Handicap trend ──
+  // Build all hcp points from full dataset, then slice last n
+  const allHcpPoints=[];
+  for(let i=2;i<data.length;i++){
+    const subset=data.slice(0,i+1).reverse();
+    const h=calcHandicap(subset);
+    if(h!==null)allHcpPoints.push({date:data[i].played_at,h});
+  }
+  const hcpEl=document.getElementById('compare-hcp-chart');
+  if(!hcpEl)return;
+  if(allHcpPoints.length<2){
+    hcpEl.innerHTML='<div style="font-size:.78rem;color:var(--tan);font-style:italic;">Need 3+ rounds to show handicap trend.</div>';
+    return;
+  }
+  const hcpSlice=allHcpPoints.slice(-n);
+  const hVals=hcpSlice.map(p=>p.h);
+  const hMin=Math.min(...hVals);
+  const hMax=Math.max(...hVals);
+  const hRange=Math.max(hMax-hMin,1);
+  const hBars=hcpSlice.map(p=>{
+    const pct=Math.round(((p.h-hMin)/hRange)*55);
+    const barH=Math.min(60,Math.max(3,pct+5));
+    return `<div class="compare-bar-col"><div class="compare-bar" style="height:${barH}px;background:var(--gold);"></div><div class="compare-val" style="font-size:.55rem;">${fmtHandicap(p.h)}</div><div class="compare-label">${fmtDate(p.date)}</div></div>`;
+  }).join('');
+  hcpEl.innerHTML=`<div class="compare-chart">${hBars}</div>`;
 }
 
 function toggleCourseDetail(safeId, name){
