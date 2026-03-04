@@ -1599,7 +1599,13 @@ function shareStats(){
   ctx.fillText('VOICESCORE',PAD,44);
   ctx.font='600 10px "DM Sans",sans-serif'; ctx.letterSpacing='1px';
   ctx.fillStyle=GOLD; ctx.textAlign='right';
-  ctx.fillText('MY STATS',W-PAD,44);
+  ctx.fillText('MY STATS',W-PAD,38);
+  const username=currentUser?currentUser.email.split('@')[0]:'';
+  if(username){
+    ctx.font='400 9px "DM Sans",sans-serif'; ctx.letterSpacing='0px';
+    ctx.fillStyle=TAN; ctx.textAlign='right';
+    ctx.fillText(username,W-PAD,52);
+  }
   ctx.letterSpacing='0px';
 
   let y=76;
@@ -1728,7 +1734,7 @@ function shareStats(){
   // Footer
   ctx.strokeStyle='rgba(201,168,76,0.1)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(PAD,y+8); ctx.lineTo(W-PAD,y+8); ctx.stroke();
-  ctx.font='400 9px "DM Sans",sans-serif'; ctx.fillStyle=MUTED; ctx.textAlign='center';
+  ctx.font='500 10px "DM Sans",sans-serif'; ctx.fillStyle=CREAM; ctx.textAlign='center';
   ctx.fillText('voicescore.app',W/2,y+24);
 
   canvas.toBlob(blob=>{
