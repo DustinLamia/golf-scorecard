@@ -1512,24 +1512,47 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
   ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(0,TOP_H);ctx.lineTo(canvasW,TOP_H);ctx.stroke();
 
-  ctx.font='bold 36px "Bebas Neue", serif';
-  ctx.letterSpacing='4px';
-  ctx.fillStyle=CREAM;
-  ctx.fillText('VOICESCORE',CARD_PAD,TOP_H-20);
-
+  // Right side: course info stacked top-down with wrapping
   const rightX=canvasW-CARD_PAD;
+  const leftBoundary=CARD_PAD+200; // keep clear of VOICESCORE text
+  const maxRightW=canvasW-CARD_PAD*2-180; // max width for right-side text
+
   ctx.textAlign='right';
+
+  // Course name — truncate if too wide
   ctx.font='bold 18px "Bebas Neue", serif';
   ctx.fillStyle=GOLD;
-  ctx.fillText(courseName,rightX,TOP_H-64);
+  let displayName=courseName;
+  while(ctx.measureText(displayName).width>maxRightW&&displayName.length>4){
+    displayName=displayName.slice(0,-1);
+  }
+  if(displayName!==courseName)displayName=displayName.trim()+'...';
+  ctx.fillText(displayName,rightX,CARD_PAD+18);
+
+  // Meta string — wrap if needed
   ctx.font='500 10px "DM Sans", sans-serif';
   ctx.fillStyle=TAN;
   const metaStr=(location?location:'')+(teeLabel?teeLabel:'')+(totalPar?' · Par '+totalPar:'')+(totalYds?' · '+totalYds+' yds':'');
-  ctx.fillText(metaStr,rightX,TOP_H-46);
+  if(ctx.measureText(metaStr).width<=maxRightW){
+    ctx.fillText(metaStr,rightX,CARD_PAD+36);
+  } else {
+    // Split at the teeLabel boundary
+    const part1=(location||'')+(teeLabel||'');
+    const part2=(totalPar?' · Par '+totalPar:'')+(totalYds?' · '+totalYds+' yds':'');
+    ctx.fillText(part1.replace(/^ · /,''),rightX,CARD_PAD+34);
+    ctx.fillText(part2.replace(/^ · /,''),rightX,CARD_PAD+47);
+  }
+
   ctx.font='400 10px "DM Sans", sans-serif';
   ctx.fillStyle=MUTED;
-  ctx.fillText(today,rightX,TOP_H-28);
+  ctx.fillText(today,rightX,CARD_PAD+62);
   ctx.textAlign='left';
+
+  // VOICESCORE — always bottom-left of header
+  ctx.font='bold 36px "Bebas Neue", serif';
+  ctx.letterSpacing='4px';
+  ctx.fillStyle=CREAM;
+  ctx.fillText('VOICESCORE',CARD_PAD,TOP_H-16);
 
   // ── Table ──
   let y=TOP_H;
