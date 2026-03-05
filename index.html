@@ -1584,7 +1584,7 @@ function parseScrambleVoice(corrected){
   return true;
 }
 
-
+function applyScoresDirectly(hole,scoreMap){
   const hi=hole-1,par=pars[hi];
   Object.entries(scoreMap).forEach(([name,score])=>{
     const pi=players.indexOf(name);if(pi<0)return;
