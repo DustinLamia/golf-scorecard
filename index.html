@@ -311,6 +311,38 @@
   .btn-skins-close{background:rgba(245,240,232,.12);color:var(--cream);}
   .btn-skins-save{background:var(--gold);color:var(--dark);}
 
+  /* ── Match Play Live Bar ── */
+  #mp-live-bar{display:none;margin:0 0 10px;border-radius:10px;background:rgba(0,0,0,.3);border:1px solid rgba(41,128,185,.35);padding:10px 14px;}
+  .mp-bar-title{font-size:.65rem;color:#7ec8f5;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+  .mp-bar-status{font-family:'Bebas Neue',cursive;font-size:1.5rem;letter-spacing:2px;text-align:center;margin-bottom:2px;}
+  .mp-bar-status.up{color:#f5d87a;}
+  .mp-bar-status.as{color:#7ec8f5;}
+  .mp-bar-status.dn{color:#f0a090;}
+  .mp-bar-detail{font-size:.72rem;color:var(--tan);text-align:center;}
+
+  /* ── Match Play Results Overlay ── */
+  #mp-results-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;align-items:center;justify-content:center;padding:20px;}
+  #mp-results-overlay.open{display:flex;}
+  .mp-results-modal{background:#1a2e17;border:1px solid rgba(41,128,185,.4);border-radius:18px;padding:28px 24px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;}
+  .mp-results-title{font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:#7ec8f5;margin-bottom:4px;}
+  .mp-results-sub{font-size:.78rem;color:var(--tan);margin-bottom:18px;}
+  .mp-result-banner{background:rgba(41,128,185,.15);border:1px solid rgba(41,128,185,.4);border-radius:12px;padding:18px 20px;text-align:center;margin-bottom:16px;}
+  .mp-result-winner{font-family:'Bebas Neue',cursive;font-size:2rem;letter-spacing:2px;color:#f5d87a;margin-bottom:4px;}
+  .mp-result-score{font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:2px;color:#7ec8f5;}
+  .mp-result-as{font-family:'Bebas Neue',cursive;font-size:1.8rem;letter-spacing:3px;color:#7ec8f5;}
+  .mp-hole-breakdown{margin-top:14px;}
+  .mp-hole-breakdown-title{font-size:.65rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;}
+  .mp-hole-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+  .mp-hole-num{width:28px;font-size:.72rem;color:var(--tan);text-align:center;}
+  .mp-hole-winner{flex:1;font-size:.82rem;}
+  .mp-hole-status{font-family:'Bebas Neue',cursive;font-size:.9rem;letter-spacing:1px;min-width:56px;text-align:right;}
+  .mp-hole-status.up{color:#f5d87a;}
+  .mp-hole-status.as{color:#7ec8f5;}
+  .mp-results-btns{display:flex;gap:10px;margin-top:20px;}
+  .mp-results-btns button{flex:1;padding:12px;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:600;cursor:pointer;}
+  .btn-mp-close{background:rgba(245,240,232,.12);color:var(--cream);}
+  .btn-mp-save{background:#2980b9;color:#fff;}
+
   /* ── Bottom Nav ── */
   #bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#1a2e17;border-top:1px solid rgba(201,168,76,.2);z-index:1000;padding:8px 0 max(8px,env(safe-area-inset-bottom));}.bottom-nav-inner{display:flex;justify-content:space-around;align-items:center;max-width:600px;margin:0 auto;}
   .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;background:none;border:none;cursor:pointer;color:var(--tan);font-family:'DM Sans',sans-serif;font-size:.6rem;letter-spacing:.5px;text-transform:uppercase;transition:color .15s;}
@@ -491,6 +523,14 @@
       <span class="skins-bar-pot" id="skins-bar-pot"></span>
     </div>
     <div class="skins-bar-rows" id="skins-bar-rows"></div>
+  </div>
+  <div id="mp-live-bar">
+    <div class="mp-bar-title">
+      <span>&#9654; Match Play</span>
+      <span id="mp-bar-holes"></span>
+    </div>
+    <div class="mp-bar-status as" id="mp-bar-status">ALL SQUARE</div>
+    <div class="mp-bar-detail" id="mp-bar-detail"></div>
   </div>
   <div class="scorecard-wrapper">
     <table>
@@ -831,6 +871,7 @@ function startRound(){
   saveSession();
   // Reset skins live bar
   const slb=document.getElementById('skins-live-bar');if(slb)slb.style.display='none';
+  const mlb=document.getElementById('mp-live-bar');if(mlb)mlb.style.display='none';
   document.getElementById('setup-screen').style.display='none';
   document.getElementById('scorecard-screen').style.display='block';
   if(selectedCourse){
@@ -1380,6 +1421,7 @@ function applyScoresDirectly(hole,scoreMap){
   setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},5000);
   showAndSpeak('✓ '+readback,6000);
   updateSkinsLiveBar();
+  updateMatchPlayLiveBar();
 }
 
 function exportScores(){
@@ -1394,7 +1436,15 @@ function exportScores(){
     Object.entries(summary).forEach(([name,data])=>{if(data.skins>topCount){topCount=data.skins;topName=name;}});
     if(topName&&topCount>0)skinsWinner={name:topName,skins:topCount};
   }
-  drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff:holeOffset,skinsWinner});
+  let matchPlayResult=null;
+  if(versusMode==='matchplay1v1'){
+    const mp=computeMatchPlay1v1();
+    matchPlayResult={winner:mp.p1Up>0?mp.p1Name:mp.p1Up<0?mp.p2Name:null,result:mp.closedReason||(mp.p1Up===0?'ALL SQUARE':Math.abs(mp.p1Up)+'UP')};
+  } else if(versusMode==='matchplay2v2'){
+    const mp=computeMatchPlay2v2();
+    matchPlayResult={winner:mp.teamAUp>0?mp.teamA[0]+'/'+mp.teamA[1]:mp.teamAUp<0?mp.teamB[0]+'/'+mp.teamB[1]:null,result:mp.closedReason||(mp.teamAUp===0?'ALL SQUARE':Math.abs(mp.teamAUp)+'UP')};
+  }
+  drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff:holeOffset,skinsWinner,matchPlayResult});
 }
 
 function exportRoundFromHistory(roundId){
@@ -1426,11 +1476,12 @@ function exportRoundFromHistory(roundId){
       scores:allScores,
       holeOff:round.hole_offset||0,
       skinsWinner:round.skins_winner&&round.skins_count?{name:round.skins_winner,skins:round.skins_count}:null,
+      matchPlayResult:round.match_play&&round.match_result?{winner:round.match_winner||null,result:round.match_result}:null,
     });
   }catch(e){console.error('Export error',e);}
 }
 
-function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff,skinsWinner}){
+function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff,skinsWinner,matchPlayResult}){
   const split18=holes===18;
   const totalPar=pars.reduce((a,b)=>a+b,0);
   const totalYds=yardages.reduce((a,b)=>a+b,0);
@@ -1471,7 +1522,8 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
   const hasYds=yardages.some(y=>y>0);
   const ydsRowH=hasYds?YDS_ROW_H:0;
   const skinsBannerH=skinsWinner?34:0;
-  const totalH=TOP_H+HEADER_H+PAR_ROW_H+ydsRowH+(players.length*ROW_H)+skinsBannerH+LEGEND_H+CARD_PAD*2+20;
+  const mpBannerH=matchPlayResult?34:0;
+  const totalH=TOP_H+HEADER_H+PAR_ROW_H+ydsRowH+(players.length*ROW_H)+skinsBannerH+mpBannerH+LEGEND_H+CARD_PAD*2+20;
 
   // Helper: x position of hole h (0-based), accounting for OUT split column
   function holeX(h){
@@ -1744,6 +1796,26 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
     y+=BANNER_H;
   }
 
+  // ── Match Play Result Banner ──
+  if(matchPlayResult){
+    const BANNER_H=34;
+    ctx.fillStyle='rgba(41,128,185,0.12)';
+    ctx.fillRect(0,y,canvasW,BANNER_H);
+    ctx.strokeStyle='rgba(41,128,185,0.3)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvasW,y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,y+BANNER_H);ctx.lineTo(canvasW,y+BANNER_H);ctx.stroke();
+    ctx.font='bold 15px "Bebas Neue", serif';
+    ctx.fillStyle='#7ec8f5';
+    ctx.textAlign='center';
+    const mpText=matchPlayResult.winner
+      ?'MATCH PLAY: '+matchPlayResult.winner.toUpperCase()+' \u00B7 '+matchPlayResult.result
+      :'MATCH PLAY: '+matchPlayResult.result;
+    ctx.fillText(mpText,canvasW/2,y+BANNER_H/2+6);
+    ctx.textAlign='left';
+    y+=BANNER_H;
+  }
+
   // ── Legend ──
   ctx.strokeStyle='rgba(245,240,232,0.07)';
   ctx.lineWidth=1;
@@ -1843,6 +1915,7 @@ function confirmReset(){
     const nf=document.getElementById('nine-front');if(nf)nf.classList.add('active');
     const nb=document.getElementById('nine-back');if(nb)nb.classList.remove('active');
     const slb=document.getElementById('skins-live-bar');if(slb)slb.style.display='none';
+    const mlb=document.getElementById('mp-live-bar');if(mlb)mlb.style.display='none';
     document.getElementById('scorecard-screen').style.display='none';
     document.getElementById('setup-screen').style.display='block';
     document.getElementById('course-results').innerHTML='';
@@ -2835,12 +2908,32 @@ async function finishRound(){
     showSkinsResults();
     return;
   }
+  // Show match play results before saving
+  if(versusMode==='matchplay1v1'||versusMode==='matchplay2v2'){
+    showMatchPlayResults();
+    return;
+  }
   // Build round data
   // Compute skins winner if this was a skins round
   let skinsWinnerName=null,skinsWinnerCount=0;
   if(versusMode==='skins'){
     const summary=skinsPerPlayer(computeSkins());
     Object.entries(summary).forEach(([name,data])=>{if(data.skins>skinsWinnerCount){skinsWinnerCount=data.skins;skinsWinnerName=name;}});
+  }
+  // Compute match play result
+  let matchWinner=null,matchResult=null,isMatchPlay=false;
+  if(versusMode==='matchplay1v1'){
+    isMatchPlay=true;
+    const mp=computeMatchPlay1v1();
+    if(mp.p1Up>0){matchWinner=mp.p1Name;matchResult=mp.closedReason||mp.p1Up+'UP';}
+    else if(mp.p1Up<0){matchWinner=mp.p2Name;matchResult=mp.closedReason||Math.abs(mp.p1Up)+'UP';}
+    else{matchWinner=null;matchResult='ALL SQUARE';}
+  } else if(versusMode==='matchplay2v2'){
+    isMatchPlay=true;
+    const mp=computeMatchPlay2v2();
+    if(mp.teamAUp>0){matchWinner=mp.teamA[0]+'/'+mp.teamA[1];matchResult=mp.closedReason||mp.teamAUp+'UP';}
+    else if(mp.teamAUp<0){matchWinner=mp.teamB[0]+'/'+mp.teamB[1];matchResult=mp.closedReason||Math.abs(mp.teamAUp)+'UP';}
+    else{matchWinner=null;matchResult='ALL SQUARE';}
   }
 
   const roundData={
@@ -2857,6 +2950,9 @@ async function finishRound(){
     score_vs_par:scores[0].filter(s=>s!==null).reduce((a,b)=>a+b,0) - scores[0].map((s,hi)=>s!==null?pars[hi]:0).reduce((a,b)=>a+b,0),
     skins_winner:skinsWinnerName,
     skins_count:skinsWinnerCount||null,
+    match_play:isMatchPlay||null,
+    match_winner:matchWinner||null,
+    match_result:matchResult||null,
   };
   const btn=document.querySelector('.btn-finish');
   if(btn){btn.textContent='Saving...';btn.disabled=true;}
@@ -3029,6 +3125,10 @@ async function loadHistory(){
     const skinsLine=round.skins_winner
       ?`<div class="skins-result-line">&#127942; ${round.skins_winner} &middot; ${round.skins_count} Skin${round.skins_count!==1?'s':''}</div>`
       :'';
+    const mpLine=round.match_play&&round.match_result
+      ?`<div style="font-size:.78rem;color:#7ec8f5;margin-top:3px;">&#9654; ${round.match_winner?round.match_winner+' &middot; ':''} ${round.match_result}</div>`
+      :'';
+    const mpPill=round.match_play?`<span style="display:inline-block;margin-left:5px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;background:rgba(41,128,185,.12);color:#7ec8f5;border:1px solid rgba(41,128,185,.3);">MATCH PLAY</span>`:'';
     card.innerHTML=`
       <div style="display:flex;align-items:flex-start;gap:4px;">
         <div style="flex:1;min-width:0;" ${isLive?`onclick="toggleRoundScorecard('${roundId}')"`:''}">
@@ -3036,8 +3136,9 @@ async function loadHistory(){
             <div class="round-card-course">${round.course_name}${isLive?` <span style="font-size:.65rem;color:var(--gold);" id="${roundId}-chevron">&#9660;</span>`:''}</div>
             <div class="round-card-score ${scoreClass}">${round.total_strokes||''}<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0;">${diffStr}</div></div>
           </div>
-          <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${playerNames}${round.tee_name?' &middot; '+round.tee_name:''} <span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;${isLive?'background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35);':'background:rgba(245,240,232,.07);color:var(--tan);border:1px solid rgba(245,240,232,.15);'}">${isLive?'LIVE':'MANUAL'}</span>${round.skins_winner?`<span style="display:inline-block;margin-left:5px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.3);">SKINS</span>`:''}</div>
+          <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${playerNames}${round.tee_name?' &middot; '+round.tee_name:''} <span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;${isLive?'background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35);':'background:rgba(245,240,232,.07);color:var(--tan);border:1px solid rgba(245,240,232,.15);'}">${isLive?'LIVE':'MANUAL'}</span>${round.skins_winner?`<span style="display:inline-block;margin-left:5px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.3);">SKINS</span>`:''}${mpPill}</div>
           ${skinsLine}
+          ${mpLine}
           ${isLive?`<div id="${roundId}" style="display:none;margin-top:12px;"></div>`:''}
         </div>
         <div class="rc-menu-wrap">
@@ -3173,7 +3274,7 @@ async function saveEditRound(){
 }
 
 // ── Versus / Skins Mode ──
-// versusMode: null | 'skins'
+// versusMode: null | 'skins' | 'matchplay1v1' | 'matchplay2v2'
 let versusMode = null;
 
 // Stub isPro check - Phase 4 will wire real Stripe gate
@@ -3365,6 +3466,284 @@ function closeSkinResults() {
 
 async function saveRoundFromSkins() {
   closeSkinResults();
+  await finishRound();
+}
+
+// ══════════════════════════════════════════
+// ── Match Play Engine ──
+// ══════════════════════════════════════════
+
+// Returns hole-by-hole match state for 1v1 scratch
+// holeResults: array of {hole(1-based), p1Score, p2Score, p1Name, p2Name,
+//   result: 'p1'|'p2'|'halved'|null, status: {leader,up,holesPlayed,holesLeft,closed,closedReason}}
+function computeMatchPlay1v1() {
+  const p1 = players[0], p2 = players[1];
+  const holeResults = [];
+  let p1Up = 0; // positive = p1 leads, negative = p2 leads
+  let closed = false, closedAt = null, closedReason = '';
+
+  for (let hi = 0; hi < holes; hi++) {
+    const s1 = scores[0][hi], s2 = scores[1][hi];
+    const holesLeft = holes - (hi + 1);
+
+    // Check for dormie / closed before this hole is scored
+    if (!closed && Math.abs(p1Up) > holesLeft) {
+      closed = true;
+      closedAt = hi; // closed before this hole
+      const leadsBy = Math.abs(p1Up);
+      const remaining = holesLeft + 1; // holes left including current
+      closedReason = leadsBy + '&' + remaining;
+    }
+
+    if (s1 === null || s2 === null) {
+      holeResults.push({ hole: hi+1, p1Score: s1, p2Score: s2, p1Name: p1, p2Name: p2,
+        result: null, p1Up, closed, holesLeft });
+      continue;
+    }
+
+    let result;
+    if (s1 < s2) { result = 'p1'; p1Up++; }
+    else if (s2 < s1) { result = 'p2'; p1Up--; }
+    else { result = 'halved'; }
+
+    holeResults.push({ hole: hi+1, p1Score: s1, p2Score: s2, p1Name: p1, p2Name: p2,
+      result, p1Up, closed, holesLeft });
+  }
+
+  // Final state
+  const holesPlayed = holeResults.filter(r => r.result !== null).length;
+  const holesLeft = holes - holesPlayed;
+  if (!closed && holesLeft === 0) {
+    // Round over - check if closed on last hole
+    if (Math.abs(p1Up) > 0) {
+      closed = true;
+      closedReason = '1UP';
+    }
+  }
+  // Check for early finish (closed mid-round)
+  if (!closed && holesPlayed > 0) {
+    const last = holeResults.filter(r => r.result !== null).slice(-1)[0];
+    if (last && Math.abs(last.p1Up) > holesLeft) {
+      closed = true;
+      const leadsBy = Math.abs(last.p1Up);
+      const rem = holesLeft;
+      closedReason = leadsBy + '&' + rem;
+    }
+  }
+
+  return { holeResults, p1Up, holesPlayed, holesLeft, closed, closedReason, p1Name: p1, p2Name: p2 };
+}
+
+// Best ball 2v2 — team A = players[0,1], team B = players[2,3]
+function computeMatchPlay2v2() {
+  const teamA = [players[0], players[1]];
+  const teamB = [players[2], players[3]];
+  const holeResults = [];
+  let teamAUp = 0;
+  let closed = false, closedReason = '';
+
+  for (let hi = 0; hi < holes; hi++) {
+    const sA0 = scores[0][hi], sA1 = scores[1][hi];
+    const sB0 = scores[2][hi], sB1 = scores[3][hi];
+
+    const bestA = [sA0, sA1].filter(s => s !== null);
+    const bestB = [sB0, sB1].filter(s => s !== null);
+    const holesLeft = holes - (hi + 1);
+
+    if (!bestA.length || !bestB.length) {
+      holeResults.push({ hole: hi+1, bestA: null, bestB: null, result: null, teamAUp, holesLeft });
+      continue;
+    }
+
+    const scoreA = Math.min(...bestA);
+    const scoreB = Math.min(...bestB);
+    let result;
+    if (scoreA < scoreB) { result = 'A'; teamAUp++; }
+    else if (scoreB < scoreA) { result = 'B'; teamAUp--; }
+    else { result = 'halved'; }
+
+    holeResults.push({ hole: hi+1, bestA: scoreA, bestB: scoreB, result, teamAUp, holesLeft });
+  }
+
+  const holesPlayed = holeResults.filter(r => r.result !== null).length;
+  const holesLeft = holes - holesPlayed;
+
+  if (!closed && holesPlayed > 0) {
+    const last = holeResults.filter(r => r.result !== null).slice(-1)[0];
+    if (last && Math.abs(last.teamAUp) > holesLeft) {
+      closed = true;
+      closedReason = Math.abs(last.teamAUp) + '&' + holesLeft;
+    } else if (holesLeft === 0 && Math.abs(teamAUp) > 0) {
+      closed = true;
+      closedReason = '1UP';
+    }
+  }
+
+  return { holeResults, teamAUp, holesPlayed, holesLeft, closed, closedReason, teamA, teamB };
+}
+
+// Format match status string: "2 UP", "ALL SQUARE", "1 DOWN", "DORMI", "3&2"
+function matchStatusLabel(up, holesLeft, closed, closedReason) {
+  if (closed) return closedReason || '1UP';
+  if (up === 0) return 'ALL SQUARE';
+  const absUp = Math.abs(up);
+  if (holesLeft > 0 && absUp === holesLeft) return absUp + ' UP (DORMI)';
+  return absUp + ' UP';
+}
+
+function updateMatchPlayLiveBar() {
+  if (versusMode !== 'matchplay1v1' && versusMode !== 'matchplay2v2') return;
+  const bar = document.getElementById('mp-live-bar');
+  if (!bar) return;
+  bar.style.display = 'block';
+
+  const statusEl = document.getElementById('mp-bar-status');
+  const detailEl = document.getElementById('mp-bar-detail');
+  const holesEl = document.getElementById('mp-bar-holes');
+
+  if (versusMode === 'matchplay1v1') {
+    const { p1Up, holesPlayed, holesLeft, closed, closedReason, p1Name, p2Name } = computeMatchPlay1v1();
+    const leaderName = p1Up > 0 ? p1Name : p1Up < 0 ? p2Name : null;
+    const up = Math.abs(p1Up);
+    const label = matchStatusLabel(p1Up, holesLeft, closed, closedReason);
+
+    statusEl.textContent = label;
+    statusEl.className = 'mp-bar-status ' + (p1Up === 0 ? 'as' : 'up');
+
+    if (holesPlayed === 0) {
+      detailEl.textContent = 'No holes played yet';
+    } else if (closed) {
+      const winner = p1Up > 0 ? p1Name : p2Name;
+      detailEl.textContent = winner + ' wins · ' + closedReason;
+    } else {
+      detailEl.textContent = (leaderName ? leaderName + ' leads' : 'All Square') + ' · Thru ' + holesPlayed;
+    }
+    holesEl.textContent = holesLeft > 0 ? holesLeft + ' left' : 'Final';
+
+  } else {
+    const { teamAUp, holesPlayed, holesLeft, closed, closedReason, teamA, teamB } = computeMatchPlay2v2();
+    const label = matchStatusLabel(teamAUp, holesLeft, closed, closedReason);
+
+    statusEl.textContent = label;
+    statusEl.className = 'mp-bar-status ' + (teamAUp === 0 ? 'as' : 'up');
+
+    if (holesPlayed === 0) {
+      detailEl.textContent = teamA[0] + '/' + teamA[1] + ' vs ' + teamB[0] + '/' + teamB[1];
+    } else if (closed) {
+      const winTeam = teamAUp > 0 ? teamA[0]+'/'+teamA[1] : teamB[0]+'/'+teamB[1];
+      detailEl.textContent = winTeam + ' wins · ' + closedReason;
+    } else {
+      const leadTeam = teamAUp > 0 ? teamA[0]+'/'+teamA[1] : teamAUp < 0 ? teamB[0]+'/'+teamB[1] : null;
+      detailEl.textContent = (leadTeam ? leadTeam + ' leads' : 'All Square') + ' · Thru ' + holesPlayed;
+    }
+    holesEl.textContent = holesLeft > 0 ? holesLeft + ' left' : 'Final';
+  }
+}
+
+function showMatchPlayResults() {
+  const sub = document.getElementById('mp-results-sub');
+  const content = document.getElementById('mp-results-content');
+  let html = '';
+
+  if (versusMode === 'matchplay1v1') {
+    const { holeResults, p1Up, holesPlayed, holesLeft, closed, closedReason, p1Name, p2Name } = computeMatchPlay1v1();
+    sub.textContent = holes + ' holes · 1v1 Scratch · Thru ' + holesPlayed;
+
+    // Result banner
+    if (holesPlayed === 0) {
+      html += '<div class="mp-result-banner"><div class="mp-result-as">NO HOLES PLAYED</div></div>';
+    } else if (p1Up === 0 && holesLeft === 0) {
+      html += '<div class="mp-result-banner"><div class="mp-result-as">ALL SQUARE</div><div style="font-size:.8rem;color:var(--tan);margin-top:6px;">Match tied after ' + holes + ' holes</div></div>';
+    } else {
+      const winner = p1Up > 0 ? p1Name : p2Name;
+      const result = closed ? closedReason : (Math.abs(p1Up) + 'UP');
+      html += '<div class="mp-result-banner">' +
+        '<div style="font-size:.7rem;color:#7ec8f5;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">Winner</div>' +
+        '<div class="mp-result-winner">' + winner + '</div>' +
+        '<div class="mp-result-score">' + result + '</div>' +
+      '</div>';
+    }
+
+    // Hole-by-hole
+    html += '<div class="mp-hole-breakdown"><div class="mp-hole-breakdown-title">Hole by Hole</div>';
+    holeResults.forEach(r => {
+      let winText, statusText, statusClass;
+      if (r.result === null) {
+        winText = '<span style="color:var(--tan);font-style:italic;">Not played</span>';
+        statusText = '';
+        statusClass = 'as';
+      } else if (r.result === 'halved') {
+        winText = '<span style="color:var(--tan);">Halved (' + r.p1Score + '–' + r.p2Score + ')</span>';
+        statusText = r.p1Up === 0 ? 'A/S' : (Math.abs(r.p1Up) + (r.p1Up > 0 ? ' UP' : ' DN'));
+        statusClass = r.p1Up === 0 ? 'as' : 'up';
+      } else {
+        const hw = r.result === 'p1' ? r.p1Name : r.p2Name;
+        winText = '<span style="color:var(--cream);">' + hw + ' (' + r.p1Score + '–' + r.p2Score + ')</span>';
+        statusText = r.p1Up === 0 ? 'A/S' : (Math.abs(r.p1Up) + (r.p1Up > 0 ? ' UP' : ' DN'));
+        statusClass = r.p1Up === 0 ? 'as' : 'up';
+      }
+      html += '<div class="mp-hole-row">' +
+        '<div class="mp-hole-num">' + r.hole + '</div>' +
+        '<div class="mp-hole-winner">' + winText + '</div>' +
+        '<div class="mp-hole-status ' + statusClass + '">' + statusText + '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+
+  } else {
+    // 2v2
+    const { holeResults, teamAUp, holesPlayed, holesLeft, closed, closedReason, teamA, teamB } = computeMatchPlay2v2();
+    sub.textContent = holes + ' holes · 2v2 Best Ball · Thru ' + holesPlayed;
+
+    if (holesPlayed === 0) {
+      html += '<div class="mp-result-banner"><div class="mp-result-as">NO HOLES PLAYED</div></div>';
+    } else if (teamAUp === 0 && holesLeft === 0) {
+      html += '<div class="mp-result-banner"><div class="mp-result-as">ALL SQUARE</div></div>';
+    } else {
+      const winTeam = teamAUp > 0 ? teamA : teamB;
+      const result = closed ? closedReason : Math.abs(teamAUp) + 'UP';
+      html += '<div class="mp-result-banner">' +
+        '<div style="font-size:.7rem;color:#7ec8f5;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">Winners</div>' +
+        '<div class="mp-result-winner">' + winTeam[0] + ' &amp; ' + winTeam[1] + '</div>' +
+        '<div class="mp-result-score">' + result + '</div>' +
+      '</div>';
+    }
+
+    html += '<div class="mp-hole-breakdown"><div class="mp-hole-breakdown-title">Hole by Hole</div>';
+    holeResults.forEach(r => {
+      let winText, statusText, statusClass;
+      if (r.result === null) {
+        winText = '<span style="color:var(--tan);font-style:italic;">Not played</span>';
+        statusText = ''; statusClass = 'as';
+      } else if (r.result === 'halved') {
+        winText = '<span style="color:var(--tan);">Halved (' + r.bestA + '–' + r.bestB + ')</span>';
+        statusText = r.teamAUp === 0 ? 'A/S' : Math.abs(r.teamAUp) + (r.teamAUp > 0 ? ' UP' : ' DN');
+        statusClass = r.teamAUp === 0 ? 'as' : 'up';
+      } else {
+        const hw = r.result === 'A' ? teamA[0]+'/'+teamA[1] : teamB[0]+'/'+teamB[1];
+        winText = '<span style="color:var(--cream);">' + hw + ' (' + r.bestA + '–' + r.bestB + ')</span>';
+        statusText = r.teamAUp === 0 ? 'A/S' : Math.abs(r.teamAUp) + (r.teamAUp > 0 ? ' UP' : ' DN');
+        statusClass = r.teamAUp === 0 ? 'as' : 'up';
+      }
+      html += '<div class="mp-hole-row">' +
+        '<div class="mp-hole-num">' + r.hole + '</div>' +
+        '<div class="mp-hole-winner">' + winText + '</div>' +
+        '<div class="mp-hole-status ' + statusClass + '">' + statusText + '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+  }
+
+  content.innerHTML = html;
+  document.getElementById('mp-results-overlay').classList.add('open');
+}
+
+function closeMPResults() {
+  document.getElementById('mp-results-overlay').classList.remove('open');
+}
+
+async function saveRoundFromMP() {
+  closeMPResults();
   await finishRound();
 }
 
@@ -3712,6 +4091,18 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="skins-results-btns">
       <button class="btn-skins-close" onclick="closeSkinResults()">Close</button>
       <button class="btn-skins-save" id="btn-skins-save-round" onclick="saveRoundFromSkins()">Save Round</button>
+    </div>
+  </div>
+</div>
+
+<div id="mp-results-overlay">
+  <div class="mp-results-modal">
+    <div class="mp-results-title">Match Play Results</div>
+    <div class="mp-results-sub" id="mp-results-sub"></div>
+    <div id="mp-results-content"></div>
+    <div class="mp-results-btns">
+      <button class="btn-mp-close" onclick="closeMPResults()">Close</button>
+      <button class="btn-mp-save" onclick="saveRoundFromMP()">Save Round</button>
     </div>
   </div>
 </div>
