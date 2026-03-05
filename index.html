@@ -3105,6 +3105,7 @@ async function loadHistory(){
     const diffStr=diff===0?'E':diff>0?'+'+diff:''+diff;
     const scoreClass=diff<0?'under':diff>0?'over':'even';
     const playerNames=Array.isArray(round.players)?round.players.join(', '):round.players;
+    const playerNamesShort=playerNames;
 
     // Detect if live round: scores array contains actual numbers
     let isLive=false;
@@ -3128,7 +3129,7 @@ async function loadHistory(){
     const mpLine=round.match_play&&round.match_result
       ?`<div style="font-size:.78rem;color:#7ec8f5;font-weight:600;margin-top:5px;">&#127942; ${round.match_winner?round.match_winner+' &middot; ':''} ${round.match_result}</div>`
       :'';
-    const mpPill=round.match_play?`<span style="display:inline-block;margin-left:5px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;background:rgba(41,128,185,.12);color:#7ec8f5;border:1px solid rgba(41,128,185,.3);">MATCH PLAY</span>`:'';
+    const mpPill=round.match_play?`<span style="display:inline-block;margin-left:4px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;letter-spacing:.5px;background:rgba(41,128,185,.12);color:#7ec8f5;border:1px solid rgba(41,128,185,.3);">MATCH</span>`:'';
     card.innerHTML=`
       <div style="display:flex;align-items:flex-start;gap:4px;">
         <div style="flex:1;min-width:0;" ${isLive?`onclick="toggleRoundScorecard('${roundId}')"`:''}">
@@ -3136,7 +3137,7 @@ async function loadHistory(){
             <div class="round-card-course">${round.course_name}${isLive?` <span style="font-size:.65rem;color:var(--gold);" id="${roundId}-chevron">&#9660;</span>`:''}</div>
             <div class="round-card-score ${scoreClass}">${round.total_strokes||''}<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0;">${diffStr}</div></div>
           </div>
-          <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${playerNames}${round.tee_name?' &middot; '+round.tee_name:''} <span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;${isLive?'background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35);':'background:rgba(245,240,232,.07);color:var(--tan);border:1px solid rgba(245,240,232,.15);'}">${isLive?'LIVE':'MANUAL'}</span></div>
+          <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${playerNamesShort}${round.tee_name?' &middot; '+round.tee_name:''} <span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;letter-spacing:.5px;${isLive?'background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35);':'background:rgba(245,240,232,.07);color:var(--tan);border:1px solid rgba(245,240,232,.15);'}">${isLive?'LIVE':'MANUAL'}</span>${round.skins_winner?`<span style="display:inline-block;margin-left:4px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;letter-spacing:.5px;background:rgba(74,140,65,.2);color:#7ec87e;border:1px solid rgba(74,140,65,.4);">SKINS</span>`:''}${mpPill}</div>
           ${(round.skins_winner||round.match_play)?`<div style="margin-top:5px;">${round.skins_winner?`<span style="display:inline-block;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;background:rgba(74,140,65,.2);color:#7ec87e;border:1px solid rgba(74,140,65,.4);">SKINS</span>`:''}${mpPill}</div>`:''}
           ${skinsLine}
           ${mpLine}
