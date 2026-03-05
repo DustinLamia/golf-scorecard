@@ -1917,15 +1917,25 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
   }
 
   // Pre-compute hole winners for highlighting
-  // Skins: find outright low scorer per hole
-  const skinsHoleWinner = {}; // hole index -> player index or null (tie)
+  // Skins: use computeSkins() to respect carryovers — only highlight holes where a skin was actually won
+  const skinsHoleWinner = {}; // hole index -> player index (winner) or null
   if(skinsWinner){
+    // Run the skins engine inline (mirrors computeSkins but uses export scores/pars)
+    let carryover=0;
     for(let h=0;h<holes;h++){
-      const holeScs=scores.map(s=>s[h]).filter(s=>s!==null);
-      if(!holeScs.length)continue;
-      const lo=Math.min(...holeScs);
-      const winners=scores.map((s,pi)=>s[h]===lo?pi:-1).filter(i=>i>=0);
-      skinsHoleWinner[h]=winners.length===1?winners[0]:null; // null = tie (no skin)
+      const holeScs=scores.map((s,pi)=>s[h]!==null?{pi,sc:s[h]}:null).filter(Boolean);
+      if(!holeScs.length){carryover++;continue;}
+      const lo=Math.min(...holeScs.map(x=>x.sc));
+      const winners=holeScs.filter(x=>x.sc===lo);
+      if(winners.length===1){
+        // outright winner — skin paid out (including any carryover)
+        skinsHoleWinner[h]=winners[0].pi;
+        carryover=0;
+      } else {
+        // tie — skin carries over, no highlight
+        skinsHoleWinner[h]=null;
+        carryover++;
+      }
     }
   }
   // Match play: hole result per hole
@@ -2031,13 +2041,18 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
         if(res==='halved'){
           holeBorderColor='rgba(245,240,232,0.35)';
         } else if(res===myTeam){
-          // Only highlight the best (lowest) scorer on the winning team
-          const slots=liveTeamSlots||{a0:0,a1:1,b0:2,b1:3};
-          const aIdxs=[slots.a0,slots.a1].filter(i=>i>=0&&i<players.length);
-          const bIdxs=[slots.b0,slots.b1].filter(i=>i>=0&&i<players.length);
-          const teamIdxs=myTeam==='A'?aIdxs:bIdxs;
-          const teamBest=Math.min(...teamIdxs.map(i=>scores[i]?.[h]??Infinity));
-          if(scores[pi]?.[h]===teamBest) holeBorderColor='#7ec8f5';
+          if(players.length===2){
+            // 1v1: just highlight the winner directly
+            holeBorderColor='#7ec8f5';
+          } else {
+            // 2v2: only highlight the best (lowest) scorer on the winning team
+            const slots=liveTeamSlots||{a0:0,a1:1,b0:2,b1:3};
+            const aIdxs=[slots.a0,slots.a1].filter(i=>i>=0&&i<players.length);
+            const bIdxs=[slots.b0,slots.b1].filter(i=>i>=0&&i<players.length);
+            const teamIdxs=myTeam==='A'?aIdxs:bIdxs;
+            const teamBest=Math.min(...teamIdxs.map(i=>scores[i]?.[h]??Infinity));
+            if(scores[pi]?.[h]===teamBest) holeBorderColor='#7ec8f5';
+          }
         }
       }
       if(isScramble){
@@ -2158,7 +2173,7 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
     ctx.fillStyle='#7ec8f5';
     ctx.textAlign='center';
     const mpText=matchPlayResult.winner
-      ?'MATCH PLAY: '+matchPlayResult.winner.toUpperCase()+' \u00B7 '+matchPlayResult.result
+      ?'MATCH PLAY WINNER: '+matchPlayResult.winner.toUpperCase()+' \u00B7 '+matchPlayResult.result
       :'MATCH PLAY: '+matchPlayResult.result;
     ctx.fillText(mpText,canvasW/2,y+BANNER_H/2+6);
     ctx.textAlign='left';
@@ -2178,7 +2193,7 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
     ctx.fillStyle='#c4b5fd';
     ctx.textAlign='center';
     const scrText=scrambleResult.winner
-      ?'SCRAMBLE: '+scrambleResult.winner.toUpperCase()+' \u00B7 '+scrambleResult.result
+      ?'SCRAMBLE WINNER: '+scrambleResult.winner.toUpperCase()+' \u00B7 '+scrambleResult.result
       :'SCRAMBLE: '+scrambleResult.result;
     ctx.fillText(scrText,canvasW/2,y+BANNER_H/2+6);
     ctx.textAlign='left';
