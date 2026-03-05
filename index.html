@@ -1479,13 +1479,20 @@ function exportScores(){
     matchPlayResult={winner:mp.p1Up>0?mp.p1Name:mp.p1Up<0?mp.p2Name:null,result:mp.closedReason||(mp.p1Up===0?'ALL SQUARE':Math.abs(mp.p1Up)+'UP')};
   } else if(versusMode==='matchplay2v2'){
     const mp=computeMatchPlay2v2();
-    matchPlayResult={winner:mp.teamAUp>0?mp.teamA[0]+'/'+mp.teamA[1]:mp.teamAUp<0?mp.teamB[0]+'/'+mp.teamB[1]:null,result:mp.closedReason||(mp.teamAUp===0?'ALL SQUARE':Math.abs(mp.teamAUp)+'UP')};
+    matchPlayResult={winner:mp.teamAUp>0?mp.teamA[0]+'/'+mp.teamA[1]:mp.teamAUp<0?mp.teamB[0]+'/'+mp.teamB[1]:null,result:mp.closedReason||(mp.teamAUp===0?'ALL SQUARE':Math.abs(mp.teamAUp)+'UP'),
+      teamA:[players[teamSlots.a0],players[teamSlots.a1]].filter(Boolean),
+      teamB:[players[teamSlots.b0],players[teamSlots.b1]].filter(Boolean)};
   }
-  drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff:holeOffset,skinsWinner,matchPlayResult});
+  let scrambleResult=null, scrambleScoresData=null;
+  if(versusMode==='scramble2v2'&&window.scrambleScores){
+    const mp=computeScramble2v2();
+    scrambleResult={winner:mp.teamAUp>0?mp.teamAName:mp.teamAUp<0?mp.teamBName:null,result:mp.closedReason||(mp.teamAUp===0?'ALL SQUARE':Math.abs(mp.teamAUp)+'UP')};
+    scrambleScoresData=window.scrambleScores;
+  }
+  drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff:holeOffset,skinsWinner,matchPlayResult,scrambleResult,scrambleScoresData,liveTeamSlots:versusMode==='matchplay2v2'?{...teamSlots}:null});
 }
 
 function exportRoundFromHistory(roundId){
-  // Find round data from the card's dataset
   const el=document.getElementById('rh-'+roundId+'-exportbtn');
   if(!el)return;
   const card=el.closest('.round-card');
@@ -1501,6 +1508,36 @@ function exportRoundFromHistory(roundId){
     const allScores=Array.isArray(sc[0])?sc:[sc];
     const holeCount=roundPars.length;
     const playedDate=new Date(round.played_at).toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+    // For 2v2 history exports, reconstruct team slots (players 0&1 = A, 2&3 = B)
+    const is2v2=round.match_play&&!round.scramble&&roundPlayers.length===4;
+    const histTeamSlots=is2v2?{a0:0,a1:1,b0:2,b1:3}:null;
+
+    // For scramble history, reconstruct team scores by pairing player scores
+    // Scramble rounds store 4 player scores but we need team A/B views
+    // We infer team scores: best of players 0&1 per hole for A, best of 2&3 for B
+    let scrambleResult=null, scrambleScoresData=null;
+    if(round.scramble&&roundPlayers.length>=2){
+      const aIdxs=[0,1].filter(i=>allScores[i]);
+      const bIdxs=[2,3].filter(i=>allScores[i]);
+      const teamA=Array.from({length:holeCount},(_,h)=>{
+        const vals=aIdxs.map(i=>allScores[i][h]).filter(s=>s!==null);
+        return vals.length?Math.min(...vals):null;
+      });
+      const teamB=Array.from({length:holeCount},(_,h)=>{
+        const vals=bIdxs.map(i=>allScores[i][h]).filter(s=>s!==null);
+        return vals.length?Math.min(...vals):null;
+      });
+      scrambleScoresData={A:teamA,B:teamB};
+      scrambleResult=round.match_result?{winner:round.match_winner||null,result:round.match_result}:null;
+    }
+
+    const matchPlayResult=round.match_play&&!round.scramble&&round.match_result
+      ?{winner:round.match_winner||null,result:round.match_result,
+        teamA:is2v2?[roundPlayers[0],roundPlayers[1]]:null,
+        teamB:is2v2?[roundPlayers[2],roundPlayers[3]]:null}
+      :null;
+
     drawScorecard({
       courseName:round.course_name||'Golf Round',
       teeLabel:round.tee_name?' · '+round.tee_name+' Tees':'',
@@ -1513,12 +1550,15 @@ function exportRoundFromHistory(roundId){
       scores:allScores,
       holeOff:round.hole_offset||0,
       skinsWinner:round.skins_winner&&round.skins_count?{name:round.skins_winner,skins:round.skins_count}:null,
-      matchPlayResult:round.match_play&&round.match_result?{winner:round.match_winner||null,result:round.match_result}:null,
+      matchPlayResult,
+      scrambleResult,
+      scrambleScoresData,
+      liveTeamSlots:histTeamSlots,
     });
   }catch(e){console.error('Export error',e);}
 }
 
-function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff,skinsWinner,matchPlayResult}){
+function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff,skinsWinner,matchPlayResult,scrambleResult,scrambleScoresData,liveTeamSlots}){
   const split18=holes===18;
   const totalPar=pars.reduce((a,b)=>a+b,0);
   const totalYds=yardages.reduce((a,b)=>a+b,0);
@@ -1556,11 +1596,16 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
   const TOP_H=110;
   const LEGEND_H=52;
 
+  const isScramble = !!scrambleScoresData;
+  const displayPlayers = isScramble ? ['Team A','Team B'] : players;
+  const displayScores = isScramble ? [scrambleScoresData.A, scrambleScoresData.B] : scores;
+
   const hasYds=yardages.some(y=>y>0);
   const ydsRowH=hasYds?YDS_ROW_H:0;
   const skinsBannerH=skinsWinner?34:0;
   const mpBannerH=matchPlayResult?34:0;
-  const totalH=TOP_H+HEADER_H+PAR_ROW_H+ydsRowH+(players.length*ROW_H)+skinsBannerH+mpBannerH+LEGEND_H+CARD_PAD*2+20;
+  const scrmBannerH=scrambleResult?34:0;
+  const totalH=TOP_H+HEADER_H+PAR_ROW_H+ydsRowH+(displayPlayers.length*ROW_H)+skinsBannerH+mpBannerH+scrmBannerH+LEGEND_H+CARD_PAD*2+20;
 
   // Helper: x position of hole h (0-based), accounting for OUT split column
   function holeX(h){
@@ -1725,23 +1770,113 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
     y+=YDS_ROW_H;
   }
 
+  // Pre-compute hole winners for highlighting
+  // Skins: find outright low scorer per hole
+  const skinsHoleWinner = {}; // hole index -> player index or null (tie)
+  if(skinsWinner){
+    for(let h=0;h<holes;h++){
+      const holeScs=scores.map(s=>s[h]).filter(s=>s!==null);
+      if(!holeScs.length)continue;
+      const lo=Math.min(...holeScs);
+      const winners=scores.map((s,pi)=>s[h]===lo?pi:-1).filter(i=>i>=0);
+      skinsHoleWinner[h]=winners.length===1?winners[0]:null; // null = tie (no skin)
+    }
+  }
+  // Match play: hole result per hole
+  const mpHoleResult = {}; // hole index -> 'A'|'B'|'halved'|null
+  // For 2v2, map player index to team
+  const playerTeamMap = {}; // pi -> 'A'|'B'
+  if(matchPlayResult && !isScramble){
+    if(players.length===2){
+      // 1v1
+      for(let h=0;h<holes;h++){
+        const s0=scores[0][h],s1=scores[1][h];
+        if(s0===null||s1===null){mpHoleResult[h]=null;continue;}
+        mpHoleResult[h]=s0<s1?'A':s1<s0?'B':'halved';
+      }
+      playerTeamMap[0]='A'; playerTeamMap[1]='B';
+    } else {
+      // 2v2 best ball
+      const slots=liveTeamSlots||{a0:0,a1:1,b0:2,b1:3};
+      const aIdxs=[slots.a0,slots.a1].filter(i=>i>=0&&i<players.length);
+      const bIdxs=[slots.b0,slots.b1].filter(i=>i>=0&&i<players.length);
+      aIdxs.forEach(i=>{ playerTeamMap[i]='A'; });
+      bIdxs.forEach(i=>{ playerTeamMap[i]='B'; });
+      for(let h=0;h<holes;h++){
+        const sA=Math.min(...aIdxs.map(i=>scores[i]?.[h]??Infinity).filter(isFinite));
+        const sB=Math.min(...bIdxs.map(i=>scores[i]?.[h]??Infinity).filter(isFinite));
+        if(!isFinite(sA)||!isFinite(sB)){mpHoleResult[h]=null;continue;}
+        mpHoleResult[h]=sA<sB?'A':sB<sA?'B':'halved';
+      }
+    }
+  }
+  // Scramble hole results
+  const scrHoleResult = {};
+  if(isScramble && scrambleScoresData){
+    for(let h=0;h<holes;h++){
+      const sA=scrambleScoresData.A[h],sB=scrambleScoresData.B[h];
+      if(sA===null||sB===null){scrHoleResult[h]=null;continue;}
+      scrHoleResult[h]=sA<sB?'A':sB<sA?'B':'halved';
+    }
+  }
+
   // Player rows
-  players.forEach((name,pi)=>{
+  displayPlayers.forEach((name,pi)=>{
     const isAlt=pi%2===1;
     ctx.fillStyle=isAlt?'rgba(255,255,255,0.025)':'transparent';
     ctx.fillRect(0,y,canvasW,ROW_H);
     drawSplitBg(y,ROW_H);
 
-    ctx.font='500 13px "DM Sans", sans-serif';
-    ctx.fillStyle=CREAM;
-    ctx.fillText(name,CARD_PAD,y+ROW_H/2+5);
+    // Name — for scramble show team label + player names
+    if(isScramble){
+      const team=pi===0?'A':'B';
+      const teamColor=team==='A'?'#7ec8f5':'#c9a84c';
+      const slots=liveTeamSlots||{a0:0,a1:1,b0:2,b1:3};
+      const aIdxs=[slots.a0,slots.a1].filter(i=>i>=0&&players[i]);
+      const bIdxs=[slots.b0,slots.b1].filter(i=>i>=0&&players[i]);
+      const idxs=team==='A'?aIdxs:bIdxs;
+      // Fallback: if no slots resolve, use first two players for A, last two for B
+      const teamPlayerNames=idxs.length
+        ?idxs.map(i=>players[i]).filter(Boolean).join(' / ')
+        :team==='A'?players.slice(0,2).join(' / '):players.slice(2,4).join(' / ');
+      ctx.font='bold 9px "DM Sans", sans-serif';
+      ctx.fillStyle=teamColor;
+      ctx.fillText('TEAM '+team,CARD_PAD,y+ROW_H/2-2);
+      ctx.font='500 12px "DM Sans", sans-serif';
+      ctx.fillStyle=CREAM;
+      ctx.fillText(teamPlayerNames,CARD_PAD,y+ROW_H/2+10);
+    } else {
+      ctx.font='500 13px "DM Sans", sans-serif';
+      ctx.fillStyle=CREAM;
+      ctx.fillText(name,CARD_PAD,y+ROW_H/2+5);
+    }
 
     let frontTotal=0,backTotal=0,frontPar=0,backPar=0;
     for(let h=0;h<holes;h++){
-      const sc=scores[pi][h];
+      const sc=displayScores[pi][h];
       const cx=holeX(h)+COL_W/2;
       const cy=y+ROW_H/2;
       const cellSize=Math.min(COL_W-6,28);
+
+      // Determine hole highlight border
+      let holeBorderColor=null;
+      if(skinsWinner && skinsHoleWinner[h]===pi){
+        holeBorderColor=GOLD; // this player won this skin
+      }
+      if(matchPlayResult && !isScramble){
+        const res=mpHoleResult[h];
+        const myTeam=playerTeamMap[pi]||'A';
+        if(res==='A'&&myTeam==='A') holeBorderColor='#7ec8f5';
+        else if(res==='B'&&myTeam==='B') holeBorderColor='#7ec8f5';
+        else if(res==='halved') holeBorderColor='rgba(245,240,232,0.35)';
+      }
+      if(isScramble){
+        const res=scrHoleResult[h];
+        const team=pi===0?'A':'B';
+        if(res===team) holeBorderColor='#7ec8f5';
+        else if(res==='halved') holeBorderColor='rgba(245,240,232,0.3)';
+      }
+
       if(sc!==null){
         const d=sc-pars[h];
         let col;
@@ -1753,6 +1888,13 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
         ctx.fillStyle=col.bg;
         roundRect(ctx,cx-cellSize/2,cy-cellSize/2,cellSize,cellSize,5);
         ctx.fill();
+        // Draw hole winner border
+        if(holeBorderColor){
+          ctx.strokeStyle=holeBorderColor;
+          ctx.lineWidth=2;
+          roundRect(ctx,cx-cellSize/2,cy-cellSize/2,cellSize,cellSize,5);
+          ctx.stroke();
+        }
         ctx.font='bold 13px "DM Sans", sans-serif';
         ctx.fillStyle=col.text;
         ctx.textAlign='center';
@@ -1796,9 +1938,9 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
     }
 
     // Total
-    const filled=scores[pi].filter(s=>s!==null);
+    const filled=displayScores[pi].filter(s=>s!==null);
     const total=filled.length?filled.reduce((a,b)=>a+b,0):null;
-    const parSoFar=scores[pi].map((s,hi)=>s!==null?pars[hi]:0).reduce((a,b)=>a+b,0);
+    const parSoFar=displayScores[pi].map((s,hi)=>s!==null?pars[hi]:0).reduce((a,b)=>a+b,0);
     const diff=total!==null?total-parSoFar:null;
     ctx.font='bold 15px "Bebas Neue", serif';
     ctx.fillStyle=CREAM;
@@ -1849,6 +1991,26 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
       ?'MATCH PLAY: '+matchPlayResult.winner.toUpperCase()+' \u00B7 '+matchPlayResult.result
       :'MATCH PLAY: '+matchPlayResult.result;
     ctx.fillText(mpText,canvasW/2,y+BANNER_H/2+6);
+    ctx.textAlign='left';
+    y+=BANNER_H;
+  }
+
+  // ── Scramble Result Banner ──
+  if(scrambleResult){
+    const BANNER_H=34;
+    ctx.fillStyle='rgba(139,92,246,0.12)';
+    ctx.fillRect(0,y,canvasW,BANNER_H);
+    ctx.strokeStyle='rgba(139,92,246,0.35)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvasW,y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,y+BANNER_H);ctx.lineTo(canvasW,y+BANNER_H);ctx.stroke();
+    ctx.font='bold 15px "Bebas Neue", serif';
+    ctx.fillStyle='#c4b5fd';
+    ctx.textAlign='center';
+    const scrText=scrambleResult.winner
+      ?'SCRAMBLE: '+scrambleResult.winner.toUpperCase()+' \u00B7 '+scrambleResult.result
+      :'SCRAMBLE: '+scrambleResult.result;
+    ctx.fillText(scrText,canvasW/2,y+BANNER_H/2+6);
     ctx.textAlign='left';
     y+=BANNER_H;
   }
