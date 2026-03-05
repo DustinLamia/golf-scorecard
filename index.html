@@ -498,6 +498,22 @@
       <button class="versus-format-btn" data-format="matchplay2v2" onclick="selectVersusFormat('matchplay2v2',this)">Match Play 2v2</button>
     </div>
     <div class="pro-gate-note" id="versus-pro-note" style="display:none;">&#128274; Versus Mode is a Pro feature. <span style="color:var(--gold);cursor:pointer;text-decoration:underline;" onclick="openAuthModal()">Upgrade to Pro</span></div>
+
+    <!-- 2v2 Team Builder -->
+    <div id="team-builder" style="display:none;margin-top:14px;border-top:1px solid rgba(245,240,232,.12);padding-top:14px;">
+      <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">Set Teams</div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;background:rgba(41,128,185,.08);border:1px solid rgba(41,128,185,.3);border-radius:10px;padding:10px 12px;">
+          <div style="font-size:.65rem;color:#7ec8f5;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:8px;">Team A</div>
+          <div id="team-a-slots" style="display:flex;flex-direction:column;gap:6px;min-height:28px;"></div>
+        </div>
+        <div style="flex:1;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:10px 12px;">
+          <div style="font-size:.65rem;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:8px;">Team B</div>
+          <div id="team-b-slots" style="display:flex;flex-direction:column;gap:6px;min-height:28px;"></div>
+        </div>
+      </div>
+      <div style="font-size:.7rem;color:var(--tan);margin-top:8px;text-align:center;">Tap a player to switch teams</div>
+    </div>
   </div>
 
   <button class="btn-start" id="start-btn" onclick="startRound()">Start Round</button>
@@ -1907,6 +1923,7 @@ function confirmReset(){
     if(recognition){recognition._killed=true;try{recognition.stop();}catch(e){}}
     selectedCourse=null;selectedTee=null;
     versusMode=null;
+    teamAssignment=[];
     selectedNine='front';
     holeOffset=0;
     const vProNote=document.getElementById('versus-pro-note');if(vProNote)vProNote.style.display='none';
@@ -1916,6 +1933,7 @@ function confirmReset(){
     const nb=document.getElementById('nine-back');if(nb)nb.classList.remove('active');
     const slb=document.getElementById('skins-live-bar');if(slb)slb.style.display='none';
     const mlb=document.getElementById('mp-live-bar');if(mlb)mlb.style.display='none';
+    const tb=document.getElementById('team-builder');if(tb)tb.style.display='none';
     document.getElementById('scorecard-screen').style.display='none';
     document.getElementById('setup-screen').style.display='block';
     document.getElementById('course-results').innerHTML='';
@@ -3277,6 +3295,8 @@ async function saveEditRound(){
 // ── Versus / Skins Mode ──
 // versusMode: null | 'skins' | 'matchplay1v1' | 'matchplay2v2'
 let versusMode = null;
+// teamAssignment: array of 'A'|'B' per player index, only used in 2v2
+let teamAssignment = [];
 
 // Stub isPro check - Phase 4 will wire real Stripe gate
 function isPro() {
@@ -3289,20 +3309,61 @@ function selectVersusFormat(fmt, btn) {
   document.querySelectorAll('.versus-format-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   const note = document.getElementById('versus-pro-note');
+  const teamBuilder = document.getElementById('team-builder');
   if (fmt === 'none') {
     versusMode = null;
     note.style.display = 'none';
+    teamBuilder.style.display = 'none';
     return;
   }
   if (!isPro()) {
     note.style.display = 'block';
     versusMode = null;
-    // Reset to None
+    teamBuilder.style.display = 'none';
     document.querySelectorAll('.versus-format-btn').forEach(b => b.classList.toggle('active', b.dataset.format === 'none'));
     return;
   }
   note.style.display = 'none';
   versusMode = fmt;
+  if (fmt === 'matchplay2v2') {
+    teamBuilder.style.display = 'block';
+    renderTeamBuilder();
+  } else {
+    teamBuilder.style.display = 'none';
+  }
+}
+
+function renderTeamBuilder() {
+  const inputs = document.querySelectorAll('.player-name');
+  const names = Array.from(inputs).map(i => i.value.trim()).filter(n => n);
+
+  // Default: first 2 on A, rest on B
+  if (teamAssignment.length !== names.length) {
+    teamAssignment = names.map((_, i) => i < 2 ? 'A' : 'B');
+  }
+
+  const aSlots = document.getElementById('team-a-slots');
+  const bSlots = document.getElementById('team-b-slots');
+  aSlots.innerHTML = '';
+  bSlots.innerHTML = '';
+
+  names.forEach((name, i) => {
+    const pill = document.createElement('button');
+    pill.textContent = name || 'Player ' + (i+1);
+    pill.style.cssText = 'background:transparent;border:1px solid rgba(245,240,232,.25);border-radius:6px;padding:5px 10px;color:var(--cream);font-family:"DM Sans",sans-serif;font-size:.8rem;cursor:pointer;text-align:left;width:100%;transition:all .15s;';
+    pill.onclick = () => {
+      teamAssignment[i] = teamAssignment[i] === 'A' ? 'B' : 'A';
+      renderTeamBuilder();
+    };
+    if (teamAssignment[i] === 'A') {
+      aSlots.appendChild(pill);
+    } else {
+      bSlots.appendChild(pill);
+    }
+  });
+
+  if (!aSlots.children.length) aSlots.innerHTML = '<div style="font-size:.72rem;color:rgba(245,240,232,.3);font-style:italic;">Empty</div>';
+  if (!bSlots.children.length) bSlots.innerHTML = '<div style="font-size:.72rem;color:rgba(245,240,232,.3);font-style:italic;">Empty</div>';
 }
 
 // ── Skins Engine ──
@@ -3535,29 +3596,33 @@ function computeMatchPlay1v1() {
   return { holeResults, p1Up, holesPlayed, holesLeft, closed, closedReason, p1Name: p1, p2Name: p2 };
 }
 
-// Best ball 2v2 — team A = players[0,1], team B = players[2,3]
+// Best ball 2v2 — teams determined by teamAssignment array
 function computeMatchPlay2v2() {
-  const teamA = [players[0], players[1]];
-  const teamB = [players[2], players[3]];
+  // Build team index lists from teamAssignment, fallback to 0,1 vs 2,3
+  const aIdxs = [], bIdxs = [];
+  players.forEach((_, i) => {
+    if (teamAssignment[i] === 'B') bIdxs.push(i);
+    else aIdxs.push(i);
+  });
+  const teamA = aIdxs.map(i => players[i]);
+  const teamB = bIdxs.map(i => players[i]);
+
   const holeResults = [];
   let teamAUp = 0;
   let closed = false, closedReason = '';
 
   for (let hi = 0; hi < holes; hi++) {
-    const sA0 = scores[0][hi], sA1 = scores[1][hi];
-    const sB0 = scores[2][hi], sB1 = scores[3][hi];
-
-    const bestA = [sA0, sA1].filter(s => s !== null);
-    const bestB = [sB0, sB1].filter(s => s !== null);
+    const scoresA = aIdxs.map(i => scores[i][hi]).filter(s => s !== null);
+    const scoresB = bIdxs.map(i => scores[i][hi]).filter(s => s !== null);
     const holesLeft = holes - (hi + 1);
 
-    if (!bestA.length || !bestB.length) {
+    if (!scoresA.length || !scoresB.length) {
       holeResults.push({ hole: hi+1, bestA: null, bestB: null, result: null, teamAUp, holesLeft });
       continue;
     }
 
-    const scoreA = Math.min(...bestA);
-    const scoreB = Math.min(...bestB);
+    const scoreA = Math.min(...scoresA);
+    const scoreB = Math.min(...scoresB);
     let result;
     if (scoreA < scoreB) { result = 'A'; teamAUp++; }
     else if (scoreB < scoreA) { result = 'B'; teamAUp--; }
@@ -3924,6 +3989,16 @@ document.addEventListener('DOMContentLoaded', function(){
     if(results && input && !input.contains(e.target) && !results.contains(e.target)){
       results.style.display='none';
     }
+  });
+
+  // Re-render team builder when player names change
+  document.querySelectorAll('.player-name').forEach(inp => {
+    inp.addEventListener('input', () => {
+      if (versusMode === 'matchplay2v2') {
+        teamAssignment = []; // reset so defaults recalculate
+        renderTeamBuilder();
+      }
+    });
   });
 
   var btnFree=document.getElementById('btn-free-signup');
