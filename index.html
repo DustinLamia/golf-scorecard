@@ -2436,7 +2436,7 @@ function shareStats(){
     {l:'ROUNDS',v:''+s.roundCount,c:GOLD},
     {l:'AVG',v:(s.avgDiffNum>0?'+':'')+s.avgDiff,c:s.avgDiffNum<0?GREEN:s.avgDiffNum>0?RED:TAN},
     {l:'BEST',v:s.bestStrokes||(s.bestStr==='-'?'-':s.bestStr),c:GREEN},
-    {l:'WORST',v:s.worstStrokes||(s.worstStr==='-'?'-':s.worstStr),c:RED},
+    {l:'MATCH',v:s.mpRecord||'--',c:TAN},
   ];
   boxes.forEach((b,i)=>{
     const bx=PAD+i*(boxW+4);
@@ -2646,6 +2646,32 @@ async function loadStats(){
   const bestStr=bestDiff===Infinity?'-':fmtDiff(bestDiff);
   const worstStr=worstDiff===-Infinity?'-':fmtDiff(worstDiff);
 
+  // Match Play Record (1v1 and 2v2, excludes skins)
+  // Need to know which player is "us" — player index 0 is always the account holder
+  let mpWins=0, mpLosses=0, mpHalves=0;
+  data.filter(r=>r.match_play&&!r.skins_winner&&!r.scramble).forEach(r=>{
+    if(!r.match_result||r.match_result==='ALL SQUARE'){mpHalves++;return;}
+    const rPlayers=Array.isArray(r.players)?r.players:[];
+    const is2v2=rPlayers.length===4;
+    // Determine if player 0 (account holder) won
+    // match_winner stores the winner name or team name
+    const winner=r.match_winner||'';
+    if(is2v2){
+      // Team A = players[0] and players[1]; win if winner contains players[0]'s name
+      const p0=rPlayers[0]||'';
+      if(winner&&winner.includes(p0)) mpWins++;
+      else if(winner) mpLosses++;
+      else mpHalves++;
+    } else {
+      const p0=rPlayers[0]||'';
+      if(winner&&winner===p0) mpWins++;
+      else if(winner) mpLosses++;
+      else mpHalves++;
+    }
+  });
+  const mpTotal=mpWins+mpLosses+mpHalves;
+  const mpRecord=mpTotal>0?`${mpWins}-${mpLosses}-${mpHalves}`:null;
+
   // Handicap — eligible rounds only
   const handicap=calcHandicap(eligibleRounds);
   const handicapDisplay=fmtHandicap(handicap);
@@ -2691,9 +2717,13 @@ async function loadStats(){
         <div class="stat-sub">${bestStrokes?bestStr:''}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Worst Round</div>
-        <div class="stat-value over">${worstStrokes||worstStr}</div>
-        <div class="stat-sub">${worstStrokes?worstStr:''}</div>
+        <div class="stat-label">Match Play</div>
+        ${mpRecord
+          ? `<div class="stat-value" style="font-size:1.6rem;letter-spacing:1px;">${mpRecord}</div>
+             <div class="stat-sub">W &middot; L &middot; H</div>`
+          : `<div class="stat-value" style="font-size:1.1rem;color:var(--tan);">--</div>
+             <div class="stat-sub">No matches yet</div>`
+        }
       </div>
 
       <div class="stat-card full">
@@ -2816,7 +2846,7 @@ async function loadStats(){
   const goalsForExport=loadGoals();
   window._statsSnapshot={
     handicapDisplay,trendHTML,roundCount,avgDiff,avgDiffNum,
-    bestStrokes,bestStr,worstStrokes,worstStr,
+    bestStrokes,bestStr,worstStrokes,worstStr,mpRecord,
     avgPar3,avgPar4,avgPar5,
     eaglePct,birdiePct,parPct,bogeyPct,doublePct,
     totalHoles,last10:last10export,goalStrokes:goalsForExport.strokes||null,
