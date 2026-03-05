@@ -1395,6 +1395,16 @@ function exportScores(){
   const teeLabel=selectedTee&&selectedCourse&&selectedCourse.tees&&selectedCourse.tees.length>1?' · '+selectedTee.name+' Tees':'';
   const location=selectedCourse?(selectedCourse.city+(selectedCourse.state?', '+selectedCourse.state:'')):'';
   const today=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  let skinsWinner=null;
+  if(versusMode==='skins'){
+    const summary=skinsPerPlayer(computeSkins());
+    let topName=null,topCount=0;
+    Object.entries(summary).forEach(([name,data])=>{if(data.skins>topCount){topCount=data.skins;topName=name;}});
+    if(topName&&topCount>0)skinsWinner={name:topName,skins:topCount};
+  }
+  drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff:holeOffset,skinsWinner});
+}
+  const today=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff:holeOffset});
 }
 
@@ -1426,11 +1436,12 @@ function exportRoundFromHistory(roundId){
       players:roundPlayers,
       scores:allScores,
       holeOff:round.hole_offset||0,
+      skinsWinner:round.skins_winner&&round.skins_count?{name:round.skins_winner,skins:round.skins_count}:null,
     });
   }catch(e){console.error('Export error',e);}
 }
 
-function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff}){
+function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff,skinsWinner}){
   const split18=holes===18;
   const totalPar=pars.reduce((a,b)=>a+b,0);
   const totalYds=yardages.reduce((a,b)=>a+b,0);
@@ -1470,7 +1481,8 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
 
   const hasYds=yardages.some(y=>y>0);
   const ydsRowH=hasYds?YDS_ROW_H:0;
-  const totalH=TOP_H+HEADER_H+PAR_ROW_H+ydsRowH+(players.length*ROW_H)+LEGEND_H+CARD_PAD*2+20;
+  const skinsBannerH=skinsWinner?34:0;
+  const totalH=TOP_H+HEADER_H+PAR_ROW_H+ydsRowH+(players.length*ROW_H)+skinsBannerH+LEGEND_H+CARD_PAD*2+20;
 
   // Helper: x position of hole h (0-based), accounting for OUT split column
   function holeX(h){
@@ -1702,6 +1714,23 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
     rowDivider(ctx,y+ROW_H,canvasW);
     y+=ROW_H;
   });
+
+  // ── Skins Winner Banner ──
+  if(skinsWinner){
+    const BANNER_H=34;
+    ctx.fillStyle='rgba(201,168,76,0.12)';
+    ctx.fillRect(0,y,canvasW,BANNER_H);
+    ctx.strokeStyle='rgba(201,168,76,0.3)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvasW,y);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(0,y+BANNER_H);ctx.lineTo(canvasW,y+BANNER_H);ctx.stroke();
+    ctx.font='bold 15px "Bebas Neue", serif';
+    ctx.fillStyle=GOLD;
+    ctx.textAlign='center';
+    ctx.fillText('SKINS WINNER: '+skinsWinner.name.toUpperCase()+' \u00B7 '+skinsWinner.skins+' SKIN'+(skinsWinner.skins!==1?'S':''),canvasW/2,y+BANNER_H/2+6);
+    ctx.textAlign='left';
+    y+=BANNER_H;
+  }
 
   // ── Legend ──
   ctx.strokeStyle='rgba(245,240,232,0.07)';
@@ -2790,6 +2819,13 @@ async function finishRound(){
     return;
   }
   // Build round data
+  // Compute skins winner if this was a skins round
+  let skinsWinnerName=null,skinsWinnerCount=0;
+  if(versusMode==='skins'){
+    const summary=skinsPerPlayer(computeSkins());
+    Object.entries(summary).forEach(([name,data])=>{if(data.skins>skinsWinnerCount){skinsWinnerCount=data.skins;skinsWinnerName=name;}});
+  }
+
   const roundData={
     user_id:currentUser.id,
     course_name:selectedCourse?selectedCourse.name:'Unknown Course',
@@ -2802,6 +2838,8 @@ async function finishRound(){
     scores:scores,
     total_strokes:scores[0].filter(s=>s!==null).reduce((a,b)=>a+b,0),
     score_vs_par:scores[0].filter(s=>s!==null).reduce((a,b)=>a+b,0) - scores[0].map((s,hi)=>s!==null?pars[hi]:0).reduce((a,b)=>a+b,0),
+    skins_winner:skinsWinnerName,
+    skins_count:skinsWinnerCount||null,
   };
   const btn=document.querySelector('.btn-finish');
   if(btn){btn.textContent='Saving...';btn.disabled=true;}
@@ -2976,7 +3014,7 @@ async function loadHistory(){
             <div class="round-card-course">${round.course_name}${isLive?` <span style="font-size:.65rem;color:var(--gold);" id="${roundId}-chevron">&#9660;</span>`:''}</div>
             <div class="round-card-score ${scoreClass}">${round.total_strokes||''}<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0;">${diffStr}</div></div>
           </div>
-          <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${playerNames}${round.tee_name?' &middot; '+round.tee_name:''} <span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;${isLive?'background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35);':'background:rgba(245,240,232,.07);color:var(--tan);border:1px solid rgba(245,240,232,.15);'}">${isLive?'LIVE':'MANUAL'}</span></div>
+          <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${playerNames}${round.tee_name?' &middot; '+round.tee_name:''} <span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;${isLive?'background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35);':'background:rgba(245,240,232,.07);color:var(--tan);border:1px solid rgba(245,240,232,.15);'}">${isLive?'LIVE':'MANUAL'}</span>${round.skins_winner?`<span style="display:inline-block;margin-left:5px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.3);">SKINS</span>`:''}</div>
           ${isLive?`<div id="${roundId}" style="display:none;margin-top:12px;"></div>`:''}
         </div>
         <div class="rc-menu-wrap">
