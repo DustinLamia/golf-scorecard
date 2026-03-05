@@ -674,6 +674,8 @@ function restoreSession(){
       });
     });
     refreshTotals();
+    updateMatchPlayLiveBar();
+    paintMatchPlayHoles();
     setupSpeech();
     return true;
   }catch(e){return false;}
@@ -970,7 +972,23 @@ function buildTable(){
   } else {
     players.forEach((name,pi)=>{
       const row=document.createElement('tr');
-      row.innerHTML='<td>'+name+'</td>';
+      // Team color label for 2v2 modes
+      let nameCell='<td>';
+      if(versusMode==='matchplay2v2'){
+        const aIdxs=[teamSlots.a0,teamSlots.a1];
+        const bIdxs=[teamSlots.b0,teamSlots.b1];
+        if(aIdxs.includes(pi)){
+          nameCell=`<td><span style="font-size:.55rem;font-weight:700;color:#7ec8f5;letter-spacing:.5px;margin-right:4px;">A</span>${name}`;
+        } else if(bIdxs.includes(pi)){
+          nameCell=`<td><span style="font-size:.55rem;font-weight:700;color:var(--gold);letter-spacing:.5px;margin-right:4px;">B</span>${name}`;
+        } else {
+          nameCell='<td>'+name;
+        }
+        nameCell+='</td>';
+      } else {
+        nameCell='<td>'+name+'</td>';
+      }
+      row.innerHTML=nameCell;
       for(let h=0;h<holes;h++){
         row.innerHTML+='<td class="score-cell"><input type="number" min="1" max="12" placeholder="-" oninput="manualScore('+pi+','+h+',this.value)" id="s-'+pi+'-'+h+'"></td>';
         if(split&&h===8)row.innerHTML+='<td class="split-col" id="out-'+pi+'">-</td>';
@@ -1005,7 +1023,7 @@ function updatePar(hi,val){
     if(inEl)inEl.textContent=pars.slice(9,18).reduce((a,b)=>a+b,0);
   }
 }
-function manualScore(pi,hi,val){scores[pi][hi]=val?parseInt(val):null;colorScore(pi,hi);refreshTotals();saveSession();updateSkinsLiveBar();}
+function manualScore(pi,hi,val){scores[pi][hi]=val?parseInt(val):null;colorScore(pi,hi);refreshTotals();saveSession();updateSkinsLiveBar();updateMatchPlayLiveBar();paintMatchPlayHoles();}
 function colorScore(pi,hi){
   const inp=document.getElementById('s-'+pi+'-'+hi);
   if(!inp)return;
@@ -1459,6 +1477,7 @@ function applyScoresDirectly(hole,scoreMap){
   showAndSpeak('✓ '+readback,6000);
   updateSkinsLiveBar();
   updateMatchPlayLiveBar();
+  paintMatchPlayHoles();
 }
 
 function exportScores(){
@@ -1848,7 +1867,23 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
     } else {
       ctx.font='500 13px "DM Sans", sans-serif';
       ctx.fillStyle=CREAM;
-      ctx.fillText(name,CARD_PAD,y+ROW_H/2+5);
+      // For 2v2 match play, prefix player name with colored team label
+      if(matchPlayResult && players.length===4){
+        const myTeam=playerTeamMap[pi];
+        if(myTeam){
+          const tColor=myTeam==='A'?'#7ec8f5':'#c9a84c';
+          ctx.font='bold 9px "DM Sans", sans-serif';
+          ctx.fillStyle=tColor;
+          ctx.fillText(myTeam,CARD_PAD,y+ROW_H/2-2);
+          ctx.font='500 12px "DM Sans", sans-serif';
+          ctx.fillStyle=CREAM;
+          ctx.fillText(name,CARD_PAD+14,y+ROW_H/2+9);
+        } else {
+          ctx.fillText(name,CARD_PAD,y+ROW_H/2+5);
+        }
+      } else {
+        ctx.fillText(name,CARD_PAD,y+ROW_H/2+5);
+      }
     }
 
     let frontTotal=0,backTotal=0,frontPar=0,backPar=0;
@@ -1866,9 +1901,17 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
       if(matchPlayResult && !isScramble){
         const res=mpHoleResult[h];
         const myTeam=playerTeamMap[pi]||'A';
-        if(res==='A'&&myTeam==='A') holeBorderColor='#7ec8f5';
-        else if(res==='B'&&myTeam==='B') holeBorderColor='#7ec8f5';
-        else if(res==='halved') holeBorderColor='rgba(245,240,232,0.35)';
+        if(res==='halved'){
+          holeBorderColor='rgba(245,240,232,0.35)';
+        } else if(res===myTeam){
+          // Only highlight the best (lowest) scorer on the winning team
+          const slots=liveTeamSlots||{a0:0,a1:1,b0:2,b1:3};
+          const aIdxs=[slots.a0,slots.a1].filter(i=>i>=0&&i<players.length);
+          const bIdxs=[slots.b0,slots.b1].filter(i=>i>=0&&i<players.length);
+          const teamIdxs=myTeam==='A'?aIdxs:bIdxs;
+          const teamBest=Math.min(...teamIdxs.map(i=>scores[i]?.[h]??Infinity));
+          if(scores[pi]?.[h]===teamBest) holeBorderColor='#7ec8f5';
+        }
       }
       if(isScramble){
         const res=scrHoleResult[h];
@@ -3848,6 +3891,40 @@ function computeMatchPlay2v2() {
   }
 
   return { holeResults, teamAUp, holesPlayed, holesLeft, closed, closedReason, teamA, teamB };
+}
+
+// ── Live hole-win painting for Match Play ────────────────────────────────────
+function paintMatchPlayHoles(){
+  if(versusMode!=='matchplay1v1'&&versusMode!=='matchplay2v2')return;
+  const WIN_BORDER='2px solid #7ec8f5';
+  const PUSH_BORDER='1px solid rgba(245,240,232,0.25)';
+
+  const aIdxs=versusMode==='matchplay2v2'?[teamSlots.a0,teamSlots.a1].filter(i=>i>=0&&players[i]):[0];
+  const bIdxs=versusMode==='matchplay2v2'?[teamSlots.b0,teamSlots.b1].filter(i=>i>=0&&players[i]):[1];
+
+  for(let h=0;h<holes;h++){
+    const sA=Math.min(...aIdxs.map(i=>scores[i]?.[h]??Infinity));
+    const sB=Math.min(...bIdxs.map(i=>scores[i]?.[h]??Infinity));
+    const bothPlayed=isFinite(sA)&&isFinite(sB);
+    const winner=!bothPlayed?null:sA<sB?'A':sB<sA?'B':'push';
+
+    players.forEach((_,pi)=>{
+      const inp=document.getElementById('s-'+pi+'-'+h);
+      if(!inp)return;
+      const myTeam=aIdxs.includes(pi)?'A':bIdxs.includes(pi)?'B':null;
+      if(!myTeam||winner===null){inp.style.outline='';return;}
+      if(winner==='push'){
+        inp.style.outline=PUSH_BORDER;
+      } else if(winner===myTeam){
+        // Only outline the best (lowest) score on the winning team
+        const myScore=scores[pi][h];
+        const teamBest=Math.min(...(myTeam==='A'?aIdxs:bIdxs).map(i=>scores[i]?.[h]??Infinity));
+        inp.style.outline=myScore===teamBest?WIN_BORDER:'';
+      } else {
+        inp.style.outline='';
+      }
+    });
+  }
 }
 
 // ── Scramble 2v2 ──────────────────────────────────────────────────────────────
