@@ -3441,40 +3441,88 @@ function toggleRoundScorecard(roundId){
     }
 
     // Player score rows
+    const isScramble = round.scramble && roundPlayers.length >= 2;
     let playerRows='';
-    roundPlayers.forEach((name,pi)=>{
-      const playerScores=Array.isArray(allScores[pi])?allScores[pi]:[];
-      const total=playerScores.filter(s=>s!==null).reduce((a,b)=>a+b,0);
-      const vspar=total-(playerScores.map((s,hi)=>s!==null?roundPars[hi]:0).reduce((a,b)=>a+b,0));
-      const vspStr=vspar===0?'E':vspar>0?'+'+vspar:''+vspar;
-      playerRows+=`<tr><td style="text-align:left;padding-left:8px;font-size:.78rem;font-weight:500;white-space:nowrap;">${name}</td>`;
-      let frontTotal=0,backTotal=0,frontPar=0,backPar=0;
-      playerScores.forEach((s,hi)=>{
-        const p=roundPars[hi];
-        const d=s!==null?s-p:null;
-        let bg='';
-        if(d!==null){
-          if(d<=-2)bg='background:rgba(201,168,76,.35);';
-          else if(d===-1)bg='background:rgba(41,128,185,.3);';
-          else if(d===0)bg='background:rgba(255,255,255,.07);';
-          else if(d===1)bg='background:rgba(192,57,43,.25);';
-          else bg='background:rgba(192,57,43,.45);';
+
+    if(isScramble){
+      // Show Team A / Team B rows with best-ball scores per hole
+      const aIdxs=[0,1].filter(i=>allScores[i]);
+      const bIdxs=[2,3].filter(i=>allScores[i]);
+      [['A',aIdxs,'#7ec8f5'],['B',bIdxs,'var(--gold)']].forEach(([team,idxs,color])=>{
+        if(!idxs.length)return;
+        const teamNames=idxs.map(i=>roundPlayers[i]).filter(Boolean).join(' / ');
+        const teamScores=Array.from({length:holeCount},(_,hi)=>{
+          const vals=idxs.map(i=>allScores[i]?.[hi]).filter(s=>s!=null);
+          return vals.length?Math.min(...vals):null;
+        });
+        const total=teamScores.filter(s=>s!==null).reduce((a,b)=>a+b,0);
+        const vspar=total-(teamScores.map((s,hi)=>s!==null?roundPars[hi]:0).reduce((a,b)=>a+b,0));
+        const vspStr=vspar===0?'E':vspar>0?'+'+vspar:''+vspar;
+        playerRows+=`<tr>
+          <td style="text-align:left;padding-left:8px;white-space:nowrap;line-height:1.3;">
+            <span style="font-size:.55rem;font-weight:700;color:${color};letter-spacing:.5px;display:block;">TEAM ${team}</span>
+            <span style="font-size:.75rem;font-weight:500;">${teamNames}</span>
+          </td>`;
+        let frontTotal=0,backTotal=0,frontPar=0,backPar=0;
+        teamScores.forEach((s,hi)=>{
+          const p=roundPars[hi];
+          const d=s!==null?s-p:null;
+          let bg='';
+          if(d!==null){
+            if(d<=-2)bg='background:rgba(201,168,76,.35);';
+            else if(d===-1)bg='background:rgba(41,128,185,.3);';
+            else if(d===0)bg='background:rgba(255,255,255,.07);';
+            else if(d===1)bg='background:rgba(192,57,43,.25);';
+            else bg='background:rgba(192,57,43,.45);';
+          }
+          if(split18&&s!==null){if(hi<9){frontTotal+=s;frontPar+=p;}else{backTotal+=s;backPar+=p;}}
+          playerRows+=`<td style="font-size:.78rem;"><span style="display:inline-block;width:24px;height:24px;line-height:24px;border-radius:4px;${bg}text-align:center;">${s!==null?s:'-'}</span></td>`;
+          if(split18&&hi===8){
+            const outDiff=frontTotal-frontPar;
+            playerRows+=`<td ${SPLIT_TD}>${frontTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${outDiff===0?'E':outDiff>0?'+'+outDiff:''+outDiff}</div></td>`;
+          }
+        });
+        if(split18){
+          const inDiff=backTotal-backPar;
+          playerRows+=`<td ${SPLIT_TD}>${backTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${inDiff===0?'E':inDiff>0?'+'+inDiff:''+inDiff}</div></td>`;
         }
-        if(split18&&s!==null){if(hi<9){frontTotal+=s;frontPar+=p;}else{backTotal+=s;backPar+=p;}}
-        playerRows+=`<td style="font-size:.78rem;"><span style="display:inline-block;width:24px;height:24px;line-height:24px;border-radius:4px;${bg}text-align:center;">${s!==null?s:'-'}</span></td>`;
-        if(split18&&hi===8){
-          const outDiff=frontTotal-frontPar;
-          const outStr=outDiff===0?'E':outDiff>0?'+'+outDiff:''+outDiff;
-          playerRows+=`<td ${SPLIT_TD}>${frontTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${outStr}</div></td>`;
-        }
+        playerRows+=`<td style="font-size:.82rem;font-family:'Bebas Neue',cursive;letter-spacing:1px;">${total||'-'}<div style="font-size:.6rem;font-family:'DM Sans',sans-serif;color:var(--tan);font-weight:400;">${total?vspStr:''}</div></td></tr>`;
       });
-      if(split18){
-        const inDiff=backTotal-backPar;
-        const inStr=inDiff===0?'E':inDiff>0?'+'+inDiff:''+inDiff;
-        playerRows+=`<td ${SPLIT_TD}>${backTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${inStr}</div></td>`;
-      }
-      playerRows+=`<td style="font-size:.82rem;font-family:'Bebas Neue',cursive;letter-spacing:1px;">${total}<div style="font-size:.6rem;font-family:'DM Sans',sans-serif;color:var(--tan);font-weight:400;">${vspStr}</div></td></tr>`;
-    });
+    } else {
+      roundPlayers.forEach((name,pi)=>{
+        const playerScores=Array.isArray(allScores[pi])?allScores[pi]:[];
+        const total=playerScores.filter(s=>s!==null).reduce((a,b)=>a+b,0);
+        const vspar=total-(playerScores.map((s,hi)=>s!==null?roundPars[hi]:0).reduce((a,b)=>a+b,0));
+        const vspStr=vspar===0?'E':vspar>0?'+'+vspar:''+vspar;
+        playerRows+=`<tr><td style="text-align:left;padding-left:8px;font-size:.78rem;font-weight:500;white-space:nowrap;">${name}</td>`;
+        let frontTotal=0,backTotal=0,frontPar=0,backPar=0;
+        playerScores.forEach((s,hi)=>{
+          const p=roundPars[hi];
+          const d=s!==null?s-p:null;
+          let bg='';
+          if(d!==null){
+            if(d<=-2)bg='background:rgba(201,168,76,.35);';
+            else if(d===-1)bg='background:rgba(41,128,185,.3);';
+            else if(d===0)bg='background:rgba(255,255,255,.07);';
+            else if(d===1)bg='background:rgba(192,57,43,.25);';
+            else bg='background:rgba(192,57,43,.45);';
+          }
+          if(split18&&s!==null){if(hi<9){frontTotal+=s;frontPar+=p;}else{backTotal+=s;backPar+=p;}}
+          playerRows+=`<td style="font-size:.78rem;"><span style="display:inline-block;width:24px;height:24px;line-height:24px;border-radius:4px;${bg}text-align:center;">${s!==null?s:'-'}</span></td>`;
+          if(split18&&hi===8){
+            const outDiff=frontTotal-frontPar;
+            const outStr=outDiff===0?'E':outDiff>0?'+'+outDiff:''+outDiff;
+            playerRows+=`<td ${SPLIT_TD}>${frontTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${outStr}</div></td>`;
+          }
+        });
+        if(split18){
+          const inDiff=backTotal-backPar;
+          const inStr=inDiff===0?'E':inDiff>0?'+'+inDiff:''+inDiff;
+          playerRows+=`<td ${SPLIT_TD}>${backTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${inStr}</div></td>`;
+        }
+        playerRows+=`<td style="font-size:.82rem;font-family:'Bebas Neue',cursive;letter-spacing:1px;">${total}<div style="font-size:.6rem;font-family:'DM Sans',sans-serif;color:var(--tan);font-weight:400;">${vspStr}</div></td></tr>`;
+      });
+    }
 
     el.innerHTML=`
       <div style="overflow-x:auto;border-radius:8px;background:rgba(0,0,0,.2);border:1px solid rgba(245,240,232,.1);">
@@ -3935,21 +3983,12 @@ async function saveRoundFromSkins() {
 function computeMatchPlay1v1() {
   const p1 = players[0], p2 = players[1];
   const holeResults = [];
-  let p1Up = 0; // positive = p1 leads, negative = p2 leads
-  let closed = false, closedAt = null, closedReason = '';
+  let p1Up = 0;
+  let closed = false, closedReason = '';
 
   for (let hi = 0; hi < holes; hi++) {
     const s1 = scores[0][hi], s2 = scores[1][hi];
     const holesLeft = holes - (hi + 1);
-
-    // Check for dormie / closed before this hole is scored
-    if (!closed && Math.abs(p1Up) > holesLeft) {
-      closed = true;
-      closedAt = hi; // closed before this hole
-      const leadsBy = Math.abs(p1Up);
-      const remaining = holesLeft + 1; // holes left including current
-      closedReason = leadsBy + '&' + remaining;
-    }
 
     if (s1 === null || s2 === null) {
       holeResults.push({ hole: hi+1, p1Score: s1, p2Score: s2, p1Name: p1, p2Name: p2,
@@ -3957,48 +3996,45 @@ function computeMatchPlay1v1() {
       continue;
     }
 
+    // Score the hole
     let result;
-    if (s1 < s2) { result = 'p1'; p1Up++; }
+    if (s1 < s2)      { result = 'p1'; p1Up++; }
     else if (s2 < s1) { result = 'p2'; p1Up--; }
-    else { result = 'halved'; }
+    else              { result = 'halved'; }
 
     holeResults.push({ hole: hi+1, p1Score: s1, p2Score: s2, p1Name: p1, p2Name: p2,
       result, p1Up, closed, holesLeft });
+
+    // Check closure AFTER scoring
+    const lead = Math.abs(p1Up);
+    if (lead > holesLeft) {
+      closed = true;
+      closedReason = holesLeft === 0 ? '1UP' : lead + '&' + holesLeft;
+      break;
+    }
   }
 
-  // Final state
+  // If all holes played and no closure (all square or dormie that never closed)
+  if (!closed) {
+    const holesPlayed = holeResults.filter(r => r.result !== null).length;
+    if (holesPlayed === holes && p1Up !== 0) {
+      closed = true;
+      closedReason = '1UP'; // won on last hole
+    }
+  }
+
   const holesPlayed = holeResults.filter(r => r.result !== null).length;
   const holesLeft = holes - holesPlayed;
-  if (!closed && holesLeft === 0) {
-    // Round over - check if closed on last hole
-    if (Math.abs(p1Up) > 0) {
-      closed = true;
-      closedReason = '1UP';
-    }
-  }
-  // Check for early finish (closed mid-round)
-  if (!closed && holesPlayed > 0) {
-    const last = holeResults.filter(r => r.result !== null).slice(-1)[0];
-    if (last && Math.abs(last.p1Up) > holesLeft) {
-      closed = true;
-      const leadsBy = Math.abs(last.p1Up);
-      const rem = holesLeft;
-      closedReason = leadsBy + '&' + rem;
-    }
-  }
-
   return { holeResults, p1Up, holesPlayed, holesLeft, closed, closedReason, p1Name: p1, p2Name: p2 };
 }
 
 // Best ball 2v2 — teams determined by teamSlots
+// Best ball 2v2 — teams determined by teamSlots
 function computeMatchPlay2v2() {
   const aIdxs = [teamSlots.a0, teamSlots.a1].filter(i => i >= 0 && players[i]);
   const bIdxs = [teamSlots.b0, teamSlots.b1].filter(i => i >= 0 && players[i]);
-
-  // Fallback if slots not set
   const finalAIdxs = aIdxs.length ? aIdxs : [0, 1];
   const finalBIdxs = bIdxs.length ? bIdxs : [2, 3];
-
   const teamA = finalAIdxs.map(i => players[i]).filter(Boolean);
   const teamB = finalBIdxs.map(i => players[i]).filter(Boolean);
 
@@ -4007,8 +4043,8 @@ function computeMatchPlay2v2() {
   let closed = false, closedReason = '';
 
   for (let hi = 0; hi < holes; hi++) {
-    const scoresA = finalAIdxs.map(i => scores[i] ? scores[i][hi] : null).filter(s => s !== null);
-    const scoresB = finalBIdxs.map(i => scores[i] ? scores[i][hi] : null).filter(s => s !== null);
+    const scoresA = finalAIdxs.map(i => scores[i]?.[hi]).filter(s => s != null);
+    const scoresB = finalBIdxs.map(i => scores[i]?.[hi]).filter(s => s != null);
     const holesLeft = holes - (hi + 1);
 
     if (!scoresA.length || !scoresB.length) {
@@ -4018,28 +4054,33 @@ function computeMatchPlay2v2() {
 
     const scoreA = Math.min(...scoresA);
     const scoreB = Math.min(...scoresB);
+
+    // Score the hole
     let result;
-    if (scoreA < scoreB) { result = 'A'; teamAUp++; }
+    if (scoreA < scoreB)      { result = 'A'; teamAUp++; }
     else if (scoreB < scoreA) { result = 'B'; teamAUp--; }
-    else { result = 'halved'; }
+    else                      { result = 'halved'; }
 
     holeResults.push({ hole: hi+1, bestA: scoreA, bestB: scoreB, result, teamAUp, holesLeft });
+
+    // Check closure AFTER scoring
+    const lead = Math.abs(teamAUp);
+    if (lead > holesLeft) {
+      closed = true;
+      closedReason = holesLeft === 0 ? '1UP' : lead + '&' + holesLeft;
+      break;
+    }
+  }
+
+  if (!closed) {
+    const holesPlayed = holeResults.filter(r => r.result !== null).length;
+    if (holesPlayed === holes && teamAUp !== 0) {
+      closed = true; closedReason = '1UP';
+    }
   }
 
   const holesPlayed = holeResults.filter(r => r.result !== null).length;
   const holesLeft = holes - holesPlayed;
-
-  if (!closed && holesPlayed > 0) {
-    const last = holeResults.filter(r => r.result !== null).slice(-1)[0];
-    if (last && Math.abs(last.teamAUp) > holesLeft) {
-      closed = true;
-      closedReason = Math.abs(last.teamAUp) + '&' + holesLeft;
-    } else if (holesLeft === 0 && Math.abs(teamAUp) > 0) {
-      closed = true;
-      closedReason = '1UP';
-    }
-  }
-
   return { holeResults, teamAUp, holesPlayed, holesLeft, closed, closedReason, teamA, teamB };
 }
 
@@ -4145,29 +4186,38 @@ function computeScramble2v2() {
   for (let hi = 0; hi < holes; hi++) {
     const sA = sc.A[hi], sB = sc.B[hi];
     const holesLeft = holes - (hi + 1);
+
     if (sA === null || sB === null) {
       holeResults.push({ hole: hi+1, sA, sB, result: null, teamAUp, holesLeft });
       continue;
     }
+
+    // Score the hole
     let result;
-    if      (sA < sB) { result = 'A'; teamAUp++; }
+    if (sA < sB)      { result = 'A'; teamAUp++; }
     else if (sB < sA) { result = 'B'; teamAUp--; }
     else              { result = 'halved'; }
+
     holeResults.push({ hole: hi+1, sA, sB, result, teamAUp, holesLeft });
+
+    // Check closure AFTER scoring
+    const lead = Math.abs(teamAUp);
+    if (lead > holesLeft) {
+      closed = true;
+      closedReason = holesLeft === 0 ? '1UP' : lead + '&' + holesLeft;
+      break;
+    }
   }
 
-  const holesPlayed = holeResults.filter(r => r.result !== null).length;
-  const holesLeft   = holes - holesPlayed;
-
-  if (!closed && holesPlayed > 0) {
-    const last = holeResults.filter(r => r.result !== null).slice(-1)[0];
-    if (last && Math.abs(last.teamAUp) > holesLeft) {
-      closed = true; closedReason = Math.abs(last.teamAUp) + '&' + holesLeft;
-    } else if (holesLeft === 0 && Math.abs(teamAUp) > 0) {
+  if (!closed) {
+    const holesPlayed = holeResults.filter(r => r.result !== null).length;
+    if (holesPlayed === holes && teamAUp !== 0) {
       closed = true; closedReason = '1UP';
     }
   }
 
+  const holesPlayed = holeResults.filter(r => r.result !== null).length;
+  const holesLeft   = holes - holesPlayed;
   return { holeResults, teamAUp, holesPlayed, holesLeft, closed, closedReason, teamAName, teamBName };
 }
 
