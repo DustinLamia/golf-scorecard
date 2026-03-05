@@ -3118,9 +3118,9 @@ async function loadCompare(){
 
   const fmtD=d=>d===0?'E':d>0?'+'+d:''+d;
 
-  // ── 3. Course breakdown (built once) ──
+  // ── 3. Course breakdown (eligible rounds only) ──
   const courseMap={};
-  data.forEach(r=>{
+  data.filter(r=>!r.scramble&&!(r.match_play&&Array.isArray(r.players)&&r.players.length===4)).forEach(r=>{
     const name=r.course_name||'Unknown Course';
     if(!courseMap[name])courseMap[name]={rounds:0,totalDiff:0,totalStrokes:0,best:Infinity,bestStrokes:null,roundList:[]};
     courseMap[name].rounds++;
@@ -3189,7 +3189,9 @@ function renderTrendChart(n){
   const fmtD=d=>d===0?'E':d>0?'+'+d:''+d;
   const fmtDate=s=>{const d=new Date(s);return(d.getMonth()+1)+'/'+(d.getDate());};
   [5,10,20].forEach(x=>{const btn=document.getElementById('ttoggle-'+x);if(btn){btn.style.background=x===n?'var(--gold)':'transparent';btn.style.color=x===n?'var(--dark)':'var(--gold)';}});
-  const slice=data.slice(-n);
+  // Only eligible rounds (exclude scramble and 2v2 match play)
+  const eligData=data.filter(r=>!r.scramble&&!(r.match_play&&Array.isArray(r.players)&&r.players.length===4));
+  const slice=eligData.slice(-n);
   const diffs=slice.map(r=>r.score_vs_par||0);
   const minD=Math.min(...diffs);
   const maxD=Math.max(...diffs);
