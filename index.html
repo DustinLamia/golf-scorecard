@@ -140,7 +140,7 @@
   .rc-menu-dropdown button{display:block;width:100%;text-align:left;padding:10px 16px;background:none;border:none;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;}
   .rc-menu-dropdown button:hover{background:rgba(245,240,232,.1);}
   .rc-menu-dropdown button.danger{color:#f0a090;}
-  .edit-round-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .edit-round-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
   .edit-round-modal{background:#1a2e1a;border:1px solid rgba(245,240,232,.2);border-radius:16px;padding:24px;width:100%;max-width:400px;}
   .edit-round-modal h3{font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px;color:var(--gold);margin-bottom:18px;}
   .edit-round-modal label{display:block;font-size:.75rem;color:var(--tan);letter-spacing:.5px;margin-bottom:4px;margin-top:12px;}
@@ -1403,9 +1403,6 @@ function exportScores(){
     if(topName&&topCount>0)skinsWinner={name:topName,skins:topCount};
   }
   drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff:holeOffset,skinsWinner});
-}
-  const today=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,players,scores,holeOff:holeOffset});
 }
 
 function exportRoundFromHistory(roundId){
