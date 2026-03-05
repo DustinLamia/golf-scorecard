@@ -1924,6 +1924,7 @@ function confirmReset(){
     selectedCourse=null;selectedTee=null;
     versusMode=null;
     teamAssignment=[];
+    teamSlots={a0:0,a1:1,b0:2,b1:3};
     selectedNine='front';
     holeOffset=0;
     const vProNote=document.getElementById('versus-pro-note');if(vProNote)vProNote.style.display='none';
@@ -3333,68 +3334,45 @@ function selectVersusFormat(fmt, btn) {
   }
 }
 
+// teamSlots: {a0, a1, b0, b1} — player indices for each slot
+let teamSlots = { a0: 0, a1: 1, b0: 2, b1: 3 };
+
 function renderTeamBuilder() {
   const inputs = document.querySelectorAll('.player-name');
-  const names = Array.from(inputs).map((inp, i) => inp.value.trim() || 'Player ' + (i+1));
-  const activePlayers = Array.from(inputs).map((inp, i) => ({name: inp.value.trim() || 'Player '+(i+1), idx: i}))
-    .filter((_, i) => i === 0 || inputs[i].value.trim()); // always include P1, others only if named
+  const activePlayers = Array.from(inputs)
+    .map((inp, i) => ({ name: inp.value.trim() || 'Player ' + (i+1), idx: i }))
+    .filter((_, i) => i === 0 || inputs[i].value.trim());
 
-  // Default: first 2 on A, rest on B
-  if (teamAssignment.length !== activePlayers.length) {
-    teamAssignment = activePlayers.map((_, i) => i < 2 ? 'A' : 'B');
+  // Reset slots if player count changed
+  if (activePlayers.length <= 2) {
+    teamSlots = { a0: activePlayers[0]?.idx ?? 0, a1: -1, b0: activePlayers[1]?.idx ?? 1, b1: -1 };
+  } else {
+    // Only reset to defaults if slots are still at initial values
+    const allIdxs = activePlayers.map(p => p.idx);
+    if (!allIdxs.includes(teamSlots.a0)) teamSlots.a0 = activePlayers[0]?.idx ?? 0;
+    if (!allIdxs.includes(teamSlots.a1)) teamSlots.a1 = activePlayers[1]?.idx ?? 1;
+    if (!allIdxs.includes(teamSlots.b0)) teamSlots.b0 = activePlayers[2]?.idx ?? 2;
+    if (!allIdxs.includes(teamSlots.b1)) teamSlots.b1 = activePlayers[3]?.idx ?? 3;
   }
 
-  const selectStyle = 'width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(245,240,232,.2);border-radius:8px;padding:8px 10px;color:var(--cream);font-family:"DM Sans",sans-serif;font-size:.85rem;outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;';
+  const opts = (currentIdx) => '<option value="-1">—</option>' +
+    activePlayers.map(p =>
+      `<option value="${p.idx}" ${p.idx === currentIdx ? 'selected' : ''}>${p.name}</option>`
+    ).join('');
+
+  const selStyle = 'width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(245,240,232,.2);border-radius:8px;padding:8px 10px;color:var(--cream);font-family:"DM Sans",sans-serif;font-size:.85rem;outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;';
 
   const aContainer = document.getElementById('team-a-selects');
   const bContainer = document.getElementById('team-b-selects');
-  aContainer.innerHTML = '';
-  bContainer.innerHTML = '';
 
-  const teamAPlayers = activePlayers.filter((_, i) => teamAssignment[i] === 'A');
-  const teamBPlayers = activePlayers.filter((_, i) => teamAssignment[i] === 'B');
-
-  // One dropdown per team slot — always show 2 slots per team
-  [0, 1].forEach(slot => {
-    // Team A slot
-    const selA = document.createElement('select');
-    selA.style.cssText = selectStyle + 'border-color:rgba(41,128,185,.4);';
-    selA.innerHTML = '<option value="">— Pick player —</option>' +
-      activePlayers.map((p, i) => `<option value="${i}" ${teamAPlayers[slot]&&teamAPlayers[slot].idx===p.idx?'selected':''}>${p.name}</option>`).join('');
-    selA.onchange = () => handleTeamSelect('A', slot, parseInt(selA.value), activePlayers);
-    aContainer.appendChild(selA);
-
-    // Team B slot
-    const selB = document.createElement('select');
-    selB.style.cssText = selectStyle + 'border-color:rgba(201,168,76,.4);';
-    selB.innerHTML = '<option value="">— Pick player —</option>' +
-      activePlayers.map((p, i) => `<option value="${i}" ${teamBPlayers[slot]&&teamBPlayers[slot].idx===p.idx?'selected':''}>${p.name}</option>`).join('');
-    selB.onchange = () => handleTeamSelect('B', slot, parseInt(selB.value), activePlayers);
-    bContainer.appendChild(selB);
-  });
-}
-
-function handleTeamSelect(team, slot, playerIdx, activePlayers) {
-  if (isNaN(playerIdx)) return;
-  // Build current team arrays
-  const teamA = activePlayers.filter((_, i) => teamAssignment[i] === 'A');
-  const teamB = activePlayers.filter((_, i) => teamAssignment[i] === 'B');
-
-  // Find who was previously in this slot on the other team and swap
-  const displaced = team === 'A' ? teamB[slot] : teamA[slot];
-  const selected = activePlayers[playerIdx];
-
-  // Find selected player's current assignment index
-  const selectedAssignmentIdx = activePlayers.findIndex(p => p.idx === selected.idx);
-  const displacedAssignmentIdx = displaced ? activePlayers.findIndex(p => p.idx === displaced.idx) : -1;
-
-  // Swap assignments
-  teamAssignment[selectedAssignmentIdx] = team;
-  if (displacedAssignmentIdx >= 0) {
-    teamAssignment[displacedAssignmentIdx] = team === 'A' ? 'B' : 'A';
-  }
-
-  renderTeamBuilder();
+  aContainer.innerHTML = `
+    <select style="${selStyle}border-color:rgba(41,128,185,.4);" onchange="teamSlots.a0=parseInt(this.value)">${opts(teamSlots.a0)}</select>
+    <select style="${selStyle}border-color:rgba(41,128,185,.4);" onchange="teamSlots.a1=parseInt(this.value)">${opts(teamSlots.a1)}</select>
+  `;
+  bContainer.innerHTML = `
+    <select style="${selStyle}border-color:rgba(201,168,76,.4);" onchange="teamSlots.b0=parseInt(this.value)">${opts(teamSlots.b0)}</select>
+    <select style="${selStyle}border-color:rgba(201,168,76,.4);" onchange="teamSlots.b1=parseInt(this.value)">${opts(teamSlots.b1)}</select>
+  `;
 }
 
 // ── Skins Engine ──
@@ -3627,18 +3605,12 @@ function computeMatchPlay1v1() {
   return { holeResults, p1Up, holesPlayed, holesLeft, closed, closedReason, p1Name: p1, p2Name: p2 };
 }
 
-// Best ball 2v2 — teams determined by teamAssignment array
+// Best ball 2v2 — teams determined by teamSlots
 function computeMatchPlay2v2() {
-  // teamAssignment maps active player slots to 'A'|'B'
-  // Build actual player indices for each team
-  const inputs = document.querySelectorAll('.player-name');
-  const activePlayers = Array.from(inputs).map((inp, i) => ({name: players[i]||inp.value.trim()||'Player '+(i+1), idx: i}))
-    .filter((p, i) => i === 0 || (players[i] && players[i].trim()));
+  const aIdxs = [teamSlots.a0, teamSlots.a1].filter(i => i >= 0 && players[i]);
+  const bIdxs = [teamSlots.b0, teamSlots.b1].filter(i => i >= 0 && players[i]);
 
-  const aIdxs = activePlayers.filter((_, i) => teamAssignment[i] !== 'B').map(p => p.idx);
-  const bIdxs = activePlayers.filter((_, i) => teamAssignment[i] === 'B').map(p => p.idx);
-
-  // Fallback if teamAssignment not set
+  // Fallback if slots not set
   const finalAIdxs = aIdxs.length ? aIdxs : [0, 1];
   const finalBIdxs = bIdxs.length ? bIdxs : [2, 3];
 
@@ -4032,10 +4004,7 @@ document.addEventListener('DOMContentLoaded', function(){
   // Re-render team builder when player names change
   document.querySelectorAll('.player-name').forEach(inp => {
     inp.addEventListener('input', () => {
-      if (versusMode === 'matchplay2v2') {
-        teamAssignment = []; // reset so defaults recalculate
-        renderTeamBuilder();
-      }
+      if (versusMode === 'matchplay2v2') renderTeamBuilder();
     });
   });
 
