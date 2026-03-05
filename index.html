@@ -2582,13 +2582,21 @@ async function loadStats(){
     return;
   }
 
+  // Rounds eligible for handicap + stats:
+  // Regular, Skins, Match Play 1v1 only — not 2v2 or Scramble
+  const eligibleRounds = data.filter(r => {
+    if(r.scramble) return false;          // Scramble 2v2 — team format, not individual
+    if(r.match_play && Array.isArray(r.players) && r.players.length === 4) return false; // Match Play 2v2
+    return true;
+  });
+
   // Aggregate stats
-  const roundCount=data.length;
+  const roundCount=eligibleRounds.length;
   let totalDiff=0,bestDiff=Infinity,worstDiff=-Infinity,bestStrokes=null,worstStrokes=null;
   let eagles=0,birdies=0,pars=0,bogeys=0,doubles=0,totalHoles=0;
   let par3scores=[],par4scores=[],par5scores=[];
 
-  data.forEach(round=>{
+  eligibleRounds.forEach(round=>{
     // Use score_vs_par directly — works for both live and past rounds
     const roundDiff=round.score_vs_par||0;
     totalDiff+=roundDiff;
@@ -2638,15 +2646,15 @@ async function loadStats(){
   const bestStr=bestDiff===Infinity?'-':fmtDiff(bestDiff);
   const worstStr=worstDiff===-Infinity?'-':fmtDiff(worstDiff);
 
-  // Handicap
-  const handicap=calcHandicap(data);
+  // Handicap — eligible rounds only
+  const handicap=calcHandicap(eligibleRounds);
   const handicapDisplay=fmtHandicap(handicap);
 
-  // Trend: compare handicap from last 5 vs prior 5
+  // Trend: compare handicap from last 5 vs prior 5 eligible rounds
   let trendHTML='';
-  if(handicap!==null&&data.length>=6){
-    const hNow=calcHandicap(data.slice(0,5));
-    const hPrev=calcHandicap(data.slice(5,10));
+  if(handicap!==null&&eligibleRounds.length>=6){
+    const hNow=calcHandicap(eligibleRounds.slice(0,5));
+    const hPrev=calcHandicap(eligibleRounds.slice(5,10));
     if(hNow!==null&&hPrev!==null){
       const delta=Math.round((hNow-hPrev)*10)/10;
       if(delta<0)trendHTML=`<div class="stat-sub" style="color:#7ec8f5;">&#9650; Improving (${delta.toFixed(1)})</div>`;
@@ -3173,11 +3181,13 @@ function renderHcpChart(n){
   if(!data)return;
   const fmtDate=s=>{const d=new Date(s);return(d.getMonth()+1)+'/'+(d.getDate());};
   [5,10,20].forEach(x=>{const btn=document.getElementById('htoggle-'+x);if(btn){btn.style.background=x===n?'var(--gold)':'transparent';btn.style.color=x===n?'var(--dark)':'var(--gold)';}});
+  // Only eligible rounds count toward handicap
+  const eligData=data.filter(r=>!r.scramble&&!(r.match_play&&Array.isArray(r.players)&&r.players.length===4));
   const allHcpPoints=[];
-  for(let i=2;i<data.length;i++){
-    const subset=data.slice(0,i+1).reverse();
+  for(let i=2;i<eligData.length;i++){
+    const subset=eligData.slice(0,i+1).reverse();
     const h=calcHandicap(subset);
-    if(h!==null)allHcpPoints.push({date:data[i].played_at,h});
+    if(h!==null)allHcpPoints.push({date:eligData[i].played_at,h});
   }
   const el=document.getElementById('compare-hcp-chart');
   if(!el)return;
@@ -3592,86 +3602,6 @@ function toggleRoundScorecard(roundId){
           }
 
           playerRows+=`<td style="font-size:.78rem;"><span style="display:inline-block;width:24px;height:24px;line-height:24px;border-radius:4px;${bg}${holeBorder(border)}text-align:center;">${s!==null?s:'-'}</span></td>`;
-          if(split18&&hi===8){
-            const outDiff=frontTotal-frontPar;
-            const outStr=outDiff===0?'E':outDiff>0?'+'+outDiff:''+outDiff;
-            playerRows+=`<td ${SPLIT_TD}>${frontTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${outStr}</div></td>`;
-          }
-        });
-        if(split18){
-          const inDiff=backTotal-backPar;
-          const inStr=inDiff===0?'E':inDiff>0?'+'+inDiff:''+inDiff;
-          playerRows+=`<td ${SPLIT_TD}>${backTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${inStr}</div></td>`;
-        }
-        playerRows+=`<td style="font-size:.82rem;font-family:'Bebas Neue',cursive;letter-spacing:1px;">${total}<div style="font-size:.6rem;font-family:'DM Sans',sans-serif;color:var(--tan);font-weight:400;">${vspStr}</div></td></tr>`;
-      });
-    }
-
-    if(isScramble){
-      // Show Team A / Team B rows with best-ball scores per hole
-      const aIdxs=[0,1].filter(i=>allScores[i]);
-      const bIdxs=[2,3].filter(i=>allScores[i]);
-      [['A',aIdxs,'#7ec8f5'],['B',bIdxs,'var(--gold)']].forEach(([team,idxs,color])=>{
-        if(!idxs.length)return;
-        const teamNames=idxs.map(i=>roundPlayers[i]).filter(Boolean).join(' / ');
-        const teamScores=Array.from({length:holeCount},(_,hi)=>{
-          const vals=idxs.map(i=>allScores[i]?.[hi]).filter(s=>s!=null);
-          return vals.length?Math.min(...vals):null;
-        });
-        const total=teamScores.filter(s=>s!==null).reduce((a,b)=>a+b,0);
-        const vspar=total-(teamScores.map((s,hi)=>s!==null?roundPars[hi]:0).reduce((a,b)=>a+b,0));
-        const vspStr=vspar===0?'E':vspar>0?'+'+vspar:''+vspar;
-        playerRows+=`<tr>
-          <td style="text-align:left;padding-left:8px;white-space:nowrap;line-height:1.3;">
-            <span style="font-size:.55rem;font-weight:700;color:${color};letter-spacing:.5px;display:block;">TEAM ${team}</span>
-            <span style="font-size:.75rem;font-weight:500;">${teamNames}</span>
-          </td>`;
-        let frontTotal=0,backTotal=0,frontPar=0,backPar=0;
-        teamScores.forEach((s,hi)=>{
-          const p=roundPars[hi];
-          const d=s!==null?s-p:null;
-          let bg='';
-          if(d!==null){
-            if(d<=-2)bg='background:rgba(201,168,76,.35);';
-            else if(d===-1)bg='background:rgba(41,128,185,.3);';
-            else if(d===0)bg='background:rgba(255,255,255,.07);';
-            else if(d===1)bg='background:rgba(192,57,43,.25);';
-            else bg='background:rgba(192,57,43,.45);';
-          }
-          if(split18&&s!==null){if(hi<9){frontTotal+=s;frontPar+=p;}else{backTotal+=s;backPar+=p;}}
-          playerRows+=`<td style="font-size:.78rem;"><span style="display:inline-block;width:24px;height:24px;line-height:24px;border-radius:4px;${bg}text-align:center;">${s!==null?s:'-'}</span></td>`;
-          if(split18&&hi===8){
-            const outDiff=frontTotal-frontPar;
-            playerRows+=`<td ${SPLIT_TD}>${frontTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${outDiff===0?'E':outDiff>0?'+'+outDiff:''+outDiff}</div></td>`;
-          }
-        });
-        if(split18){
-          const inDiff=backTotal-backPar;
-          playerRows+=`<td ${SPLIT_TD}>${backTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${inDiff===0?'E':inDiff>0?'+'+inDiff:''+inDiff}</div></td>`;
-        }
-        playerRows+=`<td style="font-size:.82rem;font-family:'Bebas Neue',cursive;letter-spacing:1px;">${total||'-'}<div style="font-size:.6rem;font-family:'DM Sans',sans-serif;color:var(--tan);font-weight:400;">${total?vspStr:''}</div></td></tr>`;
-      });
-    } else {
-      roundPlayers.forEach((name,pi)=>{
-        const playerScores=Array.isArray(allScores[pi])?allScores[pi]:[];
-        const total=playerScores.filter(s=>s!==null).reduce((a,b)=>a+b,0);
-        const vspar=total-(playerScores.map((s,hi)=>s!==null?roundPars[hi]:0).reduce((a,b)=>a+b,0));
-        const vspStr=vspar===0?'E':vspar>0?'+'+vspar:''+vspar;
-        playerRows+=`<tr><td style="text-align:left;padding-left:8px;font-size:.78rem;font-weight:500;white-space:nowrap;">${name}</td>`;
-        let frontTotal=0,backTotal=0,frontPar=0,backPar=0;
-        playerScores.forEach((s,hi)=>{
-          const p=roundPars[hi];
-          const d=s!==null?s-p:null;
-          let bg='';
-          if(d!==null){
-            if(d<=-2)bg='background:rgba(201,168,76,.35);';
-            else if(d===-1)bg='background:rgba(41,128,185,.3);';
-            else if(d===0)bg='background:rgba(255,255,255,.07);';
-            else if(d===1)bg='background:rgba(192,57,43,.25);';
-            else bg='background:rgba(192,57,43,.45);';
-          }
-          if(split18&&s!==null){if(hi<9){frontTotal+=s;frontPar+=p;}else{backTotal+=s;backPar+=p;}}
-          playerRows+=`<td style="font-size:.78rem;"><span style="display:inline-block;width:24px;height:24px;line-height:24px;border-radius:4px;${bg}text-align:center;">${s!==null?s:'-'}</span></td>`;
           if(split18&&hi===8){
             const outDiff=frontTotal-frontPar;
             const outStr=outDiff===0?'E':outDiff>0?'+'+outDiff:''+outDiff;
