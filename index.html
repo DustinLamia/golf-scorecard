@@ -256,6 +256,55 @@
   .past-error{font-size:.78rem;color:#f0a090;margin-top:8px;text-align:center;min-height:18px;}
 
 
+  /* ── Versus Mode ── */
+  .versus-toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;}
+  .versus-toggle-row label{font-size:.85rem;color:var(--tan);}
+  .toggle-switch{position:relative;width:44px;height:24px;flex-shrink:0;}
+  .toggle-switch input{opacity:0;width:0;height:0;}
+  .toggle-track{position:absolute;inset:0;background:rgba(245,240,232,.15);border-radius:12px;cursor:pointer;transition:background .2s;}
+  .toggle-track::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s;}
+  .toggle-switch input:checked + .toggle-track{background:var(--gold);}
+  .toggle-switch input:checked + .toggle-track::before{transform:translateX(20px);}
+  .versus-options{margin-top:14px;display:none;}
+  .versus-options.show{display:block;}
+  .versus-format-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  .versus-format-btn{padding:7px 16px;border-radius:8px;border:1px solid rgba(245,240,232,.25);background:transparent;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;transition:all .15s;}
+  .versus-format-btn.active{background:var(--gold);border-color:var(--gold);color:var(--dark);font-weight:600;}
+  .pro-gate-note{font-size:.72rem;color:var(--tan);margin-top:8px;padding:8px 12px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:8px;}
+  /* Live skins bar */
+  #skins-live-bar{display:none;margin:0 0 10px;border-radius:10px;background:rgba(0,0,0,.3);border:1px solid rgba(201,168,76,.3);padding:10px 14px;}
+  .skins-bar-title{font-size:.65rem;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+  .skins-bar-rows{display:flex;flex-direction:column;gap:5px;}
+  .skins-bar-row{display:flex;align-items:center;justify-content:space-between;}
+  .skins-bar-name{font-size:.8rem;color:var(--cream);font-weight:500;}
+  .skins-bar-val{font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:1px;color:var(--gold);}
+  .skins-bar-val.leader{color:#f5d87a;}
+  .skins-bar-pot{font-size:.7rem;color:var(--tan);}
+  /* Skins results overlay */
+  #skins-results-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;align-items:center;justify-content:center;padding:20px;}
+  #skins-results-overlay.open{display:flex;}
+  .skins-results-modal{background:#1a2e17;border:1px solid rgba(201,168,76,.4);border-radius:18px;padding:28px 24px;width:100%;max-width:420px;max-height:88vh;overflow-y:auto;}
+  .skins-results-title{font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:4px;}
+  .skins-results-sub{font-size:.72rem;color:var(--tan);letter-spacing:1px;margin-bottom:20px;}
+  .skins-winner-card{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.35);border-radius:12px;padding:16px 18px;margin-bottom:12px;}
+  .skins-winner-name{font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:2px;color:var(--gold);}
+  .skins-winner-count{font-size:.82rem;color:var(--cream);margin-top:2px;}
+  .skins-hole-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .skins-hole-chip{padding:3px 9px;border-radius:20px;background:rgba(201,168,76,.2);color:var(--gold);font-size:.72rem;font-weight:600;}
+  .skins-carryover-chip{background:rgba(192,57,43,.2);color:#f0a090;}
+  .skins-hole-breakdown{margin-top:14px;}
+  .skins-hole-breakdown-title{font-size:.65rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;}
+  .skins-hole-row{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid rgba(245,240,232,.06);}
+  .skins-hole-row:last-child{border-bottom:none;}
+  .skins-hole-num{font-family:'Bebas Neue',cursive;font-size:1rem;color:var(--tan);width:28px;flex-shrink:0;}
+  .skins-hole-winner{font-size:.82rem;color:var(--cream);flex:1;}
+  .skins-hole-pot{font-size:.72rem;color:var(--gold);font-weight:600;}
+  .skins-hole-carried{font-size:.7rem;color:#f0a090;font-style:italic;}
+  .skins-results-btns{display:flex;gap:10px;margin-top:20px;}
+  .skins-results-btns button{flex:1;padding:12px;border-radius:10px;border:none;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;}
+  .btn-skins-close{background:rgba(245,240,232,.12);color:var(--cream);}
+  .btn-skins-save{background:var(--gold);color:var(--dark);}
+
   /* ── Bottom Nav ── */
   #bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#1a2e17;border-top:1px solid rgba(201,168,76,.2);z-index:1000;padding:8px 0 max(8px,env(safe-area-inset-bottom));}.bottom-nav-inner{display:flex;justify-content:space-around;align-items:center;max-width:600px;margin:0 auto;}
   .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;background:none;border:none;cursor:pointer;color:var(--tan);font-family:'DM Sans',sans-serif;font-size:.6rem;letter-spacing:.5px;text-transform:uppercase;transition:color .15s;}
@@ -392,6 +441,23 @@
     </div>
   </div>
 
+  <div class="setup-card" id="versus-setup-card">
+    <div class="versus-toggle-row">
+      <h2 style="margin-bottom:0;">Versus Mode</h2>
+      <label class="toggle-switch">
+        <input type="checkbox" id="versus-toggle" onchange="toggleVersus()">
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+    <div class="versus-options" id="versus-options">
+      <div style="font-size:.75rem;color:var(--tan);margin-bottom:6px;">Format</div>
+      <div class="versus-format-btns">
+        <button class="versus-format-btn active" data-format="skins" onclick="selectVersusFormat('skins',this)">Skins</button>
+      </div>
+      <div class="pro-gate-note" id="versus-pro-note" style="display:none;">&#128274; Versus Mode is a Pro feature. <span style="color:var(--gold);cursor:pointer;text-decoration:underline;" onclick="navTo('profile')">Upgrade to Pro</span></div>
+    </div>
+  </div>
+
   <button class="btn-start" id="start-btn" onclick="startRound()">Start Round</button>
 </div>
 
@@ -408,6 +474,13 @@
     <div style="font-size:.68rem;color:var(--tan);margin-top:4px;text-align:center;letter-spacing:.5px;" id="wake-status">&#127908; Wake word active</div>
     <div class="voice-transcript" id="voice-transcript"></div>
     <div class="voice-feedback" id="voice-feedback"></div>
+  </div>
+  <div id="skins-live-bar">
+    <div class="skins-bar-title">
+      <span>&#9652; Skins</span>
+      <span class="skins-bar-pot" id="skins-bar-pot"></span>
+    </div>
+    <div class="skins-bar-rows" id="skins-bar-rows"></div>
   </div>
   <div class="scorecard-wrapper">
     <table>
@@ -722,6 +795,8 @@ function startRound(){
   }else{pars=Array(holes).fill(4);yardages=Array(holes).fill(0);}
   scores=players.map(()=>Array(holes).fill(null));
   saveSession();
+  // Reset skins live bar
+  const slb=document.getElementById('skins-live-bar');if(slb)slb.style.display='none';
   document.getElementById('setup-screen').style.display='none';
   document.getElementById('scorecard-screen').style.display='block';
   if(selectedCourse){
@@ -770,7 +845,7 @@ function buildTable(){
 }
 
 function updatePar(hi,val){pars[hi]=parseInt(val)||4;refreshTotals();document.getElementById('par-total').textContent=pars.reduce((a,b)=>a+b,0);}
-function manualScore(pi,hi,val){scores[pi][hi]=val?parseInt(val):null;colorScore(pi,hi);refreshTotals();saveSession();}
+function manualScore(pi,hi,val){scores[pi][hi]=val?parseInt(val):null;colorScore(pi,hi);refreshTotals();saveSession();updateSkinsLiveBar();}
 function colorScore(pi,hi){
   const inp=document.getElementById('s-'+pi+'-'+hi);
   if(!inp)return;
@@ -1181,6 +1256,7 @@ function applyScoresDirectly(hole,scoreMap){
   document.getElementById('voice-feedback').textContent='\u2713 '+readback;
   setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},5000);
   showAndSpeak('✓ '+readback,6000);
+  updateSkinsLiveBar();
 }
 
 function exportScores(){
@@ -1528,6 +1604,10 @@ function confirmReset(){
     isListening=false;
     if(recognition){recognition._killed=true;try{recognition.stop();}catch(e){}}
     selectedCourse=null;selectedTee=null;
+    versusMode=null;
+    const vt=document.getElementById('versus-toggle');if(vt)vt.checked=false;
+    const vo=document.getElementById('versus-options');if(vo)vo.classList.remove('show');
+    const slb=document.getElementById('skins-live-bar');if(slb)slb.style.display='none';
     document.getElementById('scorecard-screen').style.display='none';
     document.getElementById('setup-screen').style.display='block';
     document.getElementById('course-results').innerHTML='';
@@ -2509,6 +2589,11 @@ async function finishRound(){
     setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
     return;
   }
+  // Show skins results before saving if in skins mode
+  if(versusMode==='skins'){
+    showSkinsResults();
+    return;
+  }
   // Build round data
   const roundData={
     user_id:currentUser.id,
@@ -2769,6 +2854,208 @@ async function saveEditRound(){
   if(statsEl&&statsEl.innerHTML&&!statsEl.innerHTML.includes('Loading'))loadStats();
   const compareEl=document.getElementById('compare-screen');
   if(compareEl&&compareEl.style.display==='block')loadCompare();
+}
+
+// ── Versus / Skins Mode ──
+// versusMode: null | 'skins'
+let versusMode = null;
+
+// Stub isPro check - Phase 4 will wire real Stripe gate
+function isPro() {
+  // For now treat all logged-in users as Pro for testing
+  // Phase 4: replace with actual entitlement check
+  return !!currentUser;
+}
+
+function toggleVersus() {
+  const checked = document.getElementById('versus-toggle').checked;
+  const opts = document.getElementById('versus-options');
+  const note = document.getElementById('versus-pro-note');
+  if (checked) {
+    opts.classList.add('show');
+    if (!isPro()) {
+      note.style.display = 'block';
+      versusMode = null;
+    } else {
+      note.style.display = 'none';
+      versusMode = 'skins';
+    }
+  } else {
+    opts.classList.remove('show');
+    versusMode = null;
+  }
+}
+
+function selectVersusFormat(fmt, btn) {
+  document.querySelectorAll('.versus-format-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (!isPro()) { return; }
+  versusMode = fmt;
+}
+
+// ── Skins Engine ──
+// Returns array of hole results: {hole (1-based), winner (name|null), tied (bool), potSize (skins), carried (bool)}
+function computeSkins() {
+  const results = [];
+  let carryover = 0;
+  for (let hi = 0; hi < holes; hi++) {
+    const holePar = pars[hi];
+    // Gather scores for this hole - only players who have scored
+    const holeScores = players.map((name, pi) => ({
+      name,
+      score: scores[pi][hi]
+    })).filter(p => p.score !== null);
+
+    if (!holeScores.length) {
+      results.push({ hole: hi + 1, winner: null, tied: false, potSize: 1 + carryover, carried: true, skipped: true });
+      continue;
+    }
+
+    // Only count hole if ALL players have scored it
+    const allScored = players.every((_, pi) => scores[pi][hi] !== null);
+    if (!allScored) {
+      results.push({ hole: hi + 1, winner: null, tied: false, potSize: 1 + carryover, carried: true, skipped: true });
+      continue;
+    }
+
+    const minScore = Math.min(...holeScores.map(p => p.score));
+    const winners = holeScores.filter(p => p.score === minScore);
+
+    if (winners.length === 1) {
+      const pot = 1 + carryover;
+      results.push({ hole: hi + 1, winner: winners[0].name, tied: false, potSize: pot, carried: carryover > 0, carryoverAmount: carryover });
+      carryover = 0;
+    } else {
+      // Tie: skin carries
+      results.push({ hole: hi + 1, winner: null, tied: true, potSize: 1 + carryover, carried: carryover > 0 });
+      carryover += 1;
+    }
+  }
+  // Any remaining carryover at end is pushed to last contested hole as unclaimed
+  if (carryover > 0) {
+    results.push({ hole: holes + 1, winner: null, tied: true, potSize: carryover, carried: true, isRemainder: true });
+  }
+  return results;
+}
+
+// Summarize skins per player
+function skinsPerPlayer(skinResults) {
+  const map = {};
+  players.forEach(n => { map[n] = { skins: 0, holes: [] }; });
+  skinResults.forEach(r => {
+    if (r.winner && map[r.winner]) {
+      map[r.winner].skins += r.potSize;
+      map[r.winner].holes.push({ hole: r.hole, pot: r.potSize, carried: r.carryoverAmount > 0 });
+    }
+  });
+  return map;
+}
+
+function updateSkinsLiveBar() {
+  if (versusMode !== 'skins') return;
+  const bar = document.getElementById('skins-live-bar');
+  if (!bar) return;
+  bar.style.display = 'block';
+
+  const results = computeSkins();
+  const summary = skinsPerPlayer(results);
+
+  // Count pending skins (carryover pot)
+  const pending = results.filter(r => r.skipped || (r.tied && !r.isRemainder)).length;
+  const totalPlayed = results.filter(r => r.winner).reduce((a, r) => a + r.potSize, 0);
+  const remaining = holes - results.filter(r => !r.skipped && !r.isRemainder).length;
+
+  const potEl = document.getElementById('skins-bar-pot');
+  const pendingPot = results.filter(r => !r.winner && !r.isRemainder && !r.skipped).reduce((a, r) => a + 1, 0);
+  potEl.textContent = pendingPot > 0 ? pendingPot + ' skin' + (pendingPot !== 1 ? 's' : '') + ' in pot' : '';
+
+  // Sort by skins descending
+  const sorted = Object.entries(summary).sort((a, b) => b[1].skins - a[1].skins);
+  const maxSkins = sorted[0] ? sorted[0][1].skins : 0;
+
+  const rowsEl = document.getElementById('skins-bar-rows');
+  rowsEl.innerHTML = sorted.map(([name, data]) => {
+    const isLeader = data.skins > 0 && data.skins === maxSkins;
+    return '<div class="skins-bar-row">' +
+      '<span class="skins-bar-name">' + name + '</span>' +
+      '<span class="skins-bar-val' + (isLeader ? ' leader' : '') + '">' +
+        (data.skins === 0 ? '-' : data.skins + ' skin' + (data.skins !== 1 ? 's' : '')) +
+      '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function showSkinsResults() {
+  if (versusMode !== 'skins') return;
+  const results = computeSkins();
+  const summary = skinsPerPlayer(results);
+
+  const sorted = Object.entries(summary).sort((a, b) => b[1].skins - a[1].skins);
+  const totalSkins = sorted.reduce((a, [, d]) => a + d.skins, 0);
+  const unclaimedPot = holes - totalSkins;
+
+  // Sub line
+  const sub = document.getElementById('skins-results-sub');
+  sub.textContent = holes + ' holes' + (unclaimedPot > 0 ? ' \u00b7 ' + unclaimedPot + ' skin' + (unclaimedPot !== 1 ? 's' : '') + ' unclaimed (ties)' : '');
+
+  // Winner cards
+  const content = document.getElementById('skins-results-content');
+  let html = '';
+
+  // Winner summary cards
+  const winners = sorted.filter(([, d]) => d.skins > 0);
+  if (winners.length === 0) {
+    html += '<div style="text-align:center;padding:20px;color:var(--tan);font-size:.88rem;">All holes tied - no skins won!</div>';
+  } else {
+    winners.forEach(([name, data]) => {
+      const holeChips = data.holes.map(h =>
+        '<span class="skins-hole-chip' + (h.carried ? ' skins-carryover-chip' : '') + '">' +
+          'Hole ' + h.hole + (h.pot > 1 ? ' x' + h.pot : '') +
+        '</span>'
+      ).join('');
+      html += '<div class="skins-winner-card">' +
+        '<div class="skins-winner-name">' + name + '</div>' +
+        '<div class="skins-winner-count">' + data.skins + ' skin' + (data.skins !== 1 ? 's' : '') + '</div>' +
+        '<div class="skins-hole-list">' + holeChips + '</div>' +
+      '</div>';
+    });
+  }
+
+  // Hole-by-hole breakdown
+  html += '<div class="skins-hole-breakdown">' +
+    '<div class="skins-hole-breakdown-title">Hole by Hole</div>';
+  results.filter(r => !r.isRemainder).forEach(r => {
+    let winnerText, potText;
+    if (r.skipped) {
+      winnerText = '<span style="color:var(--tan);font-style:italic;">Not played</span>';
+      potText = '';
+    } else if (r.tied) {
+      winnerText = '<span style="color:#f0a090;">Tied - carries</span>';
+      potText = '';
+    } else {
+      winnerText = '<span style="color:var(--cream);">' + r.winner + '</span>';
+      potText = '<span class="skins-hole-pot">' + r.potSize + ' skin' + (r.potSize !== 1 ? 's' : '') + '</span>';
+    }
+    html += '<div class="skins-hole-row">' +
+      '<div class="skins-hole-num">' + r.hole + '</div>' +
+      '<div class="skins-hole-winner">' + winnerText + '</div>' +
+      potText +
+    '</div>';
+  });
+  html += '</div>';
+
+  content.innerHTML = html;
+
+  document.getElementById('skins-results-overlay').classList.add('open');
+}
+
+function closeSkinResults() {
+  document.getElementById('skins-results-overlay').classList.remove('open');
+}
+
+async function saveRoundFromSkins() {
+  closeSkinResults();
+  await finishRound();
 }
 
 // ── Supabase Auth ──
@@ -3081,6 +3368,18 @@ document.addEventListener('DOMContentLoaded', function(){
     <div style="font-size:.95rem;color:var(--cream);margin-bottom:4px;">Free</div>
     <div style="font-size:.78rem;color:var(--tan);margin-bottom:16px;">Upgrade to Pro for stats, handicap tracking, and Versus mode.</div>
     <button style="padding:10px 20px;border-radius:8px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
+  </div>
+</div>
+<!-- Skins Results Overlay -->
+<div id="skins-results-overlay">
+  <div class="skins-results-modal">
+    <div class="skins-results-title">Skins Results</div>
+    <div class="skins-results-sub" id="skins-results-sub"></div>
+    <div id="skins-results-content"></div>
+    <div class="skins-results-btns">
+      <button class="btn-skins-close" onclick="closeSkinResults()">Close</button>
+      <button class="btn-skins-save" id="btn-skins-save-round" onclick="saveRoundFromSkins()">Save Round</button>
+    </div>
   </div>
 </div>
 
