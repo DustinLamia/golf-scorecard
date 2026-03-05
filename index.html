@@ -2436,7 +2436,7 @@ function shareStats(){
     {l:'ROUNDS',v:''+s.roundCount,c:GOLD},
     {l:'AVG',v:(s.avgDiffNum>0?'+':'')+s.avgDiff,c:s.avgDiffNum<0?GREEN:s.avgDiffNum>0?RED:TAN},
     {l:'BEST',v:s.bestStrokes||(s.bestStr==='-'?'-':s.bestStr),c:GREEN},
-    {l:'MATCH',v:s.mpRecord||'--',c:TAN},
+    {l:'RECORD',v:s.mpRecord||'--',c:TAN},
   ];
   boxes.forEach((b,i)=>{
     const bx=PAD+i*(boxW+4);
