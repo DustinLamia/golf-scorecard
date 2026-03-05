@@ -1275,6 +1275,16 @@ function parseVoice(text){
   const corrected=text.toLowerCase().trim();
   document.getElementById('voice-transcript').textContent='"'+corrected+'"';
 
+  // Scramble 2v2 — route entirely to its own parser
+  if(versusMode==='scramble2v2'){
+    const handled=handleQuery(corrected);
+    if(!handled){
+      const ok=parseScrambleVoice(corrected);
+      if(!ok)document.getElementById('voice-feedback').textContent='Try: "Team A birdie Team B bogey"';
+    }
+    return;
+  }
+
   let holeNum=null;
   const hm=corrected.match(/hole\s+(\w+)/i);
   if(hm){
@@ -1457,7 +1467,124 @@ function scoreLabel(score,par){
   if(d===3)return'triple bogey';return score+' strokes';
 }
 
-function applyScoresDirectly(hole,scoreMap){
+function parseScrambleVoice(corrected){
+  if(!window.scrambleScores)return false;
+
+  // Resolve current hole
+  let holeNum=null;
+  const hm=corrected.match(/hole\s+(\w+)/i);
+  if(hm){
+    const spoken=w2n(hm[1]);
+    if(spoken){const internal=spoken-holeOffset;if(internal>=1&&internal<=holes)holeNum=internal;}
+  }
+  if(!holeNum){
+    const curEl=document.querySelector('.hole-header.current');
+    if(curEl)holeNum=parseInt(curEl.id.replace('hh-',''));
+    else{for(let h=0;h<holes;h++){if(window.scrambleScores.A[h]===null||window.scrambleScores.B[h]===null){holeNum=h+1;break;}}}
+    if(!holeNum)holeNum=1;
+  }
+  const par=pars[holeNum-1];
+
+  // Build player->team map from teamSlots
+  const playerTeam={};
+  [teamSlots.a0,teamSlots.a1].forEach(i=>{if(i>=0&&players[i])playerTeam[players[i].toLowerCase()]='A';});
+  [teamSlots.b0,teamSlots.b1].forEach(i=>{if(i>=0&&players[i])playerTeam[players[i].toLowerCase()]='B';});
+
+  const FILLERS=new Set(['got','a','an','with','made','gets','had','scored','makes','shot','hit','takes','for','the','his','her','get','team','and']);
+  const words=corrected.replace(/[,\.!?]/g,' ').split(/\s+/).filter(Boolean);
+
+  let sA=null,sB=null;
+
+  // ── Pass 1: look for "team a/b" or "alpha/bravo" markers ──
+  for(let i=0;i<words.length;i++){
+    const w=words[i];
+    let team=null;
+    if(w==='team'&&(words[i+1]==='a'||words[i+1]==='b')){team=words[i+1].toUpperCase();i++;}
+    else if(w==='alpha')team='A';
+    else if(w==='bravo')team='B';
+    if(!team)continue;
+    let j=i+1;
+    while(j<words.length&&FILLERS.has(words[j]))j++;
+    const twoWord=words[j]&&words[j+1]?words[j]+' '+words[j+1]:null;
+    const oneWord=words[j]||null;
+    let sc=null;
+    if(twoWord)sc=scoreTermToStrokes(twoWord,par);
+    if(!sc&&oneWord)sc=scoreTermToStrokes(oneWord,par);
+    if(sc&&sc>0&&sc<=15){
+      if(team==='A')sA=sc;else sB=sc;
+      i=j+(twoWord&&scoreTermToStrokes(twoWord,par)?1:0);
+    }
+  }
+
+  // ── Pass 2: look for player names — find which team they belong to,
+  //    then find the score that follows the last name in that group ──
+  if(sA===null||sB===null){
+    // Scan for player name mentions and group by team
+    const teamMentions={A:[],B:[]};
+    for(let i=0;i<words.length;i++){
+      if(FILLERS.has(words[i]))continue;
+      const matched=bestNameMatch(words[i],players);
+      if(matched){
+        const t=playerTeam[matched.toLowerCase()];
+        if(t)teamMentions[t].push({nameIdx:i,name:matched});
+      }
+    }
+    // For each team that had names mentioned, find the score after the last name
+    ['A','B'].forEach(team=>{
+      if(team==='A'&&sA!==null)return;
+      if(team==='B'&&sB!==null)return;
+      if(!teamMentions[team].length)return;
+      const lastMention=teamMentions[team][teamMentions[team].length-1];
+      let j=lastMention.nameIdx+1;
+      while(j<words.length&&(FILLERS.has(words[j])||bestNameMatch(words[j],players)))j++;
+      const twoWord=words[j]&&words[j+1]?words[j]+' '+words[j+1]:null;
+      const oneWord=words[j]||null;
+      let sc=null;
+      if(twoWord)sc=scoreTermToStrokes(twoWord,par);
+      if(!sc&&oneWord)sc=scoreTermToStrokes(oneWord,par);
+      if(sc&&sc>0&&sc<=15){
+        if(team==='A')sA=sc;else sB=sc;
+      }
+    });
+  }
+
+  if(sA===null&&sB===null)return false;
+
+  // Apply scores
+  const hi=holeNum-1;
+  if(sA!==null){
+    window.scrambleScores.A[hi]=sA;
+    const inp=document.getElementById('sc-A-'+hi);
+    if(inp)inp.value=sA;
+  }
+  if(sB!==null){
+    window.scrambleScores.B[hi]=sB;
+    const inp=document.getElementById('sc-B-'+hi);
+    if(inp)inp.value=sB;
+  }
+  refreshScrambleTotals();
+  updateMatchPlayLiveBar();
+  saveSession();
+
+  // Readback
+  const parts=[];
+  if(sA!==null)parts.push('Team A '+scoreLabel(sA,par));
+  if(sB!==null)parts.push('Team B '+scoreLabel(sB,par));
+  const msg='\u2713 Hole '+(holeNum+holeOffset)+' \u00b7 '+parts.join(' \u00b7 ');
+  document.getElementById('voice-feedback').textContent=msg;
+  showAndSpeak(msg,5000);
+  setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},5000);
+
+  // Advance hole header
+  if(window.scrambleScores.A[hi]!==null&&window.scrambleScores.B[hi]!==null){
+    document.querySelectorAll('.hole-header').forEach(h=>h.classList.remove('current'));
+    const next=document.getElementById('hh-'+Math.min(holeNum+1,holes));
+    if(next)next.classList.add('current');
+  }
+  return true;
+}
+
+
   const hi=hole-1,par=pars[hi];
   Object.entries(scoreMap).forEach(([name,score])=>{
     const pi=players.indexOf(name);if(pi<0)return;
