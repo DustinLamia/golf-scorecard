@@ -501,18 +501,18 @@
 
     <!-- 2v2 Team Builder -->
     <div id="team-builder" style="display:none;margin-top:14px;border-top:1px solid rgba(245,240,232,.12);padding-top:14px;">
-      <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">Set Teams</div>
-      <div style="display:flex;gap:8px;">
-        <div style="flex:1;background:rgba(41,128,185,.08);border:1px solid rgba(41,128,185,.3);border-radius:10px;padding:10px 12px;">
+      <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px;">Set Teams</div>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <div style="flex:1;">
           <div style="font-size:.65rem;color:#7ec8f5;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:8px;">Team A</div>
-          <div id="team-a-slots" style="display:flex;flex-direction:column;gap:6px;min-height:28px;"></div>
+          <div id="team-a-selects" style="display:flex;flex-direction:column;gap:6px;"></div>
         </div>
-        <div style="flex:1;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:10px 12px;">
+        <div style="display:flex;align-items:center;justify-content:center;padding-top:24px;color:var(--tan);font-size:.85rem;font-weight:600;">vs</div>
+        <div style="flex:1;">
           <div style="font-size:.65rem;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:8px;">Team B</div>
-          <div id="team-b-slots" style="display:flex;flex-direction:column;gap:6px;min-height:28px;"></div>
+          <div id="team-b-selects" style="display:flex;flex-direction:column;gap:6px;"></div>
         </div>
       </div>
-      <div style="font-size:.7rem;color:var(--tan);margin-top:8px;text-align:center;">Tap a player to switch teams</div>
     </div>
   </div>
 
@@ -3335,35 +3335,66 @@ function selectVersusFormat(fmt, btn) {
 
 function renderTeamBuilder() {
   const inputs = document.querySelectorAll('.player-name');
-  const names = Array.from(inputs).map(i => i.value.trim()).filter(n => n);
+  const names = Array.from(inputs).map((inp, i) => inp.value.trim() || 'Player ' + (i+1));
+  const activePlayers = Array.from(inputs).map((inp, i) => ({name: inp.value.trim() || 'Player '+(i+1), idx: i}))
+    .filter((_, i) => i === 0 || inputs[i].value.trim()); // always include P1, others only if named
 
   // Default: first 2 on A, rest on B
-  if (teamAssignment.length !== names.length) {
-    teamAssignment = names.map((_, i) => i < 2 ? 'A' : 'B');
+  if (teamAssignment.length !== activePlayers.length) {
+    teamAssignment = activePlayers.map((_, i) => i < 2 ? 'A' : 'B');
   }
 
-  const aSlots = document.getElementById('team-a-slots');
-  const bSlots = document.getElementById('team-b-slots');
-  aSlots.innerHTML = '';
-  bSlots.innerHTML = '';
+  const selectStyle = 'width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(245,240,232,.2);border-radius:8px;padding:8px 10px;color:var(--cream);font-family:"DM Sans",sans-serif;font-size:.85rem;outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;';
 
-  names.forEach((name, i) => {
-    const pill = document.createElement('button');
-    pill.textContent = name || 'Player ' + (i+1);
-    pill.style.cssText = 'background:transparent;border:1px solid rgba(245,240,232,.25);border-radius:6px;padding:5px 10px;color:var(--cream);font-family:"DM Sans",sans-serif;font-size:.8rem;cursor:pointer;text-align:left;width:100%;transition:all .15s;';
-    pill.onclick = () => {
-      teamAssignment[i] = teamAssignment[i] === 'A' ? 'B' : 'A';
-      renderTeamBuilder();
-    };
-    if (teamAssignment[i] === 'A') {
-      aSlots.appendChild(pill);
-    } else {
-      bSlots.appendChild(pill);
-    }
+  const aContainer = document.getElementById('team-a-selects');
+  const bContainer = document.getElementById('team-b-selects');
+  aContainer.innerHTML = '';
+  bContainer.innerHTML = '';
+
+  const teamAPlayers = activePlayers.filter((_, i) => teamAssignment[i] === 'A');
+  const teamBPlayers = activePlayers.filter((_, i) => teamAssignment[i] === 'B');
+
+  // One dropdown per team slot — always show 2 slots per team
+  [0, 1].forEach(slot => {
+    // Team A slot
+    const selA = document.createElement('select');
+    selA.style.cssText = selectStyle + 'border-color:rgba(41,128,185,.4);';
+    selA.innerHTML = '<option value="">— Pick player —</option>' +
+      activePlayers.map((p, i) => `<option value="${i}" ${teamAPlayers[slot]&&teamAPlayers[slot].idx===p.idx?'selected':''}>${p.name}</option>`).join('');
+    selA.onchange = () => handleTeamSelect('A', slot, parseInt(selA.value), activePlayers);
+    aContainer.appendChild(selA);
+
+    // Team B slot
+    const selB = document.createElement('select');
+    selB.style.cssText = selectStyle + 'border-color:rgba(201,168,76,.4);';
+    selB.innerHTML = '<option value="">— Pick player —</option>' +
+      activePlayers.map((p, i) => `<option value="${i}" ${teamBPlayers[slot]&&teamBPlayers[slot].idx===p.idx?'selected':''}>${p.name}</option>`).join('');
+    selB.onchange = () => handleTeamSelect('B', slot, parseInt(selB.value), activePlayers);
+    bContainer.appendChild(selB);
   });
+}
 
-  if (!aSlots.children.length) aSlots.innerHTML = '<div style="font-size:.72rem;color:rgba(245,240,232,.3);font-style:italic;">Empty</div>';
-  if (!bSlots.children.length) bSlots.innerHTML = '<div style="font-size:.72rem;color:rgba(245,240,232,.3);font-style:italic;">Empty</div>';
+function handleTeamSelect(team, slot, playerIdx, activePlayers) {
+  if (isNaN(playerIdx)) return;
+  // Build current team arrays
+  const teamA = activePlayers.filter((_, i) => teamAssignment[i] === 'A');
+  const teamB = activePlayers.filter((_, i) => teamAssignment[i] === 'B');
+
+  // Find who was previously in this slot on the other team and swap
+  const displaced = team === 'A' ? teamB[slot] : teamA[slot];
+  const selected = activePlayers[playerIdx];
+
+  // Find selected player's current assignment index
+  const selectedAssignmentIdx = activePlayers.findIndex(p => p.idx === selected.idx);
+  const displacedAssignmentIdx = displaced ? activePlayers.findIndex(p => p.idx === displaced.idx) : -1;
+
+  // Swap assignments
+  teamAssignment[selectedAssignmentIdx] = team;
+  if (displacedAssignmentIdx >= 0) {
+    teamAssignment[displacedAssignmentIdx] = team === 'A' ? 'B' : 'A';
+  }
+
+  renderTeamBuilder();
 }
 
 // ── Skins Engine ──
@@ -3598,22 +3629,29 @@ function computeMatchPlay1v1() {
 
 // Best ball 2v2 — teams determined by teamAssignment array
 function computeMatchPlay2v2() {
-  // Build team index lists from teamAssignment, fallback to 0,1 vs 2,3
-  const aIdxs = [], bIdxs = [];
-  players.forEach((_, i) => {
-    if (teamAssignment[i] === 'B') bIdxs.push(i);
-    else aIdxs.push(i);
-  });
-  const teamA = aIdxs.map(i => players[i]);
-  const teamB = bIdxs.map(i => players[i]);
+  // teamAssignment maps active player slots to 'A'|'B'
+  // Build actual player indices for each team
+  const inputs = document.querySelectorAll('.player-name');
+  const activePlayers = Array.from(inputs).map((inp, i) => ({name: players[i]||inp.value.trim()||'Player '+(i+1), idx: i}))
+    .filter((p, i) => i === 0 || (players[i] && players[i].trim()));
+
+  const aIdxs = activePlayers.filter((_, i) => teamAssignment[i] !== 'B').map(p => p.idx);
+  const bIdxs = activePlayers.filter((_, i) => teamAssignment[i] === 'B').map(p => p.idx);
+
+  // Fallback if teamAssignment not set
+  const finalAIdxs = aIdxs.length ? aIdxs : [0, 1];
+  const finalBIdxs = bIdxs.length ? bIdxs : [2, 3];
+
+  const teamA = finalAIdxs.map(i => players[i]).filter(Boolean);
+  const teamB = finalBIdxs.map(i => players[i]).filter(Boolean);
 
   const holeResults = [];
   let teamAUp = 0;
   let closed = false, closedReason = '';
 
   for (let hi = 0; hi < holes; hi++) {
-    const scoresA = aIdxs.map(i => scores[i][hi]).filter(s => s !== null);
-    const scoresB = bIdxs.map(i => scores[i][hi]).filter(s => s !== null);
+    const scoresA = finalAIdxs.map(i => scores[i] ? scores[i][hi] : null).filter(s => s !== null);
+    const scoresB = finalBIdxs.map(i => scores[i] ? scores[i][hi] : null).filter(s => s !== null);
     const holesLeft = holes - (hi + 1);
 
     if (!scoresA.length || !scoresB.length) {
