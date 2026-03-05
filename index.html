@@ -273,17 +273,7 @@
   th.split-th{background:rgba(0,0,0,.25);color:var(--tan)!important;font-size:.8rem;letter-spacing:1px;border-left:1px solid rgba(245,240,232,.12);border-right:1px solid rgba(245,240,232,.12);}
 
   /* ── Versus Mode ── */
-  .versus-toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:0;}
-  .versus-toggle-row label{font-size:.85rem;color:var(--tan);}
-  .toggle-switch{position:relative;width:44px;height:24px;flex-shrink:0;}
-  .toggle-switch input{opacity:0;width:0;height:0;}
-  .toggle-track{position:absolute;inset:0;background:rgba(245,240,232,.15);border-radius:12px;cursor:pointer;transition:background .2s;}
-  .toggle-track::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s;}
-  .toggle-switch input:checked + .toggle-track{background:var(--gold);}
-  .toggle-switch input:checked + .toggle-track::before{transform:translateX(20px);}
-  .versus-options{margin-top:14px;display:none;}
-  .versus-options.show{display:block;}
-  .versus-format-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  .versus-format-btns{display:flex;gap:8px;flex-wrap:wrap;}
   .versus-format-btn{padding:7px 16px;border-radius:8px;border:1px solid rgba(245,240,232,.25);background:transparent;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;transition:all .15s;}
   .versus-format-btn.active{background:var(--gold);border-color:var(--gold);color:var(--dark);font-weight:600;}
   .pro-gate-note{font-size:.72rem;color:var(--tan);margin-top:8px;padding:8px 12px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:8px;}
@@ -465,20 +455,14 @@
   </div>
 
   <div class="setup-card" id="versus-setup-card">
-    <div class="versus-toggle-row">
-      <h2 style="margin-bottom:0;">Versus Mode</h2>
-      <label class="toggle-switch">
-        <input type="checkbox" id="versus-toggle" onchange="toggleVersus()">
-        <span class="toggle-track"></span>
-      </label>
+    <h2 style="margin-bottom:12px;">Versus Mode</h2>
+    <div class="versus-format-btns">
+      <button class="versus-format-btn active" data-format="none" onclick="selectVersusFormat('none',this)">None</button>
+      <button class="versus-format-btn" data-format="skins" onclick="selectVersusFormat('skins',this)">Skins</button>
+      <button class="versus-format-btn" data-format="matchplay1v1" onclick="selectVersusFormat('matchplay1v1',this)">Match Play 1v1</button>
+      <button class="versus-format-btn" data-format="matchplay2v2" onclick="selectVersusFormat('matchplay2v2',this)">Match Play 2v2</button>
     </div>
-    <div class="versus-options" id="versus-options">
-      <div style="font-size:.75rem;color:var(--tan);margin-bottom:6px;">Format</div>
-      <div class="versus-format-btns">
-        <button class="versus-format-btn" data-format="skins" onclick="selectVersusFormat('skins',this)">Skins</button>
-      </div>
-      <div class="pro-gate-note" id="versus-pro-note" style="display:none;">&#128274; Versus Mode is a Pro feature. <span style="color:var(--gold);cursor:pointer;text-decoration:underline;" onclick="navTo('profile')">Upgrade to Pro</span></div>
-    </div>
+    <div class="pro-gate-note" id="versus-pro-note" style="display:none;">&#128274; Versus Mode is a Pro feature. <span style="color:var(--gold);cursor:pointer;text-decoration:underline;" onclick="openAuthModal()">Upgrade to Pro</span></div>
   </div>
 
   <button class="btn-start" id="start-btn" onclick="startRound()">Start Round</button>
@@ -1827,12 +1811,11 @@ function confirmReset(){
     versusMode=null;
     selectedNine='front';
     holeOffset=0;
-    const vt=document.getElementById('versus-toggle');if(vt)vt.checked=false;
-    const vo=document.getElementById('versus-options');if(vo)vo.classList.remove('show');
-    document.querySelectorAll('.versus-format-btn').forEach(b=>b.classList.remove('active'));
+    const vProNote=document.getElementById('versus-pro-note');if(vProNote)vProNote.style.display='none';
+    document.querySelectorAll('.versus-format-btn').forEach(b=>b.classList.toggle('active',b.dataset.format==='none'));
     const ns=document.getElementById('nine-selector');if(ns)ns.classList.remove('show');
-    document.getElementById('nine-front').classList.add('active');
-    document.getElementById('nine-back').classList.remove('active');
+    const nf=document.getElementById('nine-front');if(nf)nf.classList.add('active');
+    const nb=document.getElementById('nine-back');if(nb)nb.classList.remove('active');
     const slb=document.getElementById('skins-live-bar');if(slb)slb.style.display='none';
     document.getElementById('scorecard-screen').style.display='none';
     document.getElementById('setup-screen').style.display='block';
@@ -3168,30 +3151,23 @@ function isPro() {
   return !!currentUser;
 }
 
-function toggleVersus() {
-  const checked = document.getElementById('versus-toggle').checked;
-  const opts = document.getElementById('versus-options');
-  const note = document.getElementById('versus-pro-note');
-  if (checked) {
-    opts.classList.add('show');
-    if (!isPro()) {
-      note.style.display = 'block';
-      versusMode = null;
-    } else {
-      note.style.display = 'none';
-      versusMode = null; // wait for format button click
-    }
-  } else {
-    opts.classList.remove('show');
-    versusMode = null;
-    document.querySelectorAll('.versus-format-btn').forEach(b => b.classList.remove('active'));
-  }
-}
-
 function selectVersusFormat(fmt, btn) {
   document.querySelectorAll('.versus-format-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  if (!isPro()) { return; }
+  const note = document.getElementById('versus-pro-note');
+  if (fmt === 'none') {
+    versusMode = null;
+    note.style.display = 'none';
+    return;
+  }
+  if (!isPro()) {
+    note.style.display = 'block';
+    versusMode = null;
+    // Reset to None
+    document.querySelectorAll('.versus-format-btn').forEach(b => b.classList.toggle('active', b.dataset.format === 'none'));
+    return;
+  }
+  note.style.display = 'none';
   versusMode = fmt;
 }
 
