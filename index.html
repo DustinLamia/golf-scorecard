@@ -121,7 +121,12 @@
 
   /* ── Round History ── */
   #history-screen{display:none;padding:20px;max-width:600px;margin:0 auto;}
-  .history-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .history-filter-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+  .history-tab{padding:5px 14px;border-radius:20px;border:1px solid rgba(245,240,232,.2);background:transparent;color:var(--tan);font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:500;cursor:pointer;transition:all .15s;}
+  .history-tab.active{background:rgba(201,168,76,.15);border-color:rgba(201,168,76,.4);color:var(--gold);}
+  .skins-result-line{font-size:.78rem;color:var(--gold);font-weight:600;margin-top:5px;letter-spacing:.3px;}
+
+  .history-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
   .history-header h2{font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);}
   .btn-back{padding:8px 16px;border-radius:8px;border:1px solid rgba(245,240,232,.3);background:rgba(245,240,232,.1);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;}
   .round-card{background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:16px 18px;margin-bottom:12px;cursor:pointer;transition:background .15s;}
@@ -3000,10 +3005,15 @@ async function loadHistory(){
     }catch(e){}
 
     const roundId='rh-'+round.id;
+    const roundType=round.skins_winner?'skins':round.match_play?'matchplay':'regular';
     const card=document.createElement('div');
     card.className='round-card';
     card.dataset.roundId=round.id;
+    card.dataset.type=roundType;
     if(isLive)card.dataset.round=JSON.stringify(round);
+    const skinsLine=round.skins_winner
+      ?`<div class="skins-result-line">&#127942; ${round.skins_winner} &middot; ${round.skins_count} Skin${round.skins_count!==1?'s':''}</div>`
+      :'';
     card.innerHTML=`
       <div style="display:flex;align-items:flex-start;gap:4px;">
         <div style="flex:1;min-width:0;" ${isLive?`onclick="toggleRoundScorecard('${roundId}')"`:''}">
@@ -3012,6 +3022,7 @@ async function loadHistory(){
             <div class="round-card-score ${scoreClass}">${round.total_strokes||''}<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0;">${diffStr}</div></div>
           </div>
           <div class="round-card-meta">${date} &middot; ${round.holes} holes &middot; ${playerNames}${round.tee_name?' &middot; '+round.tee_name:''} <span style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;${isLive?'background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35);':'background:rgba(245,240,232,.07);color:var(--tan);border:1px solid rgba(245,240,232,.15);'}">${isLive?'LIVE':'MANUAL'}</span>${round.skins_winner?`<span style="display:inline-block;margin-left:5px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:600;letter-spacing:.5px;background:rgba(201,168,76,.12);color:var(--gold);border:1px solid rgba(201,168,76,.3);">SKINS</span>`:''}</div>
+          ${skinsLine}
           ${isLive?`<div id="${roundId}" style="display:none;margin-top:12px;"></div>`:''}
         </div>
         <div class="rc-menu-wrap">
@@ -3025,6 +3036,32 @@ async function loadHistory(){
     `;
     list.appendChild(card);
   });
+}
+
+// ── History Filter ──
+function filterHistory(filter){
+  document.querySelectorAll('.history-tab').forEach(t=>t.classList.toggle('active',t.dataset.filter===filter));
+  document.querySelectorAll('.round-card').forEach(card=>{
+    if(filter==='all'){
+      card.style.display='';
+    } else {
+      card.style.display=card.dataset.type===filter?'':'none';
+    }
+  });
+  // Show empty state if nothing visible
+  const list=document.getElementById('history-list');
+  const visible=[...list.querySelectorAll('.round-card')].filter(c=>c.style.display!=='none');
+  let empty=list.querySelector('.history-filter-empty');
+  if(visible.length===0){
+    if(!empty){
+      empty=document.createElement('div');
+      empty.className='history-filter-empty history-empty';
+      list.appendChild(empty);
+    }
+    empty.textContent=filter==='skins'?'No skins rounds yet.':filter==='matchplay'?'No match play rounds yet.':'No regular rounds found.';
+  } else if(empty){
+    empty.remove();
+  }
 }
 
 // ── Round Card Menu ──
@@ -3501,6 +3538,12 @@ document.addEventListener('DOMContentLoaded', function(){
       <button class="btn-sm" onclick="openPastRound()" style="font-size:.75rem;padding:7px 12px;">+ Log Past Round</button>
       <button class="btn-back" onclick="showSetupFromHistory()">&#8592; Back</button>
     </div>
+  </div>
+  <div class="history-filter-tabs">
+    <button class="history-tab active" data-filter="all" onclick="filterHistory('all')">All</button>
+    <button class="history-tab" data-filter="regular" onclick="filterHistory('regular')">Regular</button>
+    <button class="history-tab" data-filter="skins" onclick="filterHistory('skins')">Skins</button>
+    <button class="history-tab" data-filter="matchplay" onclick="filterHistory('matchplay')">Match Play</button>
   </div>
   <div id="history-list"><div class="history-loading">Loading...</div></div>
 </div>
