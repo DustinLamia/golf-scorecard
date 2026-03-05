@@ -3442,7 +3442,170 @@ function toggleRoundScorecard(roundId){
 
     // Player score rows
     const isScramble = round.scramble && roundPlayers.length >= 2;
+    const isMatchPlay = round.match_play && !round.scramble;
+    const isSkins = !!round.skins_winner;
+
+    // Pre-compute hole winners for highlighting
+    // Skins: carryover-aware
+    const skinsHoleWinner = {}; // hi -> player index or null
+    if(isSkins){
+      let carryover=0;
+      for(let hi=0;hi<holeCount;hi++){
+        const holeScs=roundPlayers.map((_,pi)=>({pi,s:allScores[pi]?.[hi]})).filter(x=>x.s!=null);
+        if(holeScs.length<roundPlayers.length){carryover++;continue;}
+        const lo=Math.min(...holeScs.map(x=>x.s));
+        const winners=holeScs.filter(x=>x.s===lo);
+        if(winners.length===1){skinsHoleWinner[hi]=winners[0].pi;carryover=0;}
+        else{skinsHoleWinner[hi]=null;carryover++;}
+      }
+    }
+
+    // Match play: hole result per hole (1v1 or 2v2 best ball)
+    const mpHoleResult = {}; // hi -> 'A'|'B'|'halved'|null
+    const is2v2MP = isMatchPlay && roundPlayers.length===4;
+    if(isMatchPlay){
+      for(let hi=0;hi<holeCount;hi++){
+        if(is2v2MP){
+          const sA=Math.min(...[0,1].map(i=>allScores[i]?.[hi]??Infinity));
+          const sB=Math.min(...[2,3].map(i=>allScores[i]?.[hi]??Infinity));
+          if(!isFinite(sA)||!isFinite(sB)){mpHoleResult[hi]=null;continue;}
+          mpHoleResult[hi]=sA<sB?'A':sB<sA?'B':'halved';
+        } else {
+          const s0=allScores[0]?.[hi],s1=allScores[1]?.[hi];
+          if(s0==null||s1==null){mpHoleResult[hi]=null;continue;}
+          mpHoleResult[hi]=s0<s1?'A':s1<s0?'B':'halved';
+        }
+      }
+    }
+
+    // Scramble: hole result per hole
+    const scrHoleResult = {}; // hi -> 'A'|'B'|'halved'|null
+    if(isScramble){
+      const aIdxsPre=[0,1].filter(i=>allScores[i]);
+      const bIdxsPre=[2,3].filter(i=>allScores[i]);
+      for(let hi=0;hi<holeCount;hi++){
+        const sA=Math.min(...aIdxsPre.map(i=>allScores[i]?.[hi]??Infinity));
+        const sB=Math.min(...bIdxsPre.map(i=>allScores[i]?.[hi]??Infinity));
+        if(!isFinite(sA)||!isFinite(sB)){scrHoleResult[hi]=null;continue;}
+        scrHoleResult[hi]=sA<sB?'A':sB<sA?'B':'halved';
+      }
+    }
+
+    // Helper: border style for a hole cell
+    function holeBorder(borderColor){
+      return borderColor?`box-shadow:0 0 0 2px ${borderColor};`:'';
+    }
+
     let playerRows='';
+
+    if(isScramble){
+      // Show Team A / Team B rows with best-ball scores per hole
+      const aIdxs=[0,1].filter(i=>allScores[i]);
+      const bIdxs=[2,3].filter(i=>allScores[i]);
+      [['A',aIdxs,'#7ec8f5'],['B',bIdxs,'var(--gold)']].forEach(([team,idxs,color])=>{
+        if(!idxs.length)return;
+        const teamNames=idxs.map(i=>roundPlayers[i]).filter(Boolean).join(' / ');
+        const teamScores=Array.from({length:holeCount},(_,hi)=>{
+          const vals=idxs.map(i=>allScores[i]?.[hi]).filter(s=>s!=null);
+          return vals.length?Math.min(...vals):null;
+        });
+        const total=teamScores.filter(s=>s!==null).reduce((a,b)=>a+b,0);
+        const vspar=total-(teamScores.map((s,hi)=>s!==null?roundPars[hi]:0).reduce((a,b)=>a+b,0));
+        const vspStr=vspar===0?'E':vspar>0?'+'+vspar:''+vspar;
+        playerRows+=`<tr>
+          <td style="text-align:left;padding-left:8px;white-space:nowrap;line-height:1.3;">
+            <span style="font-size:.55rem;font-weight:700;color:${color};letter-spacing:.5px;display:block;">TEAM ${team}</span>
+            <span style="font-size:.75rem;font-weight:500;">${teamNames}</span>
+          </td>`;
+        let frontTotal=0,backTotal=0,frontPar=0,backPar=0;
+        teamScores.forEach((s,hi)=>{
+          const p=roundPars[hi];
+          const d=s!==null?s-p:null;
+          let bg='';
+          if(d!==null){
+            if(d<=-2)bg='background:rgba(201,168,76,.35);';
+            else if(d===-1)bg='background:rgba(41,128,185,.3);';
+            else if(d===0)bg='background:rgba(255,255,255,.07);';
+            else if(d===1)bg='background:rgba(192,57,43,.25);';
+            else bg='background:rgba(192,57,43,.45);';
+          }
+          if(split18&&s!==null){if(hi<9){frontTotal+=s;frontPar+=p;}else{backTotal+=s;backPar+=p;}}
+          const res=scrHoleResult[hi];
+          const border=res===team?'#7ec8f5':res==='halved'?'rgba(245,240,232,0.3)':'';
+          playerRows+=`<td style="font-size:.78rem;"><span style="display:inline-block;width:24px;height:24px;line-height:24px;border-radius:4px;${bg}${holeBorder(border)}text-align:center;">${s!==null?s:'-'}</span></td>`;
+          if(split18&&hi===8){
+            const outDiff=frontTotal-frontPar;
+            playerRows+=`<td ${SPLIT_TD}>${frontTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${outDiff===0?'E':outDiff>0?'+'+outDiff:''+outDiff}</div></td>`;
+          }
+        });
+        if(split18){
+          const inDiff=backTotal-backPar;
+          playerRows+=`<td ${SPLIT_TD}>${backTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${inDiff===0?'E':inDiff>0?'+'+inDiff:''+inDiff}</div></td>`;
+        }
+        playerRows+=`<td style="font-size:.82rem;font-family:'Bebas Neue',cursive;letter-spacing:1px;">${total||'-'}<div style="font-size:.6rem;font-family:'DM Sans',sans-serif;color:var(--tan);font-weight:400;">${total?vspStr:''}</div></td></tr>`;
+      });
+    } else {
+      roundPlayers.forEach((name,pi)=>{
+        const playerScores=Array.isArray(allScores[pi])?allScores[pi]:[];
+        const total=playerScores.filter(s=>s!==null).reduce((a,b)=>a+b,0);
+        const vspar=total-(playerScores.map((s,hi)=>s!==null?roundPars[hi]:0).reduce((a,b)=>a+b,0));
+        const vspStr=vspar===0?'E':vspar>0?'+'+vspar:''+vspar;
+        // Determine team for match play highlighting
+        const myTeam=is2v2MP?(pi<=1?'A':'B'):(pi===0?'A':'B');
+        playerRows+=`<tr><td style="text-align:left;padding-left:8px;font-size:.78rem;font-weight:500;white-space:nowrap;">`;
+        if(is2v2MP){
+          const tColor=myTeam==='A'?'#7ec8f5':'var(--gold)';
+          playerRows+=`<span style="font-size:.55rem;font-weight:700;color:${tColor};margin-right:3px;">${myTeam}</span>`;
+        }
+        playerRows+=`${name}</td>`;
+        let frontTotal=0,backTotal=0,frontPar=0,backPar=0;
+        playerScores.forEach((s,hi)=>{
+          const p=roundPars[hi];
+          const d=s!==null?s-p:null;
+          let bg='';
+          if(d!==null){
+            if(d<=-2)bg='background:rgba(201,168,76,.35);';
+            else if(d===-1)bg='background:rgba(41,128,185,.3);';
+            else if(d===0)bg='background:rgba(255,255,255,.07);';
+            else if(d===1)bg='background:rgba(192,57,43,.25);';
+            else bg='background:rgba(192,57,43,.45);';
+          }
+          if(split18&&s!==null){if(hi<9){frontTotal+=s;frontPar+=p;}else{backTotal+=s;backPar+=p;}}
+
+          // Hole highlight border
+          let border='';
+          if(isSkins && skinsHoleWinner[hi]===pi){
+            border='rgba(201,168,76,.9)'; // gold for skin won
+          } else if(isMatchPlay){
+            const res=mpHoleResult[hi];
+            if(res==='halved') border='rgba(245,240,232,0.3)';
+            else if(res===myTeam){
+              if(is2v2MP){
+                // Only best scorer on winning team
+                const teamIdxs=myTeam==='A'?[0,1]:[2,3];
+                const teamBest=Math.min(...teamIdxs.map(i=>allScores[i]?.[hi]??Infinity));
+                if(s===teamBest) border='#7ec8f5';
+              } else {
+                border='#7ec8f5';
+              }
+            }
+          }
+
+          playerRows+=`<td style="font-size:.78rem;"><span style="display:inline-block;width:24px;height:24px;line-height:24px;border-radius:4px;${bg}${holeBorder(border)}text-align:center;">${s!==null?s:'-'}</span></td>`;
+          if(split18&&hi===8){
+            const outDiff=frontTotal-frontPar;
+            const outStr=outDiff===0?'E':outDiff>0?'+'+outDiff:''+outDiff;
+            playerRows+=`<td ${SPLIT_TD}>${frontTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${outStr}</div></td>`;
+          }
+        });
+        if(split18){
+          const inDiff=backTotal-backPar;
+          const inStr=inDiff===0?'E':inDiff>0?'+'+inDiff:''+inDiff;
+          playerRows+=`<td ${SPLIT_TD}>${backTotal}<div style="font-size:.55rem;font-family:'DM Sans',sans-serif;color:var(--tan);">${inStr}</div></td>`;
+        }
+        playerRows+=`<td style="font-size:.82rem;font-family:'Bebas Neue',cursive;letter-spacing:1px;">${total}<div style="font-size:.6rem;font-family:'DM Sans',sans-serif;color:var(--tan);font-weight:400;">${vspStr}</div></td></tr>`;
+      });
+    }
 
     if(isScramble){
       // Show Team A / Team B rows with best-ball scores per hole
