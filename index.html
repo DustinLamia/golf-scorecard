@@ -400,6 +400,9 @@
     <button class="auth-close" onclick="closeAuthModal()">&times;</button>
     <h2 id="auth-title">Sign In</h2>
     <p id="auth-subtitle">Save your rounds and unlock Pro features.</p>
+    <div class="auth-field" id="auth-name-field" style="display:none;"><label>First Name</label><input type="text" id="auth-name" placeholder="Name displayed on scorecard" autocomplete="given-name"></div>
+    <div class="auth-field" id="auth-lastname-field" style="display:none;"><label>Last Name</label><input type="text" id="auth-lastname" placeholder="Last name" autocomplete="family-name"></div>
+    <div class="auth-field" id="auth-username-field" style="display:none;"><label>Username</label><input type="text" id="auth-username" placeholder="Username" autocomplete="username"></div>
     <div class="auth-field"><label>Email</label><input type="email" id="auth-email" placeholder="you@email.com"></div>
     <div class="auth-field"><label>Password</label><input type="password" id="auth-password" placeholder="••••••••"></div>
     <div class="auth-error" id="auth-error"></div>
@@ -1848,6 +1851,12 @@ function confirmReset(){
     document.getElementById('tee-section').style.display='none';
     document.getElementById('selected-badge').style.display='none';
     document.getElementById('course-banner').style.display='none';
+    // Re-fill Player 1 with logged-in user's first name
+    if(currentUser){
+      const firstName=currentUser.user_metadata?.first_name||currentUser.email.split('@')[0];
+      const p1=document.querySelectorAll('.player-name')[0];
+      if(p1)p1.value=firstName;
+    }
   }
 }
 
@@ -1938,7 +1947,7 @@ function shareStats(){
   ctx.font='600 10px "DM Sans",sans-serif'; ctx.letterSpacing='1px';
   ctx.fillStyle=GOLD; ctx.textAlign='right';
   ctx.fillText('MY STATS',W-PAD,38);
-  const username=currentUser?currentUser.email.split('@')[0]:'';
+  const username=currentUser?(currentUser.user_metadata?.username||currentUser.email.split('@')[0]):'';
   if(username){
     ctx.font='400 9px "DM Sans",sans-serif'; ctx.letterSpacing='0px';
     ctx.fillStyle=TAN; ctx.textAlign='right';
@@ -2465,7 +2474,7 @@ async function submitPastRound(){
     holes:holes,
     pars:Array(holes).fill(Math.round(par/holes)),
     yardages:Array(holes).fill(0),
-    players:[currentUser.email.split('@')[0]],
+    players:[currentUser.user_metadata?.first_name||currentUser.email.split('@')[0]],
     scores:[Array(holes).fill(null)], // no hole-by-hole
     total_strokes:strokes,
     score_vs_par:diff,
@@ -3393,9 +3402,13 @@ function setUser(user){
   const btn=document.getElementById('auth-btn');
   const emailEl=document.getElementById('user-menu-email');
   const startBtn=document.getElementById('start-btn');
-  if(btn){btn.textContent=user.email.split('@')[0];btn.classList.add('signed-in');}
+  const firstName=user.user_metadata?.first_name||user.email.split('@')[0];
+  if(btn){btn.textContent=firstName;btn.classList.add('signed-in');}
   if(emailEl){emailEl.textContent=user.email;}
   if(startBtn){startBtn.textContent='Start Round';}
+  // Auto-fill Player 1 with first name
+  const playerInputs=document.querySelectorAll('.player-name');
+  if(playerInputs[0]&&!playerInputs[0].value){playerInputs[0].value=firstName;}
   hideWelcomeScreen();
   closeAuthModal();
   showBottomNav();
@@ -3418,6 +3431,9 @@ function openWelcomeAuth(mode){
   document.getElementById('auth-submit').textContent=mode==='signin'?'Sign In':'Create Account';
   document.getElementById('auth-toggle').innerHTML=mode==='signin'?'No account? <span onclick="toggleAuthMode()">Create one free</span>':'Already have one? <span onclick="toggleAuthMode()">Sign in</span>';
   document.getElementById('auth-error').textContent='';
+  document.getElementById('auth-name-field').style.display=mode==='signup'?'block':'none';
+  document.getElementById('auth-lastname-field').style.display=mode==='signup'?'block':'none';
+  document.getElementById('auth-username-field').style.display=mode==='signup'?'block':'none';
   document.getElementById('auth-overlay').classList.add('open');
 }
 
@@ -3442,6 +3458,9 @@ function openAuthModal(){
   document.getElementById('auth-error').textContent='';
   document.getElementById('auth-email').value='';
   document.getElementById('auth-password').value='';
+  document.getElementById('auth-name-field').style.display=authMode==='signup'?'block':'none';
+  document.getElementById('auth-lastname-field').style.display=authMode==='signup'?'block':'none';
+  document.getElementById('auth-username-field').style.display=authMode==='signup'?'block':'none';
   closeUserMenu();
 }
 
@@ -3455,22 +3474,29 @@ function toggleAuthMode(){
   document.getElementById('auth-subtitle').textContent=authMode==='signin'?'Save your rounds and unlock Pro features.':'Free account — unlock Pro for $6.99 one-time.';
   document.getElementById('auth-submit').textContent=authMode==='signin'?'Sign In':'Create Account';
   document.getElementById('auth-toggle').innerHTML=authMode==='signin'?'No account? <span onclick="toggleAuthMode()">Create one free</span>':'Already have one? <span onclick="toggleAuthMode()">Sign in</span>';
+  document.getElementById('auth-name-field').style.display=authMode==='signup'?'block':'none';
+  document.getElementById('auth-lastname-field').style.display=authMode==='signup'?'block':'none';
+  document.getElementById('auth-username-field').style.display=authMode==='signup'?'block':'none';
   document.getElementById('auth-error').textContent='';
 }
 
 async function submitAuth(){
   const email=document.getElementById('auth-email').value.trim();
   const password=document.getElementById('auth-password').value;
+  const firstName=document.getElementById('auth-name').value.trim();
+  const lastName=document.getElementById('auth-lastname').value.trim();
+  const username=document.getElementById('auth-username').value.trim();
   const errEl=document.getElementById('auth-error');
   const btn=document.getElementById('auth-submit');
   if(!email||!password){errEl.textContent='Please fill in all fields.';return;}
+  if(authMode==='signup'&&(!firstName||!lastName||!username)){errEl.textContent='Please fill in all fields.';return;}
   btn.disabled=true;btn.textContent='...';
   errEl.textContent='';
   let result;
   if(authMode==='signin'){
     result=await supa.auth.signInWithPassword({email,password});
   } else {
-    result=await supa.auth.signUp({email,password});
+    result=await supa.auth.signUp({email,password,options:{data:{first_name:firstName,last_name:lastName,username}}});
   }
   btn.disabled=false;
   btn.textContent=authMode==='signin'?'Sign In':'Create Account';
