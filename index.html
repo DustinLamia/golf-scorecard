@@ -3889,13 +3889,16 @@ async function loadProStatus() {
 
 function renderProStatus() {
   const planEl = document.getElementById('profile-plan-status');
+  const planDesc = document.getElementById('profile-plan-desc');
   const goBtnEl = document.getElementById('profile-go-pro-btn');
   if (!planEl || !goBtnEl) return;
   if (currentIsPro) {
     planEl.innerHTML = '<span style="color:var(--gold);font-weight:700;">PRO</span>';
+    if (planDesc) planDesc.textContent = 'You have lifetime access to all Pro features.';
     goBtnEl.style.display = 'none';
   } else {
     planEl.textContent = 'Free';
+    if (planDesc) planDesc.textContent = 'Upgrade to Pro for stats, handicap tracking, and Versus mode.';
     goBtnEl.style.display = 'inline-block';
   }
 }
@@ -5013,7 +5016,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <div style="background:rgba(245,240,232,.06);border:1px solid rgba(201,168,76,.25);border-radius:12px;padding:20px;">
     <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Plan</div>
     <div id="profile-plan-status" style="font-size:.95rem;color:var(--cream);margin-bottom:4px;">Free</div>
-    <div style="font-size:.78rem;color:var(--tan);margin-bottom:16px;">Upgrade to Pro for stats, handicap tracking, and Versus mode.</div>
+    <div id="profile-plan-desc" style="font-size:.78rem;color:var(--tan);margin-bottom:16px;">Upgrade to Pro for stats, handicap tracking, and Versus mode.</div>
     <button id="profile-go-pro-btn" onclick="launchStripeCheckout()" style="padding:10px 20px;border-radius:8px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
   </div>
 </div>
