@@ -89,6 +89,13 @@
   .legend-dot{width:10px;height:10px;border-radius:2px;}
   @media(max-width:400px){header h1{font-size:2rem;}}
 
+  /* Pro Upsell Overlay */
+  #pro-upsell-overlay.open{display:flex!important;}
+
+  /* Toast */
+  #vs-toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(201,168,76,.95);color:#1a1a1a;padding:10px 20px;border-radius:20px;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;z-index:9999;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;}
+  #vs-toast.show{opacity:1;}
+
 
   /* ── Welcome Screen ── */
   #welcome-screen{display:none;min-height:100vh;padding:40px 20px;flex-direction:column;align-items:center;justify-content:center;}
@@ -2575,6 +2582,15 @@ function shareStats(){
 
 async function loadStats(){
   const el=document.getElementById('stats-content');
+  if(!isPro()){
+    el.innerHTML=`<div class="stats-empty" style="padding:40px 20px;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:12px;">📊</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px;color:var(--gold);margin-bottom:8px;">Pro Feature</div>
+      <div style="font-size:.88rem;color:var(--tan);margin-bottom:20px;line-height:1.6;">Unlock Stats, Handicap tracking, and more with VoiceScore Pro.</div>
+      <button onclick="showProUpsell('Stats & Handicap')" style="padding:12px 28px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
+    </div>`;
+    return;
+  }
   el.innerHTML='<div class="stats-loading">Loading...</div>';
   const {data,error}=await supa.from('rounds').select('*').order('played_at',{ascending:false}).limit(100);
   if(error||!data||!data.length){
@@ -3857,11 +3873,67 @@ let versusMode = null;
 // teamAssignment: array of 'A'|'B' per player index, only used in 2v2
 let teamAssignment = [];
 
-// Stub isPro check - Phase 4 will wire real Stripe gate
+// ── Pro Status ──
+let currentIsPro = false;
+
 function isPro() {
-  // For now treat all logged-in users as Pro for testing
-  // Phase 4: replace with actual entitlement check
-  return !!currentUser;
+  return currentIsPro;
+}
+
+async function loadProStatus() {
+  if (!currentUser) { currentIsPro = false; return; }
+  const { data } = await supa.from('profiles').select('is_pro').eq('id', currentUser.id).single();
+  currentIsPro = !!(data && data.is_pro);
+  renderProStatus();
+}
+
+function renderProStatus() {
+  const planEl = document.getElementById('profile-plan-status');
+  const goBtnEl = document.getElementById('profile-go-pro-btn');
+  if (!planEl || !goBtnEl) return;
+  if (currentIsPro) {
+    planEl.innerHTML = '<span style="color:var(--gold);font-weight:700;">PRO</span>';
+    goBtnEl.style.display = 'none';
+  } else {
+    planEl.textContent = 'Free';
+    goBtnEl.style.display = 'inline-block';
+  }
+}
+
+async function launchStripeCheckout() {
+  if (!currentUser) { openAuthModal(); return; }
+  const btn = document.getElementById('profile-go-pro-btn');
+  if (btn) { btn.textContent = 'Loading...'; btn.disabled = true; }
+  try {
+    const resp = await fetch('https://lzthrmmwalesunzsqjvh.supabase.co/functions/v1/stripe-create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (await supa.auth.getSession()).data.session.access_token },
+      body: JSON.stringify({ user_id: currentUser.id, price_id: 'price_1T9aNtCGE3CXjNX9w2gqL2YQ', return_url: window.location.href })
+    });
+    const { url, error } = await resp.json();
+    if (error || !url) throw new Error(error || 'No checkout URL');
+    window.location.href = url;
+  } catch(e) {
+    if (btn) { btn.textContent = 'Go Pro — $6.99'; btn.disabled = false; }
+    alert('Could not start checkout. Please try again.');
+  }
+}
+
+function showProUpsell(featureName) {
+  document.getElementById('pro-upsell-feature').textContent = featureName || 'this feature';
+  document.getElementById('pro-upsell-overlay').classList.add('open');
+}
+
+function closeProUpsell() {
+  document.getElementById('pro-upsell-overlay').classList.remove('open');
+}
+
+function showToast(msg, duration=3000) {
+  const t = document.getElementById('vs-toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
 }
 
 function selectVersusFormat(fmt, btn) {
@@ -3880,6 +3952,7 @@ function selectVersusFormat(fmt, btn) {
     versusMode = null;
     teamBuilder.style.display = 'none';
     document.querySelectorAll('.versus-format-btn').forEach(b => b.classList.toggle('active', b.dataset.format === 'none'));
+    showProUpsell('Versus Modes');
     return;
   }
   note.style.display = 'none';
@@ -4586,6 +4659,19 @@ function setUser(user){
   hideWelcomeScreen();
   closeAuthModal();
   showBottomNav();
+  loadProStatus();
+  // Handle return from Stripe checkout
+  const urlParams=new URLSearchParams(window.location.search);
+  if(urlParams.get('checkout')==='success'){
+    history.replaceState(null,'',window.location.pathname);
+    setTimeout(async()=>{
+      await loadProStatus();
+      if(currentIsPro){
+        showToast('Welcome to VoiceScore Pro!');
+        navTo('profile');
+      }
+    },2000);
+  }
 }
 
 function clearUser(){
@@ -4926,9 +5012,9 @@ document.addEventListener('DOMContentLoaded', function(){
   <!-- Plan -->
   <div style="background:rgba(245,240,232,.06);border:1px solid rgba(201,168,76,.25);border-radius:12px;padding:20px;">
     <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Plan</div>
-    <div style="font-size:.95rem;color:var(--cream);margin-bottom:4px;">Free</div>
+    <div id="profile-plan-status" style="font-size:.95rem;color:var(--cream);margin-bottom:4px;">Free</div>
     <div style="font-size:.78rem;color:var(--tan);margin-bottom:16px;">Upgrade to Pro for stats, handicap tracking, and Versus mode.</div>
-    <button style="padding:10px 20px;border-radius:8px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
+    <button id="profile-go-pro-btn" onclick="launchStripeCheckout()" style="padding:10px 20px;border-radius:8px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
   </div>
 </div>
 <!-- Skins Results Overlay -->
@@ -4953,6 +5039,35 @@ document.addEventListener('DOMContentLoaded', function(){
       <button class="btn-mp-close" onclick="closeMPResults()">Close</button>
       <button class="btn-mp-save" onclick="saveRoundFromMP()">Save Round</button>
     </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="vs-toast"></div>
+
+<!-- Pro Upsell Modal -->
+<div id="pro-upsell-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#1e3d1a;border:1px solid rgba(201,168,76,.4);border-radius:20px;padding:32px 24px;max-width:340px;width:100%;text-align:center;position:relative;">
+    <div style="font-size:2.5rem;margin-bottom:8px;">⛳</div>
+    <div style="font-family:'Bebas Neue',cursive;font-size:1.8rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;">VoiceScore Pro</div>
+    <div style="font-size:.82rem;color:var(--tan);margin-bottom:20px;line-height:1.6;"><span id="pro-upsell-feature">This feature</span> is included in Pro.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;text-align:left;">
+      <div style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--cream);">
+        <span style="color:var(--gold);">&#10003;</span> Skins, Match Play &amp; Scramble
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--cream);">
+        <span style="color:var(--gold);">&#10003;</span> Handicap Index &amp; Tracking
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--cream);">
+        <span style="color:var(--gold);">&#10003;</span> Full Stats &amp; Score Trends
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--cream);">
+        <span style="color:var(--gold);">&#10003;</span> Shareable Stats Card
+      </div>
+    </div>
+    <button onclick="launchStripeCheckout()" style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:3px;cursor:pointer;box-shadow:0 4px 20px rgba(201,168,76,.4);margin-bottom:10px;">Go Pro — $6.99</button>
+    <div style="font-size:.72rem;color:var(--tan);margin-bottom:16px;">One-time payment. Yours forever.</div>
+    <button onclick="closeProUpsell()" style="background:transparent;border:none;color:var(--tan);font-size:.82rem;cursor:pointer;text-decoration:underline;">Maybe later</button>
   </div>
 </div>
 
