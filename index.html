@@ -3135,6 +3135,50 @@ function populateGoalInputs(goals, avgStrokes, avgPars, avgBirdies){
 
 
 // ── Compare Rounds ──
+function buildTrendHTML(n){
+  const asc=window._compareData;
+  if(!asc||!asc.length)return '<div style="font-size:.78rem;color:var(--tan);font-style:italic;">No rounds yet.</div>';
+  const fmtD=d=>d===0?'E':d>0?'+'+d:''+d;
+  const fmtDate=s=>{const d=new Date(s);return(d.getMonth()+1)+'/'+(d.getDate());};
+  const eligData=asc.filter(r=>!r.scramble&&!(r.match_play&&Array.isArray(r.players)&&r.players.length===4));
+  const slice=eligData.slice(-n);
+  if(!slice.length)return '<div style="font-size:.78rem;color:var(--tan);font-style:italic;">No eligible rounds.</div>';
+  const diffs=slice.map(r=>r.score_vs_par||0);
+  const minD=Math.min(...diffs),maxD=Math.max(...diffs);
+  const range=Math.max(maxD-minD,1);
+  const bars=slice.map((r,i)=>{
+    const d=diffs[i];
+    const h=Math.min(60,Math.max(6,Math.round(((d-minD)/range)*54)+6));
+    const color=d<0?'#4caf82':d>0?'#c0392b':'var(--tan)';
+    const strokes=r.total_strokes||'';
+    return '<div class="compare-bar-col"><div class="compare-bar" style="height:'+h+'px;background:'+color+';"></div><div class="compare-val">'+fmtD(d)+'</div><div class="compare-val" style="color:var(--tan);">'+strokes+'</div><div class="compare-label">'+fmtDate(r.played_at)+'</div></div>';
+  }).join('');
+  return '<div class="compare-chart">'+bars+'</div>';
+}
+
+function buildHcpHTML(n){
+  const asc=window._compareData;
+  if(!asc||!asc.length)return '<div style="font-size:.78rem;color:var(--tan);font-style:italic;">No rounds yet.</div>';
+  const fmtDate=s=>{const d=new Date(s);return(d.getMonth()+1)+'/'+(d.getDate());};
+  const eligData=asc.filter(r=>!r.scramble&&!(r.match_play&&Array.isArray(r.players)&&r.players.length===4));
+  const allHcpPoints=[];
+  for(let i=2;i<eligData.length;i++){
+    const subset=eligData.slice(0,i+1).reverse();
+    const h=calcHandicap(subset);
+    if(h!==null)allHcpPoints.push({date:eligData[i].played_at,h});
+  }
+  if(allHcpPoints.length<2)return '<div style="font-size:.78rem;color:var(--tan);font-style:italic;">Need 3+ rounds to show handicap trend.</div>';
+  const slice=allHcpPoints.slice(-n);
+  const hVals=slice.map(p=>p.h);
+  const hMin=Math.min(...hVals),hMax=Math.max(...hVals);
+  const hRange=Math.max(hMax-hMin,1);
+  const bars=slice.map(p=>{
+    const barH=Math.min(60,Math.max(6,Math.round(((p.h-hMin)/hRange)*54)+6));
+    return '<div class="compare-bar-col"><div class="compare-bar" style="height:'+barH+'px;background:var(--gold);"></div><div class="compare-val" style="font-size:.55rem;">'+fmtHandicap(p.h)+'</div><div class="compare-label">'+fmtDate(p.date)+'</div></div>';
+  }).join('');
+  return '<div class="compare-chart">'+bars+'</div>';
+}
+
 async function loadCompare(){
   const el=document.getElementById('compare-content');
   if(!isPro()){
@@ -3255,51 +3299,6 @@ async function loadCompare(){
   const trendToggleBtns=(active)=>[5,10,20].map(n=>`<button onclick="renderTrendChart(${n})" id="ttoggle-${n}" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(201,168,76,.4);background:${active===n?'var(--gold)':'transparent'};color:${active===n?'var(--dark)':'var(--gold)'};font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;">Last ${n}</button>`).join('');
   const hcpToggleBtns=(active)=>[5,10,20].map(n=>`<button onclick="renderHcpChart(${n})" id="htoggle-${n}" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(201,168,76,.4);background:${active===n?'var(--gold)':'transparent'};color:${active===n?'var(--dark)':'var(--gold)'};font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;">Last ${n}</button>`).join('');
 
-  // Build trend chart HTML inline (no separate render call needed)
-  function buildTrendHTML(n){
-    const asc=window._compareData;
-    if(!asc||!asc.length)return '<div style="font-size:.78rem;color:var(--tan);font-style:italic;">No rounds yet.</div>';
-    const fmtD=d=>d===0?'E':d>0?'+'+d:''+d;
-    const fmtDate=s=>{const d=new Date(s);return(d.getMonth()+1)+'/'+(d.getDate());};
-    const eligData=asc.filter(r=>!r.scramble&&!(r.match_play&&Array.isArray(r.players)&&r.players.length===4));
-    const slice=eligData.slice(-n);
-    if(!slice.length)return '<div style="font-size:.78rem;color:var(--tan);font-style:italic;">No eligible rounds.</div>';
-    const diffs=slice.map(r=>r.score_vs_par||0);
-    const minD=Math.min(...diffs), maxD=Math.max(...diffs);
-    const range=Math.max(maxD-minD,1);
-    const bars=slice.map((r,i)=>{
-      const d=diffs[i];
-      const h=Math.min(60,Math.max(6,Math.round(((d-minD)/range)*54)+6));
-      const color=d<0?'#4caf82':d>0?'#c0392b':'var(--tan)';
-      const strokes=r.total_strokes||'';
-      return `<div class="compare-bar-col"><div class="compare-bar" style="height:${h}px;background:${color};"></div><div class="compare-val">${fmtD(d)}</div><div class="compare-val" style="color:var(--tan);">${strokes}</div><div class="compare-label">${fmtDate(r.played_at)}</div></div>`;
-    }).join('');
-    return `<div class="compare-chart">${bars}</div>`;
-  }
-
-  // Build hcp chart HTML inline
-  function buildHcpHTML(n){
-    const asc=window._compareData;
-    if(!asc||!asc.length)return '<div style="font-size:.78rem;color:var(--tan);font-style:italic;">No rounds yet.</div>';
-    const fmtDate=s=>{const d=new Date(s);return(d.getMonth()+1)+'/'+(d.getDate());};
-    const eligData=asc.filter(r=>!r.scramble&&!(r.match_play&&Array.isArray(r.players)&&r.players.length===4));
-    const allHcpPoints=[];
-    for(let i=2;i<eligData.length;i++){
-      const subset=eligData.slice(0,i+1).reverse();
-      const h=calcHandicap(subset);
-      if(h!==null)allHcpPoints.push({date:eligData[i].played_at,h});
-    }
-    if(allHcpPoints.length<2)return '<div style="font-size:.78rem;color:var(--tan);font-style:italic;">Need 3+ rounds to show handicap trend.</div>';
-    const slice=allHcpPoints.slice(-n);
-    const hVals=slice.map(p=>p.h);
-    const hMin=Math.min(...hVals), hMax=Math.max(...hVals);
-    const hRange=Math.max(hMax-hMin,1);
-    const bars=slice.map(p=>{
-      const barH=Math.min(60,Math.max(6,Math.round(((p.h-hMin)/hRange)*54)+6));
-      return `<div class="compare-bar-col"><div class="compare-bar" style="height:${barH}px;background:var(--gold);"></div><div class="compare-val" style="font-size:.55rem;">${fmtHandicap(p.h)}</div><div class="compare-label">${fmtDate(p.date)}</div></div>`;
-    }).join('');
-    return `<div class="compare-chart">${bars}</div>`;
-  }
   // Default pickers: most recent = A, second most recent = B
   const defaultA=0;
   const defaultB=data.length>1?1:0;
@@ -3327,7 +3326,7 @@ async function loadCompare(){
         <div class="compare-section-title" style="margin-bottom:0;">Score vs Par</div>
         <div style="display:flex;gap:6px;" id="trend-toggles">${trendToggleBtns(10)}</div>
       </div>
-      <div id="compare-trend-chart">${buildTrendHTML(10)}</div>
+      <div id="compare-trend-chart"></div>
       <div style="font-size:.62rem;color:var(--tan);margin-top:2px;">Green = under par &middot; Red = over par</div>
     </div>
     <div class="compare-section" id="compare-hcp-section">
@@ -3335,7 +3334,7 @@ async function loadCompare(){
         <div class="compare-section-title" style="margin-bottom:0;">Handicap Trend</div>
         <div style="display:flex;gap:6px;" id="hcp-toggles">${hcpToggleBtns(10)}</div>
       </div>
-      <div id="compare-hcp-chart">${buildHcpHTML(10)}</div>
+      <div id="compare-hcp-chart"></div>
       <div style="font-size:.62rem;color:var(--tan);margin-top:4px;">Taller bar = higher index at that point in time</div>
     </div>
     <div class="compare-section">
@@ -3346,6 +3345,11 @@ async function loadCompare(){
 
   document.getElementById('h2h-a').value=defaultA;
   document.getElementById('h2h-b').value=defaultB;
+  // Set chart content after DOM exists
+  const trendEl=document.getElementById('compare-trend-chart');
+  const hcpEl=document.getElementById('compare-hcp-chart');
+  if(trendEl)trendEl.innerHTML=buildTrendHTML(10);
+  if(hcpEl)hcpEl.innerHTML=buildHcpHTML(10);
   renderH2H();
 }
 
@@ -3569,7 +3573,7 @@ function renderHcpChart(n, data){
     const barH=Math.min(60,Math.max(6,Math.round(((p.h-hMin)/hRange)*54)+6));
     return `<div class="compare-bar-col"><div class="compare-bar" style="height:${barH}px;background:var(--gold);"></div><div class="compare-val" style="font-size:.55rem;">${fmtHandicap(p.h)}</div><div class="compare-label">${fmtDate(p.date)}</div></div>`;
   }).join('');
-  el.innerHTML=`<div class="compare-chart">${bars}</div>`;
+  el.innerHTML=`<div class="compare-chart">${bars}</div><div style="font-size:.6rem;color:var(--tan);margin-top:2px;opacity:.7;">${slice.length} data point${slice.length!==1?'s':''} shown</div>`;
 }
 
 function toggleCourseDetail(safeId, name){
