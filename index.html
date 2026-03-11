@@ -3573,7 +3573,9 @@ function renderHcpChart(n, data){
     const barH=Math.min(60,Math.max(6,Math.round(((p.h-hMin)/hRange)*54)+6));
     return `<div class="compare-bar-col"><div class="compare-bar" style="height:${barH}px;background:var(--gold);"></div><div class="compare-val" style="font-size:.55rem;">${fmtHandicap(p.h)}</div><div class="compare-label">${fmtDate(p.date)}</div></div>`;
   }).join('');
-  el.innerHTML=`<div class="compare-chart">${bars}</div><div style="font-size:.6rem;color:var(--tan);margin-top:2px;opacity:.7;">${slice.length} data point${slice.length!==1?'s':''} shown</div>`;
+  const totalPts=allHcpPoints.length;
+  const note=totalPts<n?`Only ${totalPts} trend points available (need ${n-totalPts} more round${n-totalPts!==1?'s':''} for Last ${n})`:'';
+  el.innerHTML=`<div class="compare-chart">${bars}</div>`+(note?`<div style="font-size:.6rem;color:var(--tan);margin-top:4px;opacity:.8;">${note}</div>`:'');
 }
 
 function toggleCourseDetail(safeId, name){
