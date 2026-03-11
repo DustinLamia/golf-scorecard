@@ -2588,19 +2588,23 @@ async function loadStats(){
     el.innerHTML=`
       <div style="pointer-events:none;user-select:none;opacity:0.45;">
         <div class="stats-grid" style="padding:16px 16px 0;">
-          <div class="stat-card full"><div class="stat-label">Handicap Index</div><div class="stat-value gold">14.2</div><div class="stat-sub">Based on last 8 rounds</div></div>
+          <div class="stat-card full"><div class="stat-label">Handicap Index</div><div class="stat-value gold">14.2</div><div class="stat-sub">Based on best 4 of last 12 rounds</div></div>
           <div class="stat-card"><div class="stat-label">Rounds Played</div><div class="stat-value gold">24</div></div>
-          <div class="stat-card"><div class="stat-label">Scoring Avg</div><div class="stat-value over">+12.4</div><div class="stat-sub">vs par per round</div></div>
-          <div class="stat-card"><div class="stat-label">Best Round</div><div class="stat-value under">+4</div><div class="stat-sub">Eagle Dunes GC</div></div>
+          <div class="stat-card"><div class="stat-label">Scoring Average</div><div class="stat-value over">+12.4</div><div class="stat-sub">vs par per round</div></div>
+          <div class="stat-card"><div class="stat-label">Best Round</div><div class="stat-value over">84<div style="font-size:.75rem;font-family:'DM Sans',sans-serif;font-weight:400;">+12</div></div><div class="stat-sub">Eagle Dunes GC</div></div>
           <div class="stat-card"><div class="stat-label">Match Play</div><div class="stat-value" style="font-size:1.6rem;">5-3-1</div><div class="stat-sub">W &middot; L &middot; H</div></div>
           <div class="stat-card full">
             <div class="stat-label" style="margin-bottom:8px;">Last 10 Rounds</div>
-            <div style="display:flex;align-items:flex-end;gap:6px;height:60px;padding:0 4px;">
-              ${[14,10,16,8,13,11,6,9,12,7].map(v=>{
+            <div style="display:flex;align-items:flex-end;gap:4px;height:60px;padding:0 4px;">
+              ${[[14,95],[10,91],[16,97],[8,89],[13,94],[11,92],[6,87],[9,90],[12,93],[7,88]].map(([v,s])=>{
                 const h=Math.round((v/16)*56)+4;
                 const c=v<=4?'#5bc85b':v<=8?'#c9a84c':'#c0392b';
-                return `<div style="flex:1;background:${c};height:${h}px;border-radius:3px 3px 0 0;opacity:.9;"></div>`;
+                return `<div style="flex:1;background:${c};height:${h}px;border-radius:3px 3px 0 0;opacity:.9;" title="+${v} (${s})"></div>`;
               }).join('')}
+            </div>
+            <div style="display:flex;gap:12px;margin-top:6px;">
+              <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--tan);"><div style="width:8px;height:8px;border-radius:2px;background:#5bc85b;"></div>Beat goal</div>
+              <div style="display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--tan);"><div style="width:8px;height:8px;border-radius:2px;background:#c0392b;"></div>Missed goal</div>
             </div>
           </div>
           <div class="stat-card full">
@@ -2611,6 +2615,34 @@ async function loadStats(){
               <div class="par-type-cell"><div class="stat-label">Par 5</div><div class="stat-value over">+0.3</div></div>
             </div>
           </div>
+          <div class="stat-card full">
+            <div class="stat-label" style="margin-bottom:14px;">Score Breakdown</div>
+            ${[['Eagle+','#c9a84c',2],['Birdie','#2980b9',8],['Par','rgba(255,255,255,0.3)',31],['Bogey','#c0392b',42],['Double+','#8e1e14',17]].map(([label,color,pct])=>`
+            <div class="breakdown-row">
+              <div class="breakdown-label">${label}</div>
+              <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${pct}%;background:${color};"></div></div>
+              <div class="breakdown-pct">${pct}%</div>
+            </div>`).join('')}
+          </div>
+        </div>
+        <div class="goals-card" style="margin:12px 16px 0;">
+          <div class="stat-label">My Goals (per round)</div>
+          <div class="goal-row">
+            <div><div class="goal-text">Break</div><div class="goal-avg">You avg 93</div></div>
+            <div class="goal-input-wrap"><input class="goal-input" type="number" value="90" disabled><span class="goal-unit">strokes</span></div>
+          </div>
+          <div class="goal-row">
+            <div><div class="goal-text">Make at least</div><div class="goal-avg">You avg 5</div></div>
+            <div class="goal-input-wrap"><input class="goal-input" type="number" value="6" disabled><span class="goal-unit">pars or better</span></div>
+          </div>
+          <div class="goal-row">
+            <div><div class="goal-text">Make at least</div><div class="goal-avg">You avg 0.8</div></div>
+            <div class="goal-input-wrap"><input class="goal-input" type="number" value="1" disabled><span class="goal-unit">birdies</span></div>
+          </div>
+          <button class="btn-save-goals" disabled>Save Goals</button>
+        </div>
+        <div style="display:flex;justify-content:center;padding:12px 20px 20px;">
+          <button style="padding:14px 36px;border-radius:12px;border:1px solid rgba(201,168,76,.5);background:rgba(201,168,76,.1);color:var(--gold);font-family:'Bebas Neue',cursive;font-size:1.15rem;letter-spacing:3px;cursor:default;">&#128202; Share My Stats</button>
         </div>
       </div>
       <div style="position:absolute;top:80px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:20px;">
