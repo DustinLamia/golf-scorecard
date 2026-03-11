@@ -3185,64 +3185,91 @@ async function loadCompare(){
     el.style.position='relative';
     el.style.minHeight='520px';
     el.innerHTML=`
-      <div style="pointer-events:none;user-select:none;opacity:0.45;padding:16px;">
-        <!-- Fake H2H section -->
-        <div style="background:rgba(245,240,232,.07);border-radius:12px;padding:14px;margin-bottom:12px;">
-          <div style="font-size:.7rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">Head to Head</div>
-          <!-- Fake dropdowns -->
+      <div style="pointer-events:none;user-select:none;opacity:0.45;">
+
+        <!-- HEAD TO HEAD -->
+        <div class="compare-section">
+          <div class="compare-section-title">Head to Head</div>
           <div style="display:flex;gap:8px;margin-bottom:12px;">
-            <div style="flex:1;background:rgba(245,240,232,.08);border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:8px 10px;font-size:.75rem;color:var(--cream);">Dubsdread GC — Mar 8 (+7)</div>
-            <div style="flex:1;background:rgba(245,240,232,.08);border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:8px 10px;font-size:.75rem;color:var(--cream);">Falcon's Fire — Mar 2 (-1)</div>
+            <div style="flex:1;"><div style="font-size:.6rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Round A</div><select disabled style="width:100%;background:rgba(245,240,232,.08);border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:8px 10px;font-size:.75rem;color:var(--cream);"><option>Falcon's Fire GC — Feb 12 (+14)</option></select></div>
+            <div style="flex:1;"><div style="font-size:.6rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Round B</div><select disabled style="width:100%;background:rgba(245,240,232,.08);border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:8px 10px;font-size:.75rem;color:var(--cream);"><option>Wekiva Golf Club — Jan 28 (+8)</option></select></div>
           </div>
-          <!-- Fake header cards -->
-          <div style="display:flex;gap:8px;margin-bottom:10px;">
-            <div style="flex:1;background:rgba(245,240,232,.06);border-radius:8px;padding:8px 10px;">
-              <div style="font-size:.6rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;">Round A</div>
-              <div style="font-size:.82rem;color:var(--cream);font-weight:600;">Dubsdread GC</div>
-              <div style="font-size:.68rem;color:var(--tan);">Mar 8</div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <div style="flex:1;background:rgba(245,240,232,.06);border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:10px 12px;">
+              <div style="font-size:.6rem;color:var(--gold);text-transform:uppercase;letter-spacing:1px;">Round A</div>
+              <div style="font-size:.9rem;color:var(--cream);font-weight:600;margin:2px 0;">Falcon's Fire GC</div>
+              <div style="font-size:.7rem;color:var(--tan);">Feb 12</div>
             </div>
-            <div style="flex:1;background:rgba(245,240,232,.06);border-radius:8px;padding:8px 10px;">
-              <div style="font-size:.6rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;">Round B</div>
-              <div style="font-size:.82rem;color:var(--cream);font-weight:600;">Falcon's Fire GC</div>
-              <div style="font-size:.68rem;color:var(--tan);">Mar 2</div>
+            <div style="flex:1;background:rgba(245,240,232,.06);border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:10px 12px;">
+              <div style="font-size:.6rem;color:var(--gold);text-transform:uppercase;letter-spacing:1px;">Round B</div>
+              <div style="font-size:.9rem;color:var(--cream);font-weight:600;margin:2px 0;">Wekiva Golf Club</div>
+              <div style="font-size:.7rem;color:var(--tan);">Jan 28</div>
             </div>
           </div>
-          <!-- Fake stat rows -->
-          <div style="border-radius:10px;overflow:hidden;">
-            ${[
-              ['Total Score','79','71',false],
-              ['vs Par','+7','-1',false],
-              ['Front 9','+5','+1',false],
-              ['Back 9','+2','-2',false],
-              ['Birdies','1','4',false],
-              ['Pars','7','11',false],
-              ['Bogeys','7','3',true],
-              ['Doubles+','3','0',true],
-            ].map(([label,a,b,higherWorse],i)=>`
-              <div style="display:flex;align-items:center;padding:9px 10px;${i>0?'border-top:1px solid rgba(245,240,232,.05);':''}background:rgba(245,240,232,.04);">
-                <div style="flex:1;text-align:center;font-family:'Bebas Neue',cursive;font-size:1.05rem;letter-spacing:1px;color:#c0392b;">${a}</div>
-                <div style="flex:1.4;text-align:center;font-size:.68rem;color:var(--tan);text-transform:uppercase;letter-spacing:.5px;">${label}</div>
-                <div style="flex:1;text-align:center;font-family:'Bebas Neue',cursive;font-size:1.05rem;letter-spacing:1px;color:#4caf82;">${b}</div>
-              </div>`).join('')}
-          </div>
-          <!-- Fake hole-by-hole -->
-          <div style="margin-top:12px;">
-            <div style="font-size:.65rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Hole by Hole</div>
-            <div style="display:flex;gap:2px;align-items:flex-end;height:44px;">
-              ${[[2,1],[3,0],[1,2],[0,1],[2,0],[3,1],[1,2],[0,0],[2,1],[1,3],[0,1],[2,0],[1,2],[0,1],[3,0],[1,2],[0,1],[2,0]].map(([a,b])=>`
-                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;justify-content:flex-end;">
-                  <div style="width:100%;background:${a===0?'#c9a84c':a<0?'#4caf82':'#c0392b'};height:${Math.max(6,a*10+8)}px;border-radius:1px 1px 0 0;"></div>
-                  <div style="width:100%;background:${b===0?'#5b8fc9':b<0?'#4caf82':'#7b4fb8'};height:${Math.max(6,b*10+8)}px;border-radius:1px 1px 0 0;opacity:.8;"></div>
-                </div>`).join('')}
-            </div>
-            <div style="display:flex;gap:12px;margin-top:6px;">
-              <div style="display:flex;align-items:center;gap:4px;font-size:.6rem;color:var(--tan);"><div style="width:8px;height:8px;border-radius:50%;background:#c0392b;"></div>Round A</div>
-              <div style="display:flex;align-items:center;gap:4px;font-size:.6rem;color:var(--tan);"><div style="width:8px;height:8px;border-radius:50%;background:#5b8fc9;"></div>Round B</div>
-            </div>
+          <div style="background:rgba(245,240,232,.06);border-radius:10px;overflow:hidden;">
+            ${[['Total Score','86','80'],['vs Par','+14','+8'],['Front 9','+8','+3'],['Back 9','+6','+5'],['Birdies','0','2'],['Pars','4','9'],['Bogeys','9','6'],['Doubles+','5','1']].map(([l,a,b],i)=>`
+            <div style="display:flex;align-items:center;padding:10px 14px;${i>0?'border-top:1px solid rgba(245,240,232,.06);':''}">
+              <div style="flex:1;text-align:center;font-family:'Bebas Neue',cursive;font-size:1.15rem;color:#e07060;">${a}</div>
+              <div style="flex:1.4;text-align:center;font-size:.7rem;color:var(--tan);text-transform:uppercase;letter-spacing:.5px;">${l}</div>
+              <div style="flex:1;text-align:center;font-family:'Bebas Neue',cursive;font-size:1.15rem;color:#5bc85b;">${b}</div>
+            </div>`).join('')}
           </div>
         </div>
+
+        <!-- SCORE VS PAR -->
+        <div class="compare-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div class="compare-section-title" style="margin-bottom:0;">Score vs Par</div>
+            <div style="display:flex;gap:6px;">
+              ${[5,10,20].map(n=>`<button disabled style="padding:4px 12px;border-radius:6px;border:1px solid rgba(201,168,76,.4);background:${n===10?'var(--gold)':'transparent'};color:${n===10?'var(--dark)':'var(--gold)'};font-family:'DM Sans',sans-serif;font-size:.75rem;">Last ${n}</button>`).join('')}
+            </div>
+          </div>
+          <div class="compare-chart">
+            ${[['+22',94],['+11',83],['+19',91],['+16',88],['+28',100],['+9',81],['+14',86]].map(([d,s])=>`
+            <div class="compare-bar-col">
+              <div class="compare-bar" style="height:${Math.round((parseInt(d)-9)/22*54+6)}px;background:#c0392b;"></div>
+              <div class="compare-val">${d}</div>
+              <div class="compare-val" style="color:var(--tan);">${s}</div>
+              <div class="compare-label">${['10/3','10/18','11/2','11/14','12/1','12/20','1/8'][[['+22',94],['+11',83],['+19',91],['+16',88],['+28',100],['+9',81],['+14',86]].findIndex(x=>x[0]===d)]}</div>
+            </div>`).join('')}
+          </div>
+          <div style="font-size:.62rem;color:var(--tan);margin-top:2px;">Green = under par &middot; Red = over par</div>
+        </div>
+
+        <!-- HANDICAP TREND -->
+        <div class="compare-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div class="compare-section-title" style="margin-bottom:0;">Handicap Trend</div>
+            <div style="display:flex;gap:6px;">
+              ${[5,10,20].map(n=>`<button disabled style="padding:4px 12px;border-radius:6px;border:1px solid rgba(201,168,76,.4);background:${n===10?'var(--gold)':'transparent'};color:${n===10?'var(--dark)':'var(--gold)'};font-family:'DM Sans',sans-serif;font-size:.75rem;">Last ${n}</button>`).join('')}
+            </div>
+          </div>
+          <div class="compare-chart">
+            ${[[15.1,'10/18'],[16.4,'11/2'],[15.8,'11/14'],[17.2,'12/1'],[16.0,'12/20'],[14.9,'1/8'],[15.6,'1/28']].map(([h,d],i,arr)=>{
+              const vals=arr.map(x=>x[0]);
+              const mn=Math.min(...vals),mx=Math.max(...vals);
+              const bh=Math.round(((h-mn)/(mx-mn||1))*54+6);
+              return `<div class="compare-bar-col"><div class="compare-bar" style="height:${bh}px;background:var(--gold);"></div><div class="compare-val" style="font-size:.55rem;">${h}</div><div class="compare-label">${d}</div></div>`;
+            }).join('')}
+          </div>
+          <div style="font-size:.62rem;color:var(--tan);margin-top:4px;">Taller bar = higher index at that point in time</div>
+        </div>
+
+        <!-- COURSE BREAKDOWN -->
+        <div class="compare-section">
+          <div class="compare-section-title">Course by Course Breakdown</div>
+          ${[['Falcon\'s Fire GC',3,86,'+14.0'],['Wekiva Golf Club',2,81,'+9.0'],['DeBary G&CC',2,89,'+17.0'],['Eagle Dunes GC',1,84,'+12.0'],['The Deltona Club',1,91,'+19.0']].map(([n,r,s,d])=>`
+          <div class="course-row">
+            <div style="flex:1;padding-right:12px;">
+              <div class="course-row-name">${n}</div>
+              <div class="course-row-meta">${r} round${r>1?'s':''} &middot; Best: ${s} (${d})</div>
+            </div>
+            <div class="course-row-score over">${s}<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0;">${d}</div></div>
+          </div>`).join('')}
+        </div>
+
       </div>
-      <div style="position:absolute;top:50px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div style="position:absolute;top:80px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:20px;">
         <div style="background:rgba(15,30,13,0.96);border:1px solid rgba(201,168,76,.5);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.6);">
           <div style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;">Compare Rounds</div>
           <div style="font-size:.82rem;color:var(--tan);margin-bottom:18px;line-height:1.6;">See how your rounds stack up — hole by hole, front vs back, and every stat in between.</div>
