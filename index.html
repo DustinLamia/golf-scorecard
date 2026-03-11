@@ -3304,8 +3304,6 @@ async function loadCompare(){
   document.getElementById('h2h-b').value=defaultB;
 
   renderH2H();
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{ renderTrendChart(10); renderHcpChart(10); }));
-  setTimeout(()=>{ renderTrendChart(10); renderHcpChart(10); }, 150);
 }
 
 function renderH2H(){
@@ -3480,7 +3478,6 @@ function renderH2H(){
 
 function renderTrendChart(n){
   const data=window._compareData;
-  console.log('[renderTrendChart] n='+n+' data='+(data?data.length:'null')+' el='+!!document.getElementById('compare-trend-chart'));
   if(!data)return;
   const fmtD=d=>d===0?'E':d>0?'+'+d:''+d;
   const fmtDate=s=>{const d=new Date(s);return(d.getMonth()+1)+'/'+(d.getDate());};
@@ -3628,8 +3625,8 @@ function navTo(screen){
   } else if(screen==='compare'){
     document.getElementById('compare-screen').style.display='block';
     if(!window._proStatusReady){
-      loadProStatus().then(()=>{ window._proStatusReady=true; loadCompare(); });
-    } else { loadCompare(); }
+      loadProStatus().then(()=>{ window._proStatusReady=true; loadCompare().then(()=>setTimeout(()=>{ renderTrendChart(10); renderHcpChart(10); },100)); });
+    } else { loadCompare().then(()=>setTimeout(()=>{ renderTrendChart(10); renderHcpChart(10); },100)); }
   }
 }
 
