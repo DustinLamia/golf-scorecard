@@ -214,14 +214,14 @@
   /* ── Goals ── */
   .goals-card{background:rgba(245,240,232,.06);border:1px solid rgba(201,168,76,.25);border-radius:12px;padding:18px;margin-bottom:12px;}
   .goals-card .stat-label{margin-bottom:14px;}
-  .goal-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .goal-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;}
   .goal-row:last-child{margin-bottom:0;}
-  .goal-text{font-size:.9rem;color:var(--cream);flex:1;font-weight:500;}
+  .goal-text{font-size:.9rem;color:var(--cream);font-weight:500;}
   .goal-avg{font-size:.75rem;color:var(--tan);margin-top:4px;}
-  .goal-input-wrap{display:flex;align-items:center;gap:10px;}
+  .goal-input-wrap{display:flex;align-items:center;gap:10px;flex-shrink:0;}
   .goal-input{width:72px;background:rgba(0,0,0,.35);border:1px solid rgba(245,240,232,.2);border-radius:10px;padding:12px 10px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:1.4rem;text-align:center;outline:none;}
   .goal-input:focus{border-color:var(--gold);}
-  .goal-unit{font-size:.8rem;color:var(--tan);}
+  .goal-unit{font-size:.8rem;color:var(--tan);white-space:nowrap;}
   .btn-save-goals{width:100%;padding:16px;background:var(--gold);border:none;border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;color:var(--dark);cursor:pointer;margin-top:16px;}
 
 
@@ -3160,9 +3160,9 @@ function populateGoalInputs(goals, avgStrokes, avgPars, avgBirdies){
   const as=document.getElementById('goal-avg-strokes');
   const ap=document.getElementById('goal-avg-pars');
   const ab=document.getElementById('goal-avg-birdies');
-  if(as&&avgStrokes)as.textContent='Your avg: '+avgStrokes+' strokes';
-  if(ap&&avgPars!==null)ap.textContent='Your avg: '+avgPars+' per round';
-  if(ab&&avgBirdies!==null)ab.textContent='Your avg: '+avgBirdies+' per round';
+  if(as&&avgStrokes)as.textContent='You avg '+avgStrokes;
+  if(ap&&avgPars!==null)ap.textContent='You avg '+avgPars;
+  if(ab&&avgBirdies!==null)ab.textContent='You avg '+avgBirdies;
 }
 
 
