@@ -3197,20 +3197,29 @@ async function loadCompare(){
     return;
   }
   el.innerHTML='<div class="stats-loading">Loading...</div>';
-  const {data,error}=await supa.from('rounds').select('*').order('played_at',{ascending:true}).limit(100);
-  if(error||!data||data.length<2){
-    el.innerHTML='<div class="stats-empty">Play at least 2 rounds to compare.</div>';
+  const {data,error}=await supa.from('rounds').select('*').order('played_at',{ascending:false}).limit(100);
+  if(error||!data||data.length<1){
+    el.innerHTML='<div class="stats-empty">No rounds saved yet.</div>';
     return;
   }
 
-  // Store globally for re-rendering on toggle
-  window._compareData=data;
+  // Store globally for re-rendering
+  window._compareData=[...data].reverse(); // ascending for trend charts
+  window._compareDataDesc=data; // descending for pickers
 
   const fmtD=d=>d===0?'E':d>0?'+'+d:''+d;
+  const fmtDate=s=>{const d=new Date(s);return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate();};
 
-  // ── 3. Course breakdown (eligible rounds only) ──
+  // Build round options for pickers
+  const roundOptions=data.map((r,i)=>{
+    const label=`${r.course_name||'Unknown'} — ${fmtDate(r.played_at)} (${fmtD(r.score_vs_par||0)})`;
+    return `<option value="${i}">${label}</option>`;
+  }).join('');
+
+  // Course breakdown (eligible rounds)
+  const eligForCourse=data.filter(r=>!r.scramble&&!(r.match_play&&Array.isArray(r.players)&&r.players.length===4));
   const courseMap={};
-  data.filter(r=>!r.scramble&&!(r.match_play&&Array.isArray(r.players)&&r.players.length===4)).forEach(r=>{
+  eligForCourse.forEach(r=>{
     const name=r.course_name||'Unknown Course';
     if(!courseMap[name])courseMap[name]={rounds:0,totalDiff:0,totalStrokes:0,best:Infinity,bestStrokes:null,roundList:[]};
     courseMap[name].rounds++;
@@ -3246,7 +3255,28 @@ async function loadCompare(){
   const trendToggleBtns=(active)=>[5,10,20].map(n=>`<button onclick="renderTrendChart(${n})" id="ttoggle-${n}" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(201,168,76,.4);background:${active===n?'var(--gold)':'transparent'};color:${active===n?'var(--dark)':'var(--gold)'};font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;">Last ${n}</button>`).join('');
   const hcpToggleBtns=(active)=>[5,10,20].map(n=>`<button onclick="renderHcpChart(${n})" id="htoggle-${n}" style="padding:4px 12px;border-radius:6px;border:1px solid rgba(201,168,76,.4);background:${active===n?'var(--gold)':'transparent'};color:${active===n?'var(--dark)':'var(--gold)'};font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;">Last ${n}</button>`).join('');
 
+  // Default pickers: most recent = A, second most recent = B
+  const defaultA=0;
+  const defaultB=data.length>1?1:0;
+
   el.innerHTML=`
+    <!-- HEAD TO HEAD SECTION -->
+    <div class="compare-section">
+      <div class="compare-section-title">Head to Head</div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <div style="flex:1;">
+          <div style="font-size:.65rem;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Round A</div>
+          <select id="h2h-a" onchange="renderH2H()" style="width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(201,168,76,.4);border-radius:8px;padding:8px 10px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.78rem;outline:none;">${roundOptions}</select>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:.65rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Round B</div>
+          <select id="h2h-b" onchange="renderH2H()" style="width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(245,240,232,.15);border-radius:8px;padding:8px 10px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.78rem;outline:none;">${roundOptions}</select>
+        </div>
+      </div>
+      <div id="h2h-result"></div>
+    </div>
+
+    <!-- TRENDS SECTION -->
     <div class="compare-section" id="compare-trend-section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div class="compare-section-title" style="margin-bottom:0;">Score vs Par</div>
@@ -3269,8 +3299,186 @@ async function loadCompare(){
     </div>
   `;
 
+  // Set default picker values
+  document.getElementById('h2h-a').value=defaultA;
+  document.getElementById('h2h-b').value=defaultB;
+
+  renderH2H();
   renderTrendChart(10);
   renderHcpChart(10);
+}
+
+function renderH2H(){
+  const dataDesc=window._compareDataDesc;
+  if(!dataDesc)return;
+  const idxA=parseInt(document.getElementById('h2h-a').value);
+  const idxB=parseInt(document.getElementById('h2h-b').value);
+  const rA=dataDesc[idxA];
+  const rB=dataDesc[idxB];
+  const el=document.getElementById('h2h-result');
+  if(!el)return;
+
+  if(idxA===idxB){
+    el.innerHTML='<div style="font-size:.82rem;color:var(--tan);text-align:center;padding:16px;">Select two different rounds to compare.</div>';
+    return;
+  }
+
+  const fmtD=d=>d===0?'E':d>0?'+'+d:''+d;
+  const fmtDate=s=>{const d=new Date(s);return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate();};
+
+  // Parse hole scores if LIVE round
+  function getHoleScores(r){
+    try{
+      const sc=r.scores;
+      if(!sc)return null;
+      const parsed=typeof sc==='string'?JSON.parse(sc):sc;
+      // scores[0] = first player's scores array
+      const playerScores=Array.isArray(parsed[0])?parsed[0]:parsed;
+      if(Array.isArray(playerScores)&&playerScores.some(s=>s!==null&&s!==undefined&&s!==0)){
+        return playerScores;
+      }
+    }catch(e){}
+    return null;
+  }
+
+  // Compute hole stats from scores array + pars
+  function computeHoleStats(scores, pars){
+    if(!scores||!pars)return null;
+    let eagles=0,birdies=0,parsCount=0,bogeys=0,doubles=0,front=0,back=0;
+    scores.forEach((s,i)=>{
+      if(s===null||s===undefined)return;
+      const p=pars[i]||4;
+      const diff=s-p;
+      if(diff<=-2)eagles++;
+      else if(diff===-1)birdies++;
+      else if(diff===0)parsCount++;
+      else if(diff===1)bogeys++;
+      else doubles++;
+      if(i<9)front+=diff; else back+=diff;
+    });
+    return{eagles,birdies,pars:parsCount,bogeys,doubles,front,back};
+  }
+
+  const parsA=rA.hole_pars||null;
+  const parsB=rB.hole_pars||null;
+  const scoresA=getHoleScores(rA);
+  const scoresB=getHoleScores(rB);
+  const statsA=computeHoleStats(scoresA,parsA);
+  const statsB=computeHoleStats(scoresB,parsB);
+  const bothLive=!!(scoresA&&scoresB);
+
+  const scoreA=rA.total_strokes||'--';
+  const scoreB=rB.total_strokes||'--';
+  const diffA=rA.score_vs_par||0;
+  const diffB=rB.score_vs_par||0;
+
+  function valColor(v, lowerIsBetter=true){
+    if(v===null||v===undefined||v==='--')return'var(--cream)';
+    const num=parseFloat(v);
+    if(isNaN(num))return'var(--cream)';
+    if(lowerIsBetter){
+      return num<0?'#5bc85b':num>0?'#e07060':'var(--cream)';
+    } else {
+      return num>0?'#5bc85b':num<0?'#e07060':'var(--cream)';
+    }
+  }
+
+  function winnerHighlight(a, b, lowerIsBetter=true){
+    const na=parseFloat(a), nb=parseFloat(b);
+    if(isNaN(na)||isNaN(nb))return['',''];
+    if(na===nb)return['',''];
+    const aWins=lowerIsBetter?(na<nb):(na>nb);
+    return aWins?['font-weight:700;','']:['','font-weight:700;'];
+  }
+
+  // Stat rows: [label, valA, valB, lowerIsBetter]
+  const baseRows=[
+    ['Total Score', scoreA, scoreB, true],
+    ['vs Par', fmtD(diffA), fmtD(diffB), true],
+  ];
+
+  const holeRows=statsA&&statsB?[
+    ['Front 9', fmtD(statsA.front), fmtD(statsB.front), true],
+    ['Back 9', fmtD(statsA.back), fmtD(statsB.back), true],
+    ['Eagles', statsA.eagles, statsB.eagles, false],
+    ['Birdies', statsA.birdies, statsB.birdies, false],
+    ['Pars', statsA.pars, statsB.pars, false],
+    ['Bogeys', statsA.bogeys, statsB.bogeys, true],
+    ['Doubles+', statsA.doubles, statsB.doubles, true],
+  ]:[];
+
+  const allRows=[...baseRows,...holeRows];
+
+  const rowsHtml=allRows.map(([label,a,b,lib],i)=>{
+    const[wA,wB]=winnerHighlight(a,b,lib);
+    return `<div style="display:flex;align-items:center;padding:10px 14px;${i>0?'border-top:1px solid rgba(245,240,232,.06);':''}">
+      <div style="flex:1;text-align:center;font-family:'Bebas Neue',cursive;font-size:1.15rem;letter-spacing:1px;color:${valColor(a,lib)};${wA}">${a}</div>
+      <div style="flex:1.4;text-align:center;font-size:.7rem;color:var(--tan);text-transform:uppercase;letter-spacing:.5px;">${label}</div>
+      <div style="flex:1;text-align:center;font-family:'Bebas Neue',cursive;font-size:1.15rem;letter-spacing:1px;color:${valColor(b,lib)};${wB}">${b}</div>
+    </div>`;
+  }).join('');
+
+  // Round A/B header cards
+  const headerHtml=`
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <div style="flex:1;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.35);border-radius:10px;padding:10px 12px;">
+        <div style="font-size:.6rem;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Round A</div>
+        <div style="font-size:.82rem;color:var(--cream);font-weight:500;line-height:1.3;">${rA.course_name||'Unknown'}</div>
+        <div style="font-size:.7rem;color:var(--tan);margin-top:2px;">${fmtDate(rA.played_at)}</div>
+      </div>
+      <div style="flex:1;background:rgba(245,240,232,.05);border:1px solid rgba(245,240,232,.15);border-radius:10px;padding:10px 12px;">
+        <div style="font-size:.6rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Round B</div>
+        <div style="font-size:.82rem;color:var(--cream);font-weight:500;line-height:1.3;">${rB.course_name||'Unknown'}</div>
+        <div style="font-size:.7rem;color:var(--tan);margin-top:2px;">${fmtDate(rB.played_at)}</div>
+      </div>
+    </div>`;
+
+  // Hole by hole chart (only if both LIVE)
+  let holeChartHtml='';
+  if(bothLive&&scoresA&&scoresB&&parsA){
+    const holes=Math.min(scoresA.length,scoresB.length,parsA.length);
+    const diffsA=scoresA.slice(0,holes).map((s,i)=>s-(parsA[i]||4));
+    const diffsB=scoresB.slice(0,holes).map((s,i)=>s-(parsA[i]||4));
+    const allVals=[...diffsA,...diffsB].filter(v=>v!==null&&!isNaN(v));
+    const maxAbs=Math.max(Math.max(...allVals.map(Math.abs)),1);
+    const barH=28; // max bar height each direction
+    const totalH=barH*2+4;
+
+    const barsHtml=Array.from({length:holes},(_,i)=>{
+      const dA=diffsA[i]??0;
+      const dB=diffsB[i]??0;
+      const hA=Math.round((Math.abs(dA)/maxAbs)*barH);
+      const hB=Math.round((Math.abs(dB)/maxAbs)*barH);
+      const cA=dA<0?'#5bc85b':dA===0?'rgba(201,168,76,.5)':'#c0392b';
+      const cB=dB<0?'#4a9eff':dB===0?'rgba(201,168,76,.3)':'#e88';
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
+        <div style="height:${barH}px;display:flex;align-items:flex-end;width:100%;gap:1px;">
+          <div style="flex:1;height:${hA}px;background:${cA};border-radius:2px 2px 0 0;min-height:${dA!==0?2:0}px;"></div>
+          <div style="flex:1;height:${hB}px;background:${cB};border-radius:2px 2px 0 0;min-height:${dB!==0?2:0}px;"></div>
+        </div>
+        <div style="width:100%;height:1px;background:rgba(245,240,232,.15);"></div>
+        <div style="font-size:.5rem;color:var(--tan);">${i+1}</div>
+      </div>`;
+    }).join('');
+
+    holeChartHtml=`
+      <div style="margin-top:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-size:.7rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;">Hole by Hole (vs Par)</div>
+          <div style="display:flex;gap:10px;font-size:.65rem;">
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:#5bc85b;border-radius:2px;display:inline-block;"></span><span style="color:var(--gold);">A</span></span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:#4a9eff;border-radius:2px;display:inline-block;"></span><span style="color:var(--tan);">B</span></span>
+          </div>
+        </div>
+        <div style="display:flex;gap:2px;align-items:flex-end;height:${totalH}px;">${barsHtml}</div>
+        <div style="font-size:.6rem;color:var(--tan);margin-top:4px;">Taller bar = further from par &middot; Green/blue = under &middot; Red = over</div>
+      </div>`;
+  }
+
+  el.innerHTML=headerHtml+`<div style="background:rgba(245,240,232,.06);border-radius:12px;overflow:hidden;">${rowsHtml}</div>`+holeChartHtml;
+  if(!bothLive&&data.length>=2&&!(statsA&&statsB)){
+    el.innerHTML+=`<div style="font-size:.72rem;color:var(--tan);text-align:center;margin-top:10px;font-style:italic;">Hole-by-hole chart available when both rounds are scored live.</div>`;
+  }
 }
 
 function renderTrendChart(n){
@@ -5069,7 +5277,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <div id="compare-screen" style="display:none;">
   <div class="compare-header">
     <h2>Compare Rounds</h2>
-    <button class="btn-back" onclick="navTo('stats')">&#8592; Back</button>
+    <button class="btn-back" onclick="navTo('play')">&#8592; Back</button>
   </div>
   <div id="compare-content"><div class="stats-loading">Loading...</div></div>
 </div>
