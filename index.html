@@ -3480,6 +3480,7 @@ function renderH2H(){
 
 function renderTrendChart(n){
   const data=window._compareData;
+  console.log('[renderTrendChart] n='+n+' data='+(data?data.length:'null')+' el='+!!document.getElementById('compare-trend-chart'));
   if(!data)return;
   const fmtD=d=>d===0?'E':d>0?'+'+d:''+d;
   const fmtDate=s=>{const d=new Date(s);return(d.getMonth()+1)+'/'+(d.getDate());};
