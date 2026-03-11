@@ -214,15 +214,15 @@
   /* ── Goals ── */
   .goals-card{background:rgba(245,240,232,.06);border:1px solid rgba(201,168,76,.25);border-radius:12px;padding:18px;margin-bottom:12px;}
   .goals-card .stat-label{margin-bottom:14px;}
-  .goal-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .goal-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
   .goal-row:last-child{margin-bottom:0;}
-  .goal-text{font-size:.82rem;color:var(--cream);flex:1;}
-  .goal-avg{font-size:.72rem;color:var(--tan);margin-top:2px;}
-  .goal-input-wrap{display:flex;align-items:center;gap:8px;}
-  .goal-input{width:56px;background:rgba(0,0,0,.3);border:1px solid rgba(245,240,232,.2);border-radius:8px;padding:7px 10px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;text-align:center;outline:none;}
+  .goal-text{font-size:.9rem;color:var(--cream);flex:1;font-weight:500;}
+  .goal-avg{font-size:.75rem;color:var(--tan);margin-top:4px;}
+  .goal-input-wrap{display:flex;align-items:center;gap:10px;}
+  .goal-input{width:72px;background:rgba(0,0,0,.35);border:1px solid rgba(245,240,232,.2);border-radius:10px;padding:12px 10px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:1.4rem;text-align:center;outline:none;}
   .goal-input:focus{border-color:var(--gold);}
-  .goal-unit{font-size:.75rem;color:var(--tan);}
-  .btn-save-goals{width:100%;padding:10px;background:var(--gold);border:none;border-radius:8px;font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;color:var(--dark);cursor:pointer;margin-top:4px;}
+  .goal-unit{font-size:.8rem;color:var(--tan);}
+  .btn-save-goals{width:100%;padding:16px;background:var(--gold);border:none;border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;color:var(--dark);cursor:pointer;margin-top:16px;}
 
 
   /* ── Compare Screen ── */
@@ -2899,7 +2899,7 @@ async function loadStats(){
     </div>
   </div>
   <div style="display:flex;justify-content:center;padding:12px 20px 20px;">
-    <button onclick="shareStats()" style="padding:14px 36px;border-radius:12px;border:1px solid rgba(201,168,76,.5);background:rgba(201,168,76,.1);color:var(--gold);font-family:'Bebas Neue',cursive;font-size:1.15rem;letter-spacing:3px;cursor:pointer;">📊 Share My Stats</button>
+    <button onclick="shareStats()" style="padding:18px 36px;border-radius:14px;border:1px solid rgba(201,168,76,.5);background:rgba(201,168,76,.1);color:var(--gold);font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:3px;cursor:pointer;width:100%;max-width:400px;">&#128202; Share My Stats</button>
   </div>
   `;
 
