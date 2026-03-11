@@ -393,6 +393,16 @@
 </head>
 <body>
 
+<!-- iOS Add to Home Screen banner -->
+<div id="a2hs-banner" style="display:none;position:fixed;bottom:80px;left:12px;right:12px;z-index:9999;background:rgba(15,30,13,0.97);border:1px solid rgba(201,168,76,.5);border-radius:16px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.6);display:flex;align-items:center;gap:12px;">
+  <img src="icon-192.png?v=1" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;" onerror="this.style.display='none'">
+  <div style="flex:1;min-width:0;">
+    <div style="font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;color:var(--gold);line-height:1.2;">Install VoiceScore</div>
+    <div style="font-size:.72rem;color:var(--tan);margin-top:2px;line-height:1.4;">Tap <strong style="color:var(--cream);">Share</strong> <span style="font-size:.85rem;">⬆️</span> then <strong style="color:var(--cream);">"Add to Home Screen"</strong></div>
+  </div>
+  <button onclick="dismissA2HS()" style="background:none;border:none;color:var(--tan);font-size:1.2rem;cursor:pointer;padding:4px;flex-shrink:0;line-height:1;">&#x2715;</button>
+</div>
+
 <!-- Welcome Screen -->
 <div id="welcome-screen" style="display:flex;">
   <div class="welcome-logo">
@@ -5542,6 +5552,21 @@ document.addEventListener('DOMContentLoaded', function(){
       window.addEventListener('load', ()=>{
         navigator.serviceWorker.register('/sw.js').catch(()=>{});
       });
+    }
+
+    // Show iOS Add to Home Screen banner if not already installed
+    function dismissA2HS(){
+      document.getElementById('a2hs-banner').style.display='none';
+      localStorage.setItem('a2hs_dismissed','1');
+    }
+    const isStandalone = window.navigator.standalone === true;
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    const isMobile = /mobile/i.test(navigator.userAgent);
+    const dismissed = localStorage.getItem('a2hs_dismissed');
+    if(isIOS && isMobile && !isStandalone && !dismissed){
+      setTimeout(()=>{
+        document.getElementById('a2hs-banner').style.display='flex';
+      }, 3000);
     }
   </script>
 </body>
