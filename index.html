@@ -2966,6 +2966,7 @@ function setPastHoles(n){
 }
 
 async function submitPastRound(){
+  if(!isPro()){showProUpsell('Saving Rounds & Round History');return;}
   const course=document.getElementById('past-course-name').value.trim();
   const date=document.getElementById('past-date').value;
   const holes=window._pastHoles||18;
@@ -3351,6 +3352,10 @@ async function finishRound(){
     setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
     return;
   }
+  if(!isPro()){
+    showProUpsell('Saving Rounds & Round History');
+    return;
+  }
   const hasScores=scores.some(playerScores=>playerScores.some(s=>s!==null));
   if(!hasScores){
     document.getElementById('voice-feedback').textContent='No scores to save yet.';
@@ -3684,6 +3689,15 @@ function toggleRoundScorecard(roundId){
 
 async function loadHistory(){
   const list=document.getElementById('history-list');
+  if(!isPro()){
+    list.innerHTML=`<div class="stats-empty" style="padding:40px 20px;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:12px;">📋</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px;color:var(--gold);margin-bottom:8px;">Pro Feature</div>
+      <div style="font-size:.88rem;color:var(--tan);margin-bottom:20px;line-height:1.6;">Save rounds and track your history with VoiceScore Pro.</div>
+      <button onclick="showProUpsell('Round History')" style="padding:12px 28px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
+    </div>`;
+    return;
+  }
   list.innerHTML='<div class="history-loading">Loading...</div>';
   const {data,error}=await supa.from('rounds').select('*').order('played_at',{ascending:false}).limit(50);
   if(error||!data||!data.length){
