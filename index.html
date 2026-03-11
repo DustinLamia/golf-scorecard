@@ -3304,8 +3304,7 @@ async function loadCompare(){
   document.getElementById('h2h-b').value=defaultB;
 
   renderH2H();
-  renderTrendChart(10);
-  renderHcpChart(10);
+  setTimeout(()=>{ renderTrendChart(10); renderHcpChart(10); }, 0);
 }
 
 function renderH2H(){
@@ -3372,15 +3371,12 @@ function renderH2H(){
   const diffA=rA.score_vs_par||0;
   const diffB=rB.score_vs_par||0;
 
-  function valColor(v, lowerIsBetter=true){
-    if(v===null||v===undefined||v==='--')return'var(--cream)';
-    const num=parseFloat(v);
-    if(isNaN(num))return'var(--cream)';
-    if(lowerIsBetter){
-      return num<0?'#5bc85b':num>0?'#e07060':'var(--cream)';
-    } else {
-      return num>0?'#5bc85b':num<0?'#e07060':'var(--cream)';
-    }
+  function relColor(val, otherVal, lowerIsBetter=true){
+    const nv=parseFloat(val), no=parseFloat(otherVal);
+    if(isNaN(nv)||isNaN(no))return'var(--cream)';
+    if(nv===no)return'var(--cream)';
+    const iWin=lowerIsBetter?(nv<no):(nv>no);
+    return iWin?'#5bc85b':'#e07060';
   }
 
   function winnerHighlight(a, b, lowerIsBetter=true){
@@ -3412,9 +3408,9 @@ function renderH2H(){
   const rowsHtml=allRows.map(([label,a,b,lib],i)=>{
     const[wA,wB]=winnerHighlight(a,b,lib);
     return `<div style="display:flex;align-items:center;padding:10px 14px;${i>0?'border-top:1px solid rgba(245,240,232,.06);':''}">
-      <div style="flex:1;text-align:center;font-family:'Bebas Neue',cursive;font-size:1.15rem;letter-spacing:1px;color:${valColor(a,lib)};${wA}">${a}</div>
+      <div style="flex:1;text-align:center;font-family:'Bebas Neue',cursive;font-size:1.15rem;letter-spacing:1px;color:${relColor(a,b,lib)};${wA}">${a}</div>
       <div style="flex:1.4;text-align:center;font-size:.7rem;color:var(--tan);text-transform:uppercase;letter-spacing:.5px;">${label}</div>
-      <div style="flex:1;text-align:center;font-family:'Bebas Neue',cursive;font-size:1.15rem;letter-spacing:1px;color:${valColor(b,lib)};${wB}">${b}</div>
+      <div style="flex:1;text-align:center;font-family:'Bebas Neue',cursive;font-size:1.15rem;letter-spacing:1px;color:${relColor(b,a,lib)};${wB}">${b}</div>
     </div>`;
   }).join('');
 
@@ -3466,12 +3462,12 @@ function renderH2H(){
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div style="font-size:.7rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;">Hole by Hole (vs Par)</div>
           <div style="display:flex;gap:10px;font-size:.65rem;">
-            <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:#5bc85b;border-radius:2px;display:inline-block;"></span><span style="color:var(--gold);">A</span></span>
-            <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:#4a9eff;border-radius:2px;display:inline-block;"></span><span style="color:var(--tan);">B</span></span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:#c0392b;border-radius:2px;display:inline-block;"></span><span style="width:8px;height:8px;background:#5bc85b;border-radius:2px;display:inline-block;"></span><span style="color:var(--gold);">A</span></span>
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:#e07060;border-radius:2px;display:inline-block;"></span><span style="width:8px;height:8px;background:#4a9eff;border-radius:2px;display:inline-block;"></span><span style="color:var(--tan);">B</span></span>
           </div>
         </div>
         <div style="display:flex;gap:2px;align-items:flex-end;height:${totalH}px;">${barsHtml}</div>
-        <div style="font-size:.6rem;color:var(--tan);margin-top:4px;">Taller bar = further from par &middot; Green/blue = under &middot; Red = over</div>
+        <div style="font-size:.6rem;color:var(--tan);margin-top:4px;">Red = over par &middot; Green = under par (A) &middot; Blue = under par (B)</div>
       </div>`;
   }
 
