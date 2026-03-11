@@ -2583,12 +2583,46 @@ function shareStats(){
 async function loadStats(){
   const el=document.getElementById('stats-content');
   if(!isPro()){
-    el.innerHTML=`<div class="stats-empty" style="padding:40px 20px;text-align:center;">
-      <div style="font-size:2rem;margin-bottom:12px;">📊</div>
-      <div style="font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px;color:var(--gold);margin-bottom:8px;">Pro Feature</div>
-      <div style="font-size:.88rem;color:var(--tan);margin-bottom:20px;line-height:1.6;">Unlock Stats, Handicap tracking, and more with VoiceScore Pro.</div>
-      <button onclick="showProUpsell('Stats & Handicap')" style="padding:12px 28px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
-    </div>`;
+    el.style.position='relative';
+    el.style.minHeight='500px';
+    el.innerHTML=`
+      <div style="pointer-events:none;user-select:none;">
+        <div style="filter:blur(3px) brightness(0.5);">
+          <div class="stats-grid" style="padding:16px 16px 0;">
+            <div class="stat-card full"><div class="stat-label">Handicap Index</div><div class="stat-value gold">8.4</div><div class="stat-sub">Based on last 8 rounds</div></div>
+            <div class="stat-card"><div class="stat-label">Rounds Played</div><div class="stat-value gold">18</div></div>
+            <div class="stat-card"><div class="stat-label">Scoring Average</div><div class="stat-value over">+6.2</div><div class="stat-sub">vs par per round</div></div>
+            <div class="stat-card"><div class="stat-label">Best Round</div><div class="stat-value under">-1</div><div class="stat-sub">Falcon's Fire</div></div>
+            <div class="stat-card"><div class="stat-label">Match Play</div><div class="stat-value" style="font-size:1.6rem;">7-4-2</div><div class="stat-sub">W &middot; L &middot; H</div></div>
+            <div class="stat-card full">
+              <div class="stat-label" style="margin-bottom:8px;">Last 10 Rounds</div>
+              <div style="display:flex;align-items:flex-end;gap:6px;height:60px;padding:0 4px;">
+                ${['+9','+7','+11','+5','+8','+6','+4','+7','+5','-1'].map((v,i)=>{
+                  const h=Math.max(10,Math.round((parseInt(v)+15)/20*60));
+                  const c=parseInt(v)<0?'#5bc85b':parseInt(v)<=6?'#c9a84c':'#c0392b';
+                  return `<div style="flex:1;background:${c};height:${h}px;border-radius:3px 3px 0 0;opacity:.8;"></div>`;
+                }).join('')}
+              </div>
+            </div>
+            <div class="stat-card full">
+              <div class="stat-label" style="margin-bottom:14px;">Avg Score by Hole Type</div>
+              <div class="par-type-row">
+                <div class="par-type-cell"><div class="stat-label">Par 3</div><div class="stat-value over">+0.8</div></div>
+                <div class="par-type-cell"><div class="stat-label">Par 4</div><div class="stat-value over">+0.4</div></div>
+                <div class="par-type-cell"><div class="stat-label">Par 5</div><div class="stat-value under">-0.2</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:rgba(15,30,13,0.93);border:1px solid rgba(201,168,76,.4);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center;">
+          <div style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;">Stats &amp; Handicap</div>
+          <div style="font-size:.82rem;color:var(--tan);margin-bottom:18px;line-height:1.6;">Track your handicap, scoring trends, and performance by hole type.</div>
+          <button onclick="showProUpsell('Stats & Handicap')" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
+          <div style="font-size:.7rem;color:var(--tan);margin-top:10px;">One-time payment. Yours forever.</div>
+        </div>
+      </div>`;
     return;
   }
   el.innerHTML='<div class="stats-loading">Loading...</div>';
@@ -3697,12 +3731,39 @@ function toggleRoundScorecard(roundId){
 async function loadHistory(){
   const list=document.getElementById('history-list');
   if(!isPro()){
-    list.innerHTML=`<div class="stats-empty" style="padding:40px 20px;text-align:center;">
-      <div style="font-size:2rem;margin-bottom:12px;">📋</div>
-      <div style="font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px;color:var(--gold);margin-bottom:8px;">Pro Feature</div>
-      <div style="font-size:.88rem;color:var(--tan);margin-bottom:20px;line-height:1.6;">Save rounds and track your history with VoiceScore Pro.</div>
-      <button onclick="showProUpsell('Round History')" style="padding:12px 28px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
-    </div>`;
+    list.style.position='relative';
+    list.style.minHeight='420px';
+    list.innerHTML=`
+      <div style="pointer-events:none;user-select:none;">
+        <div style="filter:blur(3px) brightness(0.5);padding:4px 0;">
+          <div class="round-card" style="margin-bottom:10px;"><div style="display:flex;align-items:flex-start;gap:4px;"><div style="flex:1;">
+            <div class="round-card-top"><div class="round-card-course">Dubsdread Golf Course</div><div class="round-card-score over">+7<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;">79</div></div></div>
+            <div class="round-card-meta">Sat, Mar 8 &middot; 18 holes &middot; Dustin <span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35);">LIVE</span></div>
+          </div></div></div>
+          <div class="round-card" style="margin-bottom:10px;"><div style="display:flex;align-items:flex-start;gap:4px;"><div style="flex:1;">
+            <div class="round-card-top"><div class="round-card-course">Hunter's Creek Golf Club</div><div class="round-card-score over">+11<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;">83</div></div></div>
+            <div class="round-card-meta">Wed, Mar 5 &middot; 18 holes &middot; Dustin, Brian <span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;background:rgba(74,140,65,.2);color:#7ec87e;border:1px solid rgba(74,140,65,.4);">SKINS</span></div>
+            <div class="skins-result-line">&#127942; Dustin &middot; 4 Skins</div>
+          </div></div></div>
+          <div class="round-card" style="margin-bottom:10px;"><div style="display:flex;align-items:flex-start;gap:4px;"><div style="flex:1;">
+            <div class="round-card-top"><div class="round-card-course">Falcon's Fire Golf Club</div><div class="round-card-score under">-1<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;">71</div></div></div>
+            <div class="round-card-meta">Sun, Mar 2 &middot; 18 holes &middot; Dustin <span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;background:rgba(245,240,232,.07);color:var(--tan);border:1px solid rgba(245,240,232,.15);">MANUAL</span></div>
+          </div></div></div>
+          <div class="round-card"><div style="display:flex;align-items:flex-start;gap:4px;"><div style="flex:1;">
+            <div class="round-card-top"><div class="round-card-course">Stoneybrook West Golf Club</div><div class="round-card-score over">+5<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;">77</div></div></div>
+            <div class="round-card-meta">Fri, Feb 28 &middot; 18 holes &middot; Dustin, Clint <span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;background:rgba(41,128,185,.12);color:#7ec8f5;border:1px solid rgba(41,128,185,.3);">MATCH</span></div>
+            <div style="font-size:.78rem;color:#7ec8f5;font-weight:600;margin-top:5px;">&#127942; Dustin &middot; 3&amp;2</div>
+          </div></div></div>
+        </div>
+      </div>
+      <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:rgba(15,30,13,0.93);border:1px solid rgba(201,168,76,.4);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center;">
+          <div style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;">Round History</div>
+          <div style="font-size:.82rem;color:var(--tan);margin-bottom:18px;line-height:1.6;">Save every round, track your progress, and relive your best games.</div>
+          <button onclick="showProUpsell('Round History')" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
+          <div style="font-size:.7rem;color:var(--tan);margin-top:10px;">One-time payment. Yours forever.</div>
+        </div>
+      </div>`;
     return;
   }
   list.innerHTML='<div class="history-loading">Loading...</div>';
