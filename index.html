@@ -4387,7 +4387,7 @@ async function launchStripeCheckout() {
     window.location.href = url;
   } catch(e) {
     if (btn) { btn.textContent = 'Go Pro — $6.99'; btn.disabled = false; }
-    alert('Could not start checkout. Please try again.');
+    alert('Checkout error: ' + e.message);
   }
 }
 
