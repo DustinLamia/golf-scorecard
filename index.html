@@ -2588,17 +2588,17 @@ async function loadStats(){
     el.innerHTML=`
       <div style="pointer-events:none;user-select:none;opacity:0.45;">
         <div class="stats-grid" style="padding:16px 16px 0;">
-          <div class="stat-card full"><div class="stat-label">Handicap Index</div><div class="stat-value gold">8.4</div><div class="stat-sub">Based on last 8 rounds</div></div>
-          <div class="stat-card"><div class="stat-label">Rounds Played</div><div class="stat-value gold">18</div></div>
-          <div class="stat-card"><div class="stat-label">Scoring Avg</div><div class="stat-value over">+6.2</div><div class="stat-sub">vs par per round</div></div>
-          <div class="stat-card"><div class="stat-label">Best Round</div><div class="stat-value under">-1</div><div class="stat-sub">Falcon's Fire</div></div>
-          <div class="stat-card"><div class="stat-label">Match Play</div><div class="stat-value" style="font-size:1.6rem;">7-4-2</div><div class="stat-sub">W &middot; L &middot; H</div></div>
+          <div class="stat-card full"><div class="stat-label">Handicap Index</div><div class="stat-value gold">14.2</div><div class="stat-sub">Based on last 8 rounds</div></div>
+          <div class="stat-card"><div class="stat-label">Rounds Played</div><div class="stat-value gold">24</div></div>
+          <div class="stat-card"><div class="stat-label">Scoring Avg</div><div class="stat-value over">+12.4</div><div class="stat-sub">vs par per round</div></div>
+          <div class="stat-card"><div class="stat-label">Best Round</div><div class="stat-value under">+4</div><div class="stat-sub">Eagle Dunes GC</div></div>
+          <div class="stat-card"><div class="stat-label">Match Play</div><div class="stat-value" style="font-size:1.6rem;">5-3-1</div><div class="stat-sub">W &middot; L &middot; H</div></div>
           <div class="stat-card full">
             <div class="stat-label" style="margin-bottom:8px;">Last 10 Rounds</div>
             <div style="display:flex;align-items:flex-end;gap:6px;height:60px;padding:0 4px;">
-              ${[9,7,11,5,8,6,4,7,5,1].map((v,i)=>{
-                const h=Math.round((v/11)*56)+4;
-                const c=v<=2?'#5bc85b':v<=6?'#c9a84c':'#c0392b';
+              ${[14,10,16,8,13,11,6,9,12,7].map(v=>{
+                const h=Math.round((v/16)*56)+4;
+                const c=v<=4?'#5bc85b':v<=8?'#c9a84c':'#c0392b';
                 return `<div style="flex:1;background:${c};height:${h}px;border-radius:3px 3px 0 0;opacity:.9;"></div>`;
               }).join('')}
             </div>
@@ -2606,9 +2606,9 @@ async function loadStats(){
           <div class="stat-card full">
             <div class="stat-label" style="margin-bottom:14px;">Avg Score by Hole Type</div>
             <div class="par-type-row">
-              <div class="par-type-cell"><div class="stat-label">Par 3</div><div class="stat-value over">+0.8</div></div>
-              <div class="par-type-cell"><div class="stat-label">Par 4</div><div class="stat-value over">+0.4</div></div>
-              <div class="par-type-cell"><div class="stat-label">Par 5</div><div class="stat-value under">-0.2</div></div>
+              <div class="par-type-cell"><div class="stat-label">Par 3</div><div class="stat-value over">+1.2</div></div>
+              <div class="par-type-cell"><div class="stat-label">Par 4</div><div class="stat-value over">+0.7</div></div>
+              <div class="par-type-cell"><div class="stat-label">Par 5</div><div class="stat-value over">+0.3</div></div>
             </div>
           </div>
         </div>
@@ -4067,24 +4067,29 @@ async function loadHistory(){
     list.style.minHeight='420px';
     list.innerHTML=`
       <div style="pointer-events:none;user-select:none;opacity:0.45;">
-        <div class="round-card" style="margin-bottom:10px;"><div style="display:flex;align-items:flex-start;gap:4px;"><div style="flex:1;">
-          <div class="round-card-top"><div class="round-card-course">Dubsdread Golf Course</div><div class="round-card-score over">+7<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;">79</div></div></div>
-          <div class="round-card-meta">Sat, Mar 8 &middot; 18 holes &middot; Dustin <span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35);">LIVE</span></div>
-        </div></div></div>
-        <div class="round-card" style="margin-bottom:10px;"><div style="display:flex;align-items:flex-start;gap:4px;"><div style="flex:1;">
-          <div class="round-card-top"><div class="round-card-course">Hunter's Creek Golf Club</div><div class="round-card-score over">+11<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;">83</div></div></div>
-          <div class="round-card-meta">Wed, Mar 5 &middot; 18 holes &middot; Dustin, Brian <span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;background:rgba(74,140,65,.2);color:#7ec87e;border:1px solid rgba(74,140,65,.4);">SKINS</span></div>
-          <div class="skins-result-line">&#127942; Dustin &middot; 4 Skins</div>
-        </div></div></div>
-        <div class="round-card" style="margin-bottom:10px;"><div style="display:flex;align-items:flex-start;gap:4px;"><div style="flex:1;">
-          <div class="round-card-top"><div class="round-card-course">Falcon's Fire Golf Club</div><div class="round-card-score under">-1<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;">71</div></div></div>
-          <div class="round-card-meta">Sun, Mar 2 &middot; 18 holes &middot; Dustin <span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;background:rgba(245,240,232,.07);color:var(--tan);border:1px solid rgba(245,240,232,.15);">MANUAL</span></div>
-        </div></div></div>
-        <div class="round-card"><div style="display:flex;align-items:flex-start;gap:4px;"><div style="flex:1;">
-          <div class="round-card-top"><div class="round-card-course">Stoneybrook West Golf Club</div><div class="round-card-score over">+5<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;">77</div></div></div>
-          <div class="round-card-meta">Fri, Feb 28 &middot; 18 holes &middot; Dustin, Clint <span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;background:rgba(41,128,185,.12);color:#7ec8f5;border:1px solid rgba(41,128,185,.3);">MATCH</span></div>
-          <div style="font-size:.78rem;color:#7ec8f5;font-weight:600;margin-top:5px;">&#127942; Dustin &middot; 3&amp;2</div>
-        </div></div></div>
+        ${[
+          {course:'Wekiva Golf Club', score:'+11', strokes:'83', date:'Tue, Mar 4', players:'Dustin, Brian', type:'skins', skins:'Brian &middot; 5 Skins'},
+          {course:'Eagle Dunes Golf Club', score:'+6', strokes:'78', date:'Thu, Feb 27', players:'Dustin', type:'live'},
+          {course:'DeBary Golf &amp; Country Club', score:'+15', strokes:'87', date:'Sun, Feb 23', players:'Dustin, Clint', type:'match', match:'Clint &middot; 2&amp;1'},
+          {course:'Sweetwater Highlands GC', score:'+9', strokes:'81', date:'Mon, Feb 17', players:'Dustin', type:'manual'},
+          {course:'The Deltona Club', score:'+13', strokes:'85', date:'Sat, Feb 8', players:'Dustin', type:'live'},
+        ].map(r=>`
+        <div class="round-card" style="margin-bottom:10px;">
+          <div style="display:flex;align-items:flex-start;gap:4px;"><div style="flex:1;">
+            <div class="round-card-top">
+              <div class="round-card-course">${r.course}</div>
+              <div class="round-card-score over">${r.strokes}<div style="font-size:.65rem;font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0;">${r.score}</div></div>
+            </div>
+            <div class="round-card-meta">${r.date} &middot; 18 holes &middot; ${r.players}
+              ${r.type==='live'?'<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.35);">LIVE</span>':''}
+              ${r.type==='manual'?'<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;background:rgba(245,240,232,.07);color:var(--tan);border:1px solid rgba(245,240,232,.15);">MANUAL</span>':''}
+              ${r.type==='skins'?'<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;background:rgba(74,140,65,.2);color:#7ec87e;border:1px solid rgba(74,140,65,.4);">SKINS</span>':''}
+              ${r.type==='match'?'<span style="display:inline-block;margin-left:6px;padding:1px 6px;border-radius:20px;font-size:.55rem;font-weight:700;background:rgba(41,128,185,.12);color:#7ec8f5;border:1px solid rgba(41,128,185,.3);">MATCH</span>':''}
+            </div>
+            ${r.skins?`<div class="skins-result-line">&#127942; ${r.skins}</div>`:''}
+            ${r.match?`<div style="font-size:.78rem;color:#7ec8f5;font-weight:600;margin-top:5px;">&#127942; ${r.match}</div>`:''}
+          </div></div>
+        </div>`).join('')}
       </div>
       <div style="position:absolute;top:60px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:20px;">
         <div style="background:rgba(15,30,13,0.96);border:1px solid rgba(201,168,76,.5);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.6);">
