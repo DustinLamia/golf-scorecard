@@ -406,7 +406,8 @@
 <!-- Welcome Screen -->
 <div id="welcome-screen" style="display:flex;">
   <div class="welcome-logo">
-    <h1>VoiceScore</h1>
+    <img src="logo-full.png" alt="VoiceScore" style="height:clamp(60px,16vw,100px);width:auto;object-fit:contain;margin-bottom:8px;" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+    <h1 style="display:none;">VoiceScore</h1>
     <p>Hands Free &middot; Golf Scorecard</p>
   </div>
   <div class="welcome-tiers">
@@ -2663,6 +2664,7 @@ async function loadStats(){
       </div>
       <div style="position:absolute;top:80px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:20px;">
         <div style="background:rgba(15,30,13,0.96);border:1px solid rgba(201,168,76,.5);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.6);">
+          <img src="logo-mascot.png" alt="" style="height:60px;width:auto;object-fit:contain;margin-bottom:10px;" onerror="this.style.display='none'">
           <div style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;">Stats &amp; Handicap</div>
           <div style="font-size:.82rem;color:var(--tan);margin-bottom:18px;line-height:1.6;">Track your handicap, scoring trends, and performance by hole type.</div>
           <button onclick="showProUpsell('Stats & Handicap')" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
@@ -3322,6 +3324,7 @@ async function loadCompare(){
       </div>
       <div style="position:absolute;top:80px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:20px;">
         <div style="background:rgba(15,30,13,0.96);border:1px solid rgba(201,168,76,.5);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.6);">
+          <img src="logo-mascot.png" alt="" style="height:60px;width:auto;object-fit:contain;margin-bottom:10px;" onerror="this.style.display='none'">
           <div style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;">Compare Rounds</div>
           <div style="font-size:.82rem;color:var(--tan);margin-bottom:18px;line-height:1.6;">See how your rounds stack up — hole by hole, front vs back, and every stat in between.</div>
           <button onclick="showProUpsell('Compare Rounds')" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
@@ -4144,6 +4147,7 @@ async function loadHistory(){
       </div>
       <div style="position:absolute;top:60px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:20px;">
         <div style="background:rgba(15,30,13,0.96);border:1px solid rgba(201,168,76,.5);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.6);">
+          <img src="logo-mascot.png" alt="" style="height:60px;width:auto;object-fit:contain;margin-bottom:10px;" onerror="this.style.display='none'">
           <div style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;">Round History</div>
           <div style="font-size:.82rem;color:var(--tan);margin-bottom:18px;line-height:1.6;">Save every round, track your progress, and relive your best games.</div>
           <button onclick="showProUpsell('Round History')" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
@@ -5315,7 +5319,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- History Screen -->
 <div id="history-screen">
   <div class="history-header">
-    <h2>Round History</h2>
+    <img src="logo-full.png" alt="VoiceScore" style="height:36px;width:auto;object-fit:contain;" onerror="this.outerHTML='<h2>Round History</h2>'">
     <div style="display:flex;gap:8px;">
       <button class="btn-sm" onclick="openPastRound()" style="font-size:.75rem;padding:7px 12px;">+ Log Past Round</button>
       <button class="btn-back" onclick="showSetupFromHistory()">&#8592; Back</button>
@@ -5334,7 +5338,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- Stats Screen -->
 <div id="stats-screen">
   <div class="stats-header">
-    <h2>My Stats</h2>
+    <img src="logo-full.png" alt="VoiceScore" style="height:36px;width:auto;object-fit:contain;" onerror="this.outerHTML='<h2>My Stats</h2>'">
     <button class="btn-back" onclick="showSetupFromStats()">&#8592; Back</button>
   </div>
   <div id="stats-content"><div class="stats-loading">Loading...</div></div>
@@ -5415,7 +5419,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- Compare Screen -->
 <div id="compare-screen" style="display:none;">
   <div class="compare-header">
-    <h2>Compare Rounds</h2>
+    <img src="logo-full.png" alt="VoiceScore" style="height:36px;width:auto;object-fit:contain;" onerror="this.outerHTML='<h2>Compare Rounds</h2>'">
     <button class="btn-back" onclick="navTo('play')">&#8592; Back</button>
   </div>
   <div id="compare-content"><div class="stats-loading">Loading...</div></div>
@@ -5451,7 +5455,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <!-- Profile Screen -->
 <div id="profile-screen" style="display:none;padding:20px;max-width:600px;margin:0 auto;padding-bottom:80px;">
-  <h2 style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:20px;">Profile</h2>
+  <img src="logo-full.png" alt="VoiceScore" style="height:36px;width:auto;object-fit:contain;margin-bottom:20px;display:block;" onerror="this.outerHTML='<h2 style=\'font-family:Bebas Neue,cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:20px;\'>Profile</h2>'">
 
   <!-- Name & Username -->
   <div style="background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:20px;margin-bottom:12px;">
@@ -5524,7 +5528,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- Pro Upsell Modal -->
 <div id="pro-upsell-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#1e3d1a;border:1px solid rgba(201,168,76,.4);border-radius:20px;padding:32px 24px;max-width:340px;width:100%;text-align:center;position:relative;">
-    <div style="font-size:2.5rem;margin-bottom:8px;">⛳</div>
+    <img src="logo-mascot.png" alt="" style="height:72px;width:auto;object-fit:contain;margin-bottom:8px;" onerror="this.style.display='none'">
     <div style="font-family:'Bebas Neue',cursive;font-size:1.8rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;">VoiceScore Pro</div>
     <div style="font-size:.82rem;color:var(--tan);margin-bottom:20px;line-height:1.6;"><span id="pro-upsell-feature">This feature</span> is included in Pro.</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;text-align:left;">
