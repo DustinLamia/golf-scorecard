@@ -356,7 +356,7 @@
   .nav-btn.active{color:var(--gold);}
   .nav-btn .nav-icon{font-size:1.3rem;line-height:1;}
   /* Push content above nav */
-  body.has-nav #setup-screen,body.has-nav #scorecard-screen,body.has-nav #history-screen,body.has-nav #stats-screen,body.has-nav #past-round-screen{padding-bottom:80px;}
+  body.has-nav #setup-screen,body.has-nav #scorecard-screen,body.has-nav #history-screen,body.has-nav #stats-screen,body.has-nav #past-round-screen,body.has-nav #compare-screen{padding-bottom:80px;}
 
   /* ── Auth ── */
   .auth-btn{padding:7px 14px;border-radius:8px;border:1px solid rgba(245,240,232,.3);background:rgba(245,240,232,.1);color:var(--cream);font-family:"DM Sans",sans-serif;font-size:.78rem;cursor:pointer;backdrop-filter:blur(10px);transition:all .2s;white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis;}
@@ -2864,24 +2864,6 @@ async function loadStats(){
         <button class="btn-save-goals" onclick="saveGoals()">Save Goals</button>
       </div>
 
-      <div class="goals-card" onclick="navTo('compare')" style="cursor:pointer;display:flex;flex-direction:column;justify-content:space-between;">
-        <div>
-          <div class="stat-label" style="margin-bottom:14px;">Compare Rounds</div>
-          <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;">
-            <li style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--cream);">
-              <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block;"></span>Score vs Par
-            </li>
-            <li style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--cream);">
-              <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block;"></span>Handicap Trend
-            </li>
-            <li style="display:flex;align-items:center;gap:10px;font-size:.85rem;color:var(--cream);">
-              <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;display:inline-block;"></span>Course by Course Breakdown
-            </li>
-          </ul>
-        </div>
-        <button class="btn-save-goals" style="margin-top:20px;">Compare Rounds &#8594;</button>
-      </div>
-
     </div>
   </div>
   <div style="display:flex;justify-content:center;padding:12px 20px 20px;">
@@ -3155,6 +3137,65 @@ function populateGoalInputs(goals, avgStrokes, avgPars, avgBirdies){
 // ── Compare Rounds ──
 async function loadCompare(){
   const el=document.getElementById('compare-content');
+  if(!isPro()){
+    el.style.position='relative';
+    el.style.minHeight='520px';
+    el.innerHTML=`
+      <div style="pointer-events:none;user-select:none;opacity:0.45;padding:16px;">
+        <!-- Fake round selector -->
+        <div style="display:flex;gap:10px;margin-bottom:16px;">
+          <div style="flex:1;background:rgba(245,240,232,.08);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:.65rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Round A</div>
+            <div style="font-size:.88rem;color:var(--cream);font-weight:500;">Dubsdread GC</div>
+            <div style="font-size:.72rem;color:var(--tan);">Mar 8 &middot; +7 (79)</div>
+          </div>
+          <div style="flex:1;background:rgba(245,240,232,.08);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:12px 14px;">
+            <div style="font-size:.65rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Round B</div>
+            <div style="font-size:.88rem;color:var(--cream);font-weight:500;">Falcon's Fire GC</div>
+            <div style="font-size:.72rem;color:var(--tan);">Mar 2 &middot; -1 (71)</div>
+          </div>
+        </div>
+        <!-- Fake stat comparison rows -->
+        <div style="background:rgba(245,240,232,.07);border-radius:12px;overflow:hidden;margin-bottom:12px;">
+          ${[
+            ['Total Score','79','71'],
+            ['vs Par','+7','-1'],
+            ['Front 9','+5','+1'],
+            ['Back 9','+2','-2'],
+            ['Eagles','0','1'],
+            ['Birdies','1','4'],
+            ['Pars','7','11'],
+            ['Bogeys','7','3'],
+            ['Doubles+','3','0'],
+          ].map(([label,a,b],i)=>`
+            <div style="display:flex;align-items:center;padding:10px 14px;${i>0?'border-top:1px solid rgba(245,240,232,.06);':''}">
+              <div style="flex:1;text-align:center;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:1px;color:${a.startsWith('-')?'#5bc85b':a.startsWith('+')||parseInt(a)>72?'#c0392b':'var(--cream)'};">${a}</div>
+              <div style="flex:1.2;text-align:center;font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:.5px;">${label}</div>
+              <div style="flex:1;text-align:center;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:1px;color:${b.startsWith('-')?'#5bc85b':b.startsWith('+')||parseInt(b)>72?'#c0392b':'var(--cream)'};">${b}</div>
+            </div>`).join('')}
+        </div>
+        <!-- Fake hole-by-hole bar chart -->
+        <div style="background:rgba(245,240,232,.07);border-radius:12px;padding:14px;">
+          <div style="font-size:.7rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Hole by Hole</div>
+          <div style="display:flex;gap:3px;align-items:flex-end;height:50px;">
+            ${[1,2,-1,0,2,3,1,0,2,-1,1,2,0,1,-1,2,1,0].map((v,i)=>{
+              const h=Math.abs(v)*14+8;
+              const c=v<0?'#5bc85b':v===0?'#c9a84c':'#c0392b';
+              return `<div style="flex:1;background:${c};height:${h}px;border-radius:2px 2px 0 0;opacity:.85;"></div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;top:60px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:rgba(15,30,13,0.96);border:1px solid rgba(201,168,76,.5);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.6);">
+          <div style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;">Compare Rounds</div>
+          <div style="font-size:.82rem;color:var(--tan);margin-bottom:18px;line-height:1.6;">See how your rounds stack up — hole by hole, front vs back, and every stat in between.</div>
+          <button onclick="showProUpsell('Compare Rounds')" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
+          <div style="font-size:.7rem;color:var(--tan);margin-top:10px;">One-time payment. Yours forever.</div>
+        </div>
+      </div>`;
+    return;
+  }
   el.innerHTML='<div class="stats-loading">Loading...</div>';
   const {data,error}=await supa.from('rounds').select('*').order('played_at',{ascending:true}).limit(100);
   if(error||!data||data.length<2){
@@ -3380,7 +3421,9 @@ function navTo(screen){
     renderProStatus();
   } else if(screen==='compare'){
     document.getElementById('compare-screen').style.display='block';
-    loadCompare();
+    if(!window._proStatusReady){
+      loadProStatus().then(()=>{ window._proStatusReady=true; loadCompare(); });
+    } else { loadCompare(); }
   }
 }
 
@@ -5041,11 +5084,15 @@ document.addEventListener('DOMContentLoaded', function(){
     </button>
     <button class="nav-btn" id="nav-history" onclick="navTo('history')">
       <span class="nav-icon">📋</span>
-      <span>Round History</span>
+      <span>History</span>
     </button>
     <button class="nav-btn" id="nav-stats" onclick="navTo('stats')">
       <span class="nav-icon">📊</span>
-      <span>My Stats</span>
+      <span>Stats</span>
+    </button>
+    <button class="nav-btn" id="nav-compare" onclick="navTo('compare')">
+      <span class="nav-icon">⚖️</span>
+      <span>Compare</span>
     </button>
     <button class="nav-btn" id="nav-profile" onclick="navTo('profile')">
       <span class="nav-icon">👤</span>
