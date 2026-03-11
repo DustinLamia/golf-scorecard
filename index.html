@@ -3323,10 +3323,16 @@ function navTo(screen){
     document.getElementById('setup-screen').style.display='block';
   } else if(screen==='history'){
     document.getElementById('history-screen').style.display='block';
-    loadHistory();
+    if(!window._proStatusReady){
+      document.getElementById('history-list').innerHTML='<div class="history-loading">Loading...</div>';
+      loadProStatus().then(()=>{ window._proStatusReady=true; loadHistory(); });
+    } else { loadHistory(); }
   } else if(screen==='stats'){
     document.getElementById('stats-screen').style.display='block';
-    loadStats();
+    if(!window._proStatusReady){
+      document.getElementById('stats-content').innerHTML='<div class="stats-loading">Loading...</div>';
+      loadProStatus().then(()=>{ window._proStatusReady=true; loadStats(); });
+    } else { loadStats(); }
   } else if(screen==='profile'){
     document.getElementById('profile-screen').style.display='block';
     const emailEl=document.getElementById('profile-email');
@@ -3339,6 +3345,7 @@ function navTo(screen){
       document.getElementById('profile-username').value=m.username||'';
       document.getElementById('profile-name-msg').textContent='';
     }
+    renderProStatus();
   } else if(screen==='compare'){
     document.getElementById('compare-screen').style.display='block';
     loadCompare();
@@ -3895,9 +3902,10 @@ function isPro() {
 }
 
 async function loadProStatus() {
-  if (!currentUser) { currentIsPro = false; return; }
+  if (!currentUser) { currentIsPro = false; window._proStatusReady = true; return; }
   const { data } = await supa.from('profiles').select('is_pro').eq('id', currentUser.id).single();
   currentIsPro = !!(data && data.is_pro);
+  window._proStatusReady = true;
   renderProStatus();
 }
 
