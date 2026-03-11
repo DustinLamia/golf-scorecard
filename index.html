@@ -4380,7 +4380,7 @@ async function launchStripeCheckout() {
     const resp = await fetch('https://lzthrmmwalesunzsqjvh.supabase.co/functions/v1/stripe-create-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (await supa.auth.getSession()).data.session.access_token },
-      body: JSON.stringify({ user_id: currentUser.id, price_id: 'price_1T9aNtCGE3CXjNX9w2gqL2YQ', return_url: window.location.href })
+      body: JSON.stringify({ user_id: currentUser.id, price_id: 'price_1T9euyCS4Oftbp4DoyNam3Xt', return_url: window.location.href })
     });
     const { url, error } = await resp.json();
     if (error || !url) throw new Error(error || 'No checkout URL');
