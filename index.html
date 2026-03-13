@@ -1144,10 +1144,12 @@ function setupSpeech(){
       const heard=(final||interim).toLowerCase().trim();
       // Also allow tap-to-activate: if isListening was set by button tap, switch mode
       const wakeMatch=WAKE_TRIGGERS.find(w=>heard.includes(w));
-      // If caddie overlay is open, route wake word to caddie instead of scoring
-      if(window._caddieOverlayOpen && (wakeMatch || isListening)){
+      // If caddie overlay is open, route to caddie
+      if(window._caddieOverlayOpen){
+        if(!final) return; // wait for final result only
         unlockAudio();
         let remainder=heard;
+        // Strip wake word if they said it, otherwise use full utterance
         if(wakeMatch){const idx=heard.indexOf(wakeMatch);remainder=heard.slice(idx+wakeMatch.length).trim();}
         if(remainder){
           stopCaddieMic();
@@ -5468,40 +5470,48 @@ function startCaddieMic(){
     return;
   }
 
-  // Fallback: spin up a continuous recognizer just for the overlay
-  try {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR){ stopCaddieMic(); return; }
-    _caddieRecognition = new SR();
-    _caddieRecognition.continuous = true;
-    _caddieRecognition.interimResults = true;
-    _caddieRecognition.lang = 'en-US';
-    _caddieRecognition.onresult = (e) => {
-      let final = '';
-      for(let i = e.resultIndex; i < e.results.length; i++){
-        if(e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
-      }
-      if(!final) return;
-      const heard = final.toLowerCase().trim();
-      const WAKE = ['voice score','voicescore','hey voicescore','hey voice score'];
-      const wakeMatch = WAKE.find(w => heard.includes(w));
-      // Strip wake word if present; otherwise treat whole utterance as query
-      let query = wakeMatch ? heard.slice(heard.indexOf(wakeMatch) + wakeMatch.length).trim() : heard;
-      if(query){
-        stopCaddieMic();
-        document.getElementById('caddie-input').value = query;
-        sendCaddieMessage();
-      }
-    };
-    _caddieRecognition.onerror = (e) => { if(e.error !== 'no-speech') stopCaddieMic(); };
-    _caddieRecognition.onend = () => {
-      // Auto-restart so it keeps listening until user taps mic again
-      if(_caddieListening && _caddieRecognition){
-        try{ _caddieRecognition.start(); }catch(e){ stopCaddieMic(); }
-      }
-    };
-    _caddieRecognition.start();
-  } catch(e){ stopCaddieMic(); }
+  // Spin up a recognizer for the overlay
+  // NOTE: iOS Safari does not support continuous:true — use single-shot with manual restart
+  function _startCaddieRecognition(){
+    try {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if(!SR){ stopCaddieMic(); return; }
+      _caddieRecognition = new SR();
+      _caddieRecognition.continuous = false;   // must be false for iOS
+      _caddieRecognition.interimResults = false; // final results only
+      _caddieRecognition.lang = 'en-US';
+      _caddieRecognition.onresult = (e) => {
+        const heard = (e.results[0][0].transcript || '').toLowerCase().trim();
+        if(!heard) return;
+        const WAKE = ['voice score','voicescore','hey voicescore','hey voice score'];
+        const wakeMatch = WAKE.find(w => heard.includes(w));
+        let query = wakeMatch ? heard.slice(heard.indexOf(wakeMatch) + wakeMatch.length).trim() : heard;
+        if(query){
+          stopCaddieMic();
+          document.getElementById('caddie-input').value = query;
+          sendCaddieMessage();
+        }
+      };
+      _caddieRecognition.onerror = (e) => {
+        // no-speech is normal — just restart. anything else, stop.
+        if(e.error === 'no-speech' && _caddieListening){
+          _caddieRecognition = null;
+          _startCaddieRecognition();
+        } else {
+          stopCaddieMic();
+        }
+      };
+      _caddieRecognition.onend = () => {
+        // Restart unless we already got a result (stopCaddieMic sets _caddieListening=false)
+        if(_caddieListening){
+          _caddieRecognition = null;
+          setTimeout(_startCaddieRecognition, 150);
+        }
+      };
+      _caddieRecognition.start();
+    } catch(e){ stopCaddieMic(); }
+  }
+  _startCaddieRecognition();
 }
 
 function stopCaddieMic(){
@@ -5616,6 +5626,14 @@ function addCaddieMessage(role, text){
   `;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
+  // Speak assistant replies aloud
+  if(role === 'assistant' && 'speechSynthesis' in window){
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.rate = 1.05;
+    utt.pitch = 1;
+    window.speechSynthesis.speak(utt);
+  }
 }
 
 function addCaddieTyping(){
@@ -6056,8 +6074,10 @@ RULES:
     if(data.content && data.content[0] && data.content[0].text){
       addCaddieMessage('assistant', data.content[0].text);
     } else if(data.error){
-      addCaddieMessage('assistant', `API error: ${data.error.message || 'Unknown error'}. Try again.`);
+      console.error('Claude API error:', JSON.stringify(data.error));
+      addCaddieMessage('assistant', `Hmm, hit a snag: ${data.error.message || JSON.stringify(data.error)}. Try again.`);
     } else {
+      console.error('Claude unexpected response:', JSON.stringify(data));
       addCaddieMessage('assistant', "Sorry, I couldn't get a response. Try again!");
     }
   } catch(e){
