@@ -3747,7 +3747,7 @@ function navTo(screen){
   setActiveNav(screen);
   // FAB: hide during live scoring (mic button handles assistant there), show everywhere else
   if(currentUser){
-    screen==='scorecard'||screen==='play' ? hideCaddieFab() : showCaddieFab();
+    screen==='scorecard' ? hideCaddieFab() : showCaddieFab();
   }
   sessionStorage.setItem('vs_screen',screen);
   if(screen==='play'){
@@ -5422,6 +5422,78 @@ ${ctx}`;
   } catch(e){ return null; }
 }
 
+let _caddieListening = false;
+let _caddieRecognition = null;
+
+function toggleCaddieMic(){
+  unlockAudio();
+  if(_caddieListening){
+    stopCaddieMic();
+  } else {
+    startCaddieMic();
+  }
+}
+
+function startCaddieMic(){
+  _caddieListening = true;
+  playMicOn();
+  // Update button UI to match scoring screen listening state
+  const btn = document.getElementById('caddie-mic-btn');
+  if(btn){
+    btn.style.background = 'rgba(192,57,43,.3)';
+    btn.style.borderColor = 'var(--red)';
+    btn.style.animation = 'pulse-ring 1.2s ease-out infinite';
+    btn.querySelector('svg').style.fill = 'var(--red)';
+  }
+  document.getElementById('caddie-voice-status').style.display = 'block';
+
+  // Use the existing recognition instance if available
+  if(window.recognition && window.recognition._killed === false){
+    // Piggyback on existing recognition — wake word already active
+    window._caddieOverlayOpen = true;
+    return;
+  }
+
+  // Fallback: create a one-shot recognition for the overlay
+  try {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR){ stopCaddieMic(); return; }
+    _caddieRecognition = new SR();
+    _caddieRecognition.continuous = false;
+    _caddieRecognition.interimResults = false;
+    _caddieRecognition.lang = 'en-US';
+    _caddieRecognition.onresult = (e) => {
+      const heard = e.results[0][0].transcript.toLowerCase().trim();
+      const WAKE = ['voice score','voicescore','hey voicescore','hey voice score'];
+      const wakeMatch = WAKE.find(w => heard.includes(w));
+      let query = wakeMatch ? heard.slice(heard.indexOf(wakeMatch) + wakeMatch.length).trim() : heard;
+      stopCaddieMic();
+      if(query){
+        document.getElementById('caddie-input').value = query;
+        sendCaddieMessage();
+      }
+    };
+    _caddieRecognition.onerror = () => stopCaddieMic();
+    _caddieRecognition.onend = () => { if(_caddieListening) stopCaddieMic(); };
+    _caddieRecognition.start();
+  } catch(e){ stopCaddieMic(); }
+}
+
+function stopCaddieMic(){
+  _caddieListening = false;
+  window._caddieOverlayOpen = false;
+  playMicOff();
+  const btn = document.getElementById('caddie-mic-btn');
+  if(btn){
+    btn.style.background = 'rgba(245,240,232,.1)';
+    btn.style.borderColor = 'var(--cream)';
+    btn.style.animation = '';
+    btn.querySelector('svg').style.fill = 'var(--cream)';
+  }
+  document.getElementById('caddie-voice-status').style.display = 'none';
+  if(_caddieRecognition){ try{ _caddieRecognition.stop(); }catch(e){} _caddieRecognition = null; }
+}
+
 // ============================================================
 // GOLF ASSISTANT
 // ============================================================
@@ -5441,7 +5513,7 @@ function openCaddie(){
 function closeCaddie(){
   document.getElementById('caddie-overlay').style.display='none';
   document.body.style.overflow='';
-  // Restore FAB
+  stopCaddieMic();
   if(currentUser) showCaddieFab();
 }
 
@@ -5570,7 +5642,7 @@ async function sendCaddieMessage(){
     return;
   }
 
-  // Fall back to Claude
+  // No local match — send to Claude for golf knowledge + reasoning
   await askClaude(query);
   document.getElementById('caddie-send-btn').disabled = false;
 }
@@ -5955,6 +6027,8 @@ RULES:
 
     if(data.content && data.content[0] && data.content[0].text){
       addCaddieMessage('assistant', data.content[0].text);
+    } else if(data.error){
+      addCaddieMessage('assistant', `API error: ${data.error.message || 'Unknown error'}. Try again.`);
     } else {
       addCaddieMessage('assistant', "Sorry, I couldn't get a response. Try again!");
     }
@@ -6176,7 +6250,18 @@ document.head.appendChild(caddieStyle);
       <div style="font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:3px;color:var(--gold);">Golf Assistant</div>
       <div style="font-size:.6rem;color:var(--tan);letter-spacing:.8px;margin-top:1px;line-height:1.4;">Hands-Free &middot; Say "VoiceScore" or type &middot; Ask anything about your stats or golf</div>
     </div>
-    <div style="font-size:1.2rem;">⛳</div>
+    <button id="caddie-mic-btn" onclick="toggleCaddieMic()" style="
+      width:40px;height:40px;border-radius:50%;
+      border:2px solid var(--cream);background:rgba(245,240,232,.1);
+      cursor:pointer;display:flex;align-items:center;justify-content:center;
+      flex-shrink:0;transition:all .2s;
+    ">
+      <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:var(--cream);"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1.5 4v6a1.5 1.5 0 0 0 3 0V5a1.5 1.5 0 0 0-3 0zM5 10a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 0 1 2 0 8 8 0 0 1-7 7.93V21h2a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2h2v-2.07A8 8 0 0 1 4 11a1 1 0 0 1 1-1z"/></svg>
+    </button>
+  </div>
+  <!-- Voice status bar (hidden by default) -->
+  <div id="caddie-voice-status" style="display:none;padding:6px 18px;background:rgba(192,57,43,.15);border-bottom:1px solid rgba(192,57,43,.3);font-size:.7rem;color:#e07060;text-align:center;letter-spacing:.5px;">
+    🎙 Listening... say "VoiceScore" then ask your question
   </div>
 
   <!-- Messages -->
@@ -6189,9 +6274,9 @@ document.head.appendChild(caddieStyle);
   </div>
 
   <!-- Input area -->
-  <div style="padding:12px 18px 24px;border-top:1px solid rgba(245,240,232,.1);flex-shrink:0;display:flex;gap:10px;align-items:flex-end;">
+  <div style="padding:12px 18px 24px;border-top:1px solid rgba(245,240,232,.1);flex-shrink:0;display:flex;gap:10px;align-items:flex-end;background:var(--dark);padding-bottom:max(24px, env(safe-area-inset-bottom, 24px));">
     <textarea id="caddie-input" placeholder='Ask anything about your game...' rows="1"
-      style="flex:1;background:rgba(245,240,232,.07);border:1px solid rgba(245,240,232,.15);border-radius:12px;color:var(--cream);font-size:.95rem;padding:11px 14px;resize:none;font-family:inherit;line-height:1.4;max-height:100px;outline:none;"
+      style="flex:1;background:rgba(245,240,232,.07);border:1px solid rgba(245,240,232,.15);border-radius:12px;color:var(--cream);font-size:.95rem;padding:11px 14px;resize:none;font-family:inherit;line-height:1.4;max-height:100px;outline:none;min-height:44px;"
       oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"
       onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCaddieMessage();}"
     ></textarea>
