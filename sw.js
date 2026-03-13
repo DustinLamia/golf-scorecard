@@ -1,4 +1,4 @@
-const CACHE = 'voicescore-v9';
+const CACHE = 'voicescore-v10';
 const ASSETS = [
   '/',
   '/index.html',
