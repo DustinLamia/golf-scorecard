@@ -1,4 +1,4 @@
-const CACHE = 'voicescore-v10';
+const CACHE = 'voicescore-v11';
 const ASSETS = [
   '/',
   '/index.html',
@@ -12,6 +12,7 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE).then(c => c.addAll(ASSETS))
   );
+  // Take over immediately without waiting for old SW to die
   self.skipWaiting();
 });
 
@@ -22,6 +23,11 @@ self.addEventListener('activate', e => {
     )
   );
   self.clients.claim();
+});
+
+// Listen for skip waiting message from the page
+self.addEventListener('message', e => {
+  if(e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', e => {

@@ -5550,7 +5550,23 @@ document.addEventListener('DOMContentLoaded', function(){
   <script>
     if('serviceWorker' in navigator){
       window.addEventListener('load', ()=>{
-        navigator.serviceWorker.register('/sw.js').catch(()=>{});
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+          // If there's a new SW waiting, activate it immediately
+          if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
+          reg.addEventListener('updatefound', () => {
+            const newSW = reg.installing;
+            newSW.addEventListener('statechange', () => {
+              if(newSW.state === 'installed' && navigator.serviceWorker.controller) {
+                newSW.postMessage({type:'SKIP_WAITING'});
+                window.location.reload();
+              }
+            });
+          });
+        }).catch(()=>{});
+        // Notify controller to skip waiting on subsequent visits
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.location.reload();
+        });
       });
     }
 
