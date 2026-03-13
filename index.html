@@ -1144,6 +1144,18 @@ function setupSpeech(){
       const heard=(final||interim).toLowerCase().trim();
       // Also allow tap-to-activate: if isListening was set by button tap, switch mode
       const wakeMatch=WAKE_TRIGGERS.find(w=>heard.includes(w));
+      // If caddie overlay is open, route wake word to caddie instead of scoring
+      if(window._caddieOverlayOpen && (wakeMatch || isListening)){
+        unlockAudio();
+        let remainder=heard;
+        if(wakeMatch){const idx=heard.indexOf(wakeMatch);remainder=heard.slice(idx+wakeMatch.length).trim();}
+        if(remainder){
+          stopCaddieMic();
+          document.getElementById('caddie-input').value=remainder;
+          sendCaddieMessage();
+        }
+        return;
+      }
       if(isListening||wakeMatch){
         unlockAudio();
         // Strip the wake phrase itself from what follows, so it's not parsed as a score
@@ -3739,6 +3751,9 @@ function setActiveNav(id){
   if(btn)btn.classList.add('active');
 }
 function navTo(screen){
+  // Close caddie overlay if open
+  const caddieOverlay = document.getElementById('caddie-overlay');
+  if(caddieOverlay && caddieOverlay.style.display === 'flex') closeCaddie();
   // Hide all screens
   ['setup-screen','scorecard-screen','history-screen','stats-screen','past-round-screen','profile-screen','compare-screen'].forEach(id=>{
     const el=document.getElementById(id);
@@ -5447,34 +5462,44 @@ function startCaddieMic(){
   }
   document.getElementById('caddie-voice-status').style.display = 'block';
 
-  // Use the existing recognition instance if available
-  if(window.recognition && window.recognition._killed === false){
-    // Piggyback on existing recognition — wake word already active
+  // Piggyback on the main recognition engine if it is already running
+  if(recognition){
     window._caddieOverlayOpen = true;
     return;
   }
 
-  // Fallback: create a one-shot recognition for the overlay
+  // Fallback: spin up a continuous recognizer just for the overlay
   try {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if(!SR){ stopCaddieMic(); return; }
     _caddieRecognition = new SR();
-    _caddieRecognition.continuous = false;
-    _caddieRecognition.interimResults = false;
+    _caddieRecognition.continuous = true;
+    _caddieRecognition.interimResults = true;
     _caddieRecognition.lang = 'en-US';
     _caddieRecognition.onresult = (e) => {
-      const heard = e.results[0][0].transcript.toLowerCase().trim();
+      let final = '';
+      for(let i = e.resultIndex; i < e.results.length; i++){
+        if(e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
+      }
+      if(!final) return;
+      const heard = final.toLowerCase().trim();
       const WAKE = ['voice score','voicescore','hey voicescore','hey voice score'];
       const wakeMatch = WAKE.find(w => heard.includes(w));
+      // Strip wake word if present; otherwise treat whole utterance as query
       let query = wakeMatch ? heard.slice(heard.indexOf(wakeMatch) + wakeMatch.length).trim() : heard;
-      stopCaddieMic();
       if(query){
+        stopCaddieMic();
         document.getElementById('caddie-input').value = query;
         sendCaddieMessage();
       }
     };
-    _caddieRecognition.onerror = () => stopCaddieMic();
-    _caddieRecognition.onend = () => { if(_caddieListening) stopCaddieMic(); };
+    _caddieRecognition.onerror = (e) => { if(e.error !== 'no-speech') stopCaddieMic(); };
+    _caddieRecognition.onend = () => {
+      // Auto-restart so it keeps listening until user taps mic again
+      if(_caddieListening && _caddieRecognition){
+        try{ _caddieRecognition.start(); }catch(e){ stopCaddieMic(); }
+      }
+    };
     _caddieRecognition.start();
   } catch(e){ stopCaddieMic(); }
 }
@@ -5503,7 +5528,8 @@ let caddieRounds = [];
 function openCaddie(){
   document.getElementById('caddie-overlay').style.display='flex';
   document.body.style.overflow='hidden';
-  // Hide the FAB while overlay is open
+  // Hide bottom nav and FAB while overlay is open
+  document.getElementById('bottom-nav').style.display='none';
   const fab = document.getElementById('caddie-fab');
   if(fab) fab.style.display='none';
   // Load rounds data fresh each time
@@ -5514,6 +5540,8 @@ function closeCaddie(){
   document.getElementById('caddie-overlay').style.display='none';
   document.body.style.overflow='';
   stopCaddieMic();
+  // Restore bottom nav
+  document.getElementById('bottom-nav').style.display='block';
   if(currentUser) showCaddieFab();
 }
 
