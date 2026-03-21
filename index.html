@@ -1176,7 +1176,6 @@ function setupSpeech(){
       const wakeMatch=WAKE_TRIGGERS.find(w=>heard.includes(w));
       if(isListening||wakeMatch){
         unlockAudio();
-        // Strip the wake phrase itself from what follows, so it's not parsed as a score
         let remainder=heard;
         if(wakeMatch){const idx=heard.indexOf(wakeMatch);remainder=heard.slice(idx+wakeMatch.length).trim();}
         _accumulated=remainder?' '+remainder:'';
@@ -1186,7 +1185,12 @@ function setupSpeech(){
         playMicOn();
         document.getElementById('voice-feedback').textContent='';
         clearTimeout(window._silenceTimer);
-        window._silenceTimer=setTimeout(()=>commitScore(true),12000);
+        // If the wake word came with score content already, commit quickly
+        if(remainder&&remainder.length>2){
+          window._silenceTimer=setTimeout(()=>commitScore(false),1500);
+        } else {
+          window._silenceTimer=setTimeout(()=>commitScore(true),12000);
+        }
       }
     } else {
       // Score mode: accumulate chunks, reset 2s silence timer on every word
@@ -1195,7 +1199,7 @@ function setupSpeech(){
       if(display.trim())
         document.getElementById('voice-transcript').textContent='"'+fixTranscript(display.trim())+'"';
       clearTimeout(window._silenceTimer);
-      window._silenceTimer=setTimeout(()=>commitScore(false),2000);
+      window._silenceTimer=setTimeout(()=>commitScore(false),2500);
     }
   };
 
@@ -1275,7 +1279,7 @@ function setListeningUI(on){
   }
 }
 
-const numWords={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12};
+const numWords={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18};
 function w2n(str){str=str.trim().toLowerCase();if(!isNaN(parseInt(str)))return parseInt(str);return numWords[str]||null;}
 
 function scoreTermToStrokes(term,par){
@@ -1283,21 +1287,26 @@ function scoreTermToStrokes(term,par){
   const n=w2n(term);if(n)return n;
   if(term==='ace'||term==='hole in one')return 1;
   if(term==='albatross'||term==='double eagle')return par-3;
-  if(term==='eagle')return par-2;
-  if(term==='birdie')return par-1;
-  if(term==='par')return par;
-  if(term==='bogey')return par+1;
-  if(term==='double bogey'||term==='double')return par+2;
-  if(term==='triple bogey'||term==='triple')return par+3;
-  if(term==='quad'||term==='quadruple')return par+4;
+  if(term==='eagle'||term==='legal'||term==='egal')return par-2;
+  if(term==='birdie'||term==='birdy'||term==='burdie'||term==='buddy')return par-1;
+  if(term==='par'||term==='pars'||term==='parr')return par;
+  if(term==='bogey'||term==='boggy'||term==='bogie'||term==='boogie'||term==='bogy')return par+1;
+  if(term==='double bogey'||term==='double bogie'||term==='double boggy'||term==='double')return par+2;
+  if(term==='triple bogey'||term==='triple bogie'||term==='triple boggy'||term==='triple')return par+3;
+  if(term==='quad'||term==='quadruple'||term==='quad bogey')return par+4;
   return null;
 }
 
 function fixTranscript(text){
   text=text.toLowerCase().trim();
+  // Fix "hold" -> "hole" (common misrecognition)
+  text=text.replace(/\bhold\b/gi,'hole');
   const holeFixes={'who won':'hole one','whole one':'hole one','who one':'hole one','hall one':'hole one','who too':'hole two','whole two':'hole two','who to':'hole two','hall two':'hole two','who three':'hole three','whole three':'hole three','hall three':'hole three','who for':'hole four','who four':'hole four','whole four':'hole four','hall four':'hole four','who five':'hole five','whole five':'hole five','hall five':'hole five','who six':'hole six','whole six':'hole six','hall six':'hole six','who seven':'hole seven','whole seven':'hole seven','hall seven':'hole seven','who eight':'hole eight','whole eight':'hole eight','hall eight':'hole eight','who nine':'hole nine','whole nine':'hole nine','hall nine':'hole nine','who ten':'hole ten','whole ten':'hole ten','hall ten':'hole ten','who eleven':'hole eleven','whole eleven':'hole eleven','who twelve':'hole twelve','whole twelve':'hole twelve','who 13':'hole 13','whole 13':'hole 13','who 14':'hole 14','whole 14':'hole 14','who 15':'hole 15','whole 15':'hole 15','who 16':'hole 16','whole 16':'hole 16','who 17':'hole 17','whole 17':'hole 17','who 18':'hole 18','whole 18':'hole 18'};
   for(const[bad,good]of Object.entries(holeFixes))text=text.replace(new RegExp('\\b'+bad+'\\b','gi'),good);
-  const scoreFixes={'birtie':'birdie','birty':'birdie','burdie':'birdie','burdee':'birdie','birdo':'birdie','birdee':'birdie','birdi':'birdie','birdy':'birdie','buddy':'birdie','burdy':'birdie','brady':'birdie','bertie':'birdie','birty':'birdie','berty':'birdie','burtie':'birdie','boggy':'bogey','bogy':'bogey','boogie':'bogey','bogie':'bogey','bow g':'bogey','bogue':'bogey','bogee':'bogey','parr':'par','pars':'par','par s':'par','legal':'eagle','egal':'eagle','eggle':'eagle','double bogy':'double bogey','double boggy':'double bogey','double bogie':'double bogey','triple bogy':'triple bogey','triple boggy':'triple bogey'};
+  const scoreFixes={'birtie':'birdie','birty':'birdie','burdie':'birdie','burdee':'birdie','birdo':'birdie','birdee':'birdie','birdi':'birdie','birdy':'birdie','buddy':'birdie','burdy':'birdie','brady':'birdie','bertie':'birdie','berty':'birdie','burtie':'birdie','birdie birdie':'birdie','boggy':'bogey','bogy':'bogey','boogie':'bogey','bogie':'bogey','bow g':'bogey','bogue':'bogey','bogee':'bogey','bogey bogey':'bogey','parr':'par','pars':'par','par s':'par','par par':'par','legal':'eagle','egal':'eagle','eggle':'eagle','eagle eagle':'eagle','double bogy':'double bogey','double boggy':'double bogey','double bogie':'double bogey','triple bogy':'triple bogey','triple boggy':'triple bogey','trip':'triple','tripp':'triple','tripe':'triple'};
+  // Number word fixes — "to/too/two" etc
+  const numFixes={'to ':'two ','too ':'two ','fore ':'four ','for ':'four ','ate ':'eight ','won ':'one ','tree ':'three ','free ':'three '};
+  for(const[bad,good]of Object.entries(numFixes))text=text.replace(new RegExp(bad,'gi'),good);
   for(const[bad,good]of Object.entries(scoreFixes))text=text.replace(new RegExp('\\b'+bad+'\\b','gi'),good);
   players.forEach(name=>{
     const nl=name.toLowerCase();
@@ -1419,7 +1428,30 @@ function parseVoice(text){
 
   const par=pars[holeNum-1];
   const ps={};
-  const FILLERS=new Set(['got','a','an','with','made','gets','had','scored','makes','shot','hit','takes','for','the','his','her','get']);
+  const FILLERS=new Set(['got','a','an','with','made','gets','had','scored','makes','shot','hit','takes','for','the','his','her','get','i','my','me']);
+
+  // "I" / "me" / "my" → map to single player name
+  if(players.length===1){
+    const iPattern=/\b(i|me|my)\b/gi;
+    if(iPattern.test(corrected)){
+      const mapped=corrected.replace(/\b(i|me|my)\b/gi,players[0].toLowerCase());
+      const words2=mapped.replace(/[,\.!?]/g,' ').split(/\s+/).filter(Boolean);
+      for(let i=0;i<words2.length;i++){
+        if(FILLERS.has(words2[i]))continue;
+        const player=bestNameMatch(words2[i],players);
+        if(player){
+          let j=i+1;
+          while(j<words2.length&&FILLERS.has(words2[j]))j++;
+          const twoWord=words2[j]&&words2[j+1]?words2[j]+' '+words2[j+1]:null;
+          const oneWord=words2[j]||null;
+          let sc=null;
+          if(twoWord)sc=scoreTermToStrokes(twoWord,par);
+          if(!sc&&oneWord)sc=scoreTermToStrokes(oneWord,par);
+          if(sc&&sc>0&&sc<=20){ps[player]=sc;break;}
+        }
+      }
+    }
+  }
   const words=corrected.replace(/[,\.!?]/g,' ').split(/\s+/).filter(Boolean);
 
   for(let i=0;i<words.length;i++){
@@ -1439,10 +1471,29 @@ function parseVoice(text){
   }
 
   if(!Object.keys(ps).length){
-    const handled=handleQuery(corrected);
-    if(!handled)
-      document.getElementById('voice-feedback').textContent='No scores heard \u2014 try: "Dustin birdie Scott bogey"';
-    return;
+    // Single player fallback — try parsing a score without requiring the player name
+    if(players.length===1){
+      const allWords=corrected.replace(/[,\.!?]/g,' ').split(/\s+/).filter(Boolean);
+      for(let i=0;i<allWords.length;i++){
+        if(FILLERS.has(allWords[i]))continue;
+        const twoWord=allWords[i+1]?allWords[i]+' '+allWords[i+1]:null;
+        let sc=null;
+        if(twoWord)sc=scoreTermToStrokes(twoWord,par);
+        if(!sc)sc=scoreTermToStrokes(allWords[i],par);
+        if(sc&&sc>0&&sc<=20){ps[players[0]]=sc;break;}
+      }
+    }
+    if(!Object.keys(ps).length){
+      const handled=handleQuery(corrected);
+      if(!handled){
+        const hint=players.length===1
+          ?'Try: "birdie" or "'+players[0]+' got a 5"'
+          :'Try: "'+players[0]+' birdie"';
+        document.getElementById('voice-feedback').textContent='\u274c Heard: "'+corrected+'" \u2014 '+hint;
+        setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},4000);
+      }
+      return;
+    }
   }
   applyScoresDirectly(holeNum,ps);
 }
@@ -1708,7 +1759,19 @@ function applyScoresDirectly(hole,scoreMap){
   updateLiveRoundNav();
   document.querySelectorAll('.hole-header').forEach(h=>h.classList.remove('current'));
   const next=document.getElementById('hh-'+Math.min(hole+1,holes));
-  if(next)next.classList.add('current');
+  if(next){
+    next.classList.add('current');
+    // Scroll the scorecard table so the next hole is visible
+    setTimeout(()=>{
+      const cell=next.closest('td')||next;
+      const wrapper=document.querySelector('.scorecard-wrapper');
+      if(cell&&wrapper){
+        const cellLeft=cell.offsetLeft;
+        const wrapperW=wrapper.clientWidth;
+        wrapper.scrollLeft=Math.max(0,cellLeft-wrapperW/3);
+      }
+    },100);
+  }
   const parts=Object.entries(scoreMap).map(([name,score])=>name+', '+scoreLabel(score,par));
   const readback='Hole '+(hole+holeOffset)+'. '+parts.join('. ');
   document.getElementById('voice-feedback').textContent='\u2713 '+readback;
