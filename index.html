@@ -3583,8 +3583,8 @@ function renderH2H(){
     return{eagles,birdies,pars:parsCount,bogeys,doubles,front,back};
   }
 
-  const parsA=rA.hole_pars||null;
-  const parsB=rB.hole_pars||null;
+  const parsA=rA.pars||null;
+  const parsB=rB.pars||null;
   const scoresA=getHoleScores(rA);
   const scoresB=getHoleScores(rB);
   const statsA=computeHoleStats(scoresA,parsA);
@@ -3618,14 +3618,14 @@ function renderH2H(){
     ['vs Par', fmtD(diffA), fmtD(diffB), true],
   ];
 
-  const holeRows=statsA&&statsB?[
-    ['Front 9', fmtD(statsA.front), fmtD(statsB.front), true],
-    ['Back 9', fmtD(statsA.back), fmtD(statsB.back), true],
-    ['Eagles', statsA.eagles, statsB.eagles, false],
-    ['Birdies', statsA.birdies, statsB.birdies, false],
-    ['Pars', statsA.pars, statsB.pars, false],
-    ['Bogeys', statsA.bogeys, statsB.bogeys, true],
-    ['Doubles+', statsA.doubles, statsB.doubles, true],
+  const holeRows=(statsA||statsB)?[
+    ['Front 9', statsA?fmtD(statsA.front):'--', statsB?fmtD(statsB.front):'--', true],
+    ['Back 9', statsA?fmtD(statsA.back):'--', statsB?fmtD(statsB.back):'--', true],
+    ['Eagles', statsA?statsA.eagles:'--', statsB?statsB.eagles:'--', false],
+    ['Birdies', statsA?statsA.birdies:'--', statsB?statsB.birdies:'--', false],
+    ['Pars', statsA?statsA.pars:'--', statsB?statsB.pars:'--', false],
+    ['Bogeys', statsA?statsA.bogeys:'--', statsB?statsB.bogeys:'--', true],
+    ['Doubles+', statsA?statsA.doubles:'--', statsB?statsB.doubles:'--', true],
   ]:[];
 
   const allRows=[...baseRows,...holeRows];
