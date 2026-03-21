@@ -3102,10 +3102,18 @@ async function loadStats(){
 function openPastRound(){
   document.getElementById('history-screen').style.display='none';
   document.getElementById('past-round-screen').style.display='block';
-  // Default date to today
   window._pastHoles=18;
+  window._pastNine='front';
+  window._pastCourseData=null;
+  window._pastSelectedTee=null;
   document.getElementById('past-holes-9').classList.remove('active');
   document.getElementById('past-holes-18').classList.add('active');
+  document.getElementById('past-tee-section').style.display='none';
+  document.getElementById('past-nine-selector').style.display='none';
+  document.getElementById('past-holeby-section').style.display='none';
+  document.getElementById('past-total-section').style.display='block';
+  document.getElementById('past-holeby-toggle').checked=false;
+  document.getElementById('past-holeby-grid').innerHTML='';
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('past-date').value=today;
   document.getElementById('past-error').textContent='';
@@ -3117,46 +3125,138 @@ function setPastHoles(n){
   window._pastHoles=n;
   document.getElementById('past-holes-9').classList.toggle('active',n===9);
   document.getElementById('past-holes-18').classList.toggle('active',n===18);
+  // Show front/back selector if course has 18-hole data and 9 holes selected
+  const has18=window._pastCourseData&&window._pastSelectedTee&&window._pastSelectedTee.pars.length>=18;
+  document.getElementById('past-nine-selector').style.display=(n===9&&has18)?'block':'none';
+  if(n===18){window._pastNine='front';}
+  _rebuildPastGrid();
+}
+
+function setPastNine(which){
+  window._pastNine=which;
+  document.getElementById('past-nine-front').classList.toggle('active',which==='front');
+  document.getElementById('past-nine-back').classList.toggle('active',which==='back');
+  _rebuildPastGrid();
+}
+
+function _getPastParsYards(){
+  const tee=window._pastSelectedTee;
+  const holes=window._pastHoles||18;
+  if(!tee)return{pars:Array(holes).fill(4),yardages:Array(holes).fill(0),offset:0};
+  const offset=(holes===9&&window._pastNine==='back'&&tee.pars.length>=18)?9:0;
+  return{
+    pars:tee.pars.slice(offset,offset+holes),
+    yardages:tee.yardages?tee.yardages.slice(offset,offset+holes):Array(holes).fill(0),
+    offset
+  };
+}
+
+function togglePastHoleByHole(){
+  const on=document.getElementById('past-holeby-toggle').checked;
+  document.getElementById('past-holeby-section').style.display=on?'block':'none';
+  document.getElementById('past-total-section').style.display=on?'none':'block';
+  if(on)_rebuildPastGrid();
+}
+
+function _rebuildPastGrid(){
+  if(!document.getElementById('past-holeby-toggle').checked)return;
+  const holes=window._pastHoles||18;
+  const {pars,offset}=_getPastParsYards();
+  const grid=document.getElementById('past-holeby-grid');
+  let html='<table style="width:100%;border-collapse:collapse;font-size:.78rem;">';
+  // Header row
+  html+='<tr><td style="padding:4px 6px;color:var(--tan);font-size:.68rem;">HOLE</td>';
+  for(let h=0;h<holes;h++) html+=`<td style="text-align:center;padding:4px 3px;color:var(--gold);font-weight:600;">${h+1+offset}</td>`;
+  html+='</tr>';
+  // Par row
+  html+='<tr><td style="padding:4px 6px;color:var(--tan);font-size:.68rem;">PAR</td>';
+  for(let h=0;h<holes;h++) html+=`<td style="text-align:center;padding:4px 3px;color:var(--tan);">${pars[h]||4}</td>`;
+  html+='</tr>';
+  // Score row
+  html+='<tr><td style="padding:4px 6px;color:var(--tan);font-size:.68rem;">SCORE</td>';
+  for(let h=0;h<holes;h++){
+    html+=`<td style="padding:2px 2px;"><input type="number" id="ph-${h}" min="1" max="15" 
+      oninput="_updatePastTotal()" 
+      style="width:32px;text-align:center;background:rgba(0,0,0,.3);border:1px solid rgba(245,240,232,.2);border-radius:4px;padding:4px 2px;color:var(--cream);font-size:.82rem;outline:none;-moz-appearance:textfield;"
+      placeholder="${pars[h]||4}"></td>`;
+  }
+  html+='</tr></table>';
+  // Running total display
+  html+='<div id="past-running-total" style="margin-top:8px;font-size:.8rem;color:var(--tan);text-align:right;"></div>';
+  grid.innerHTML=html;
+}
+
+function _updatePastTotal(){
+  const holes=window._pastHoles||18;
+  const {pars}=_getPastParsYards();
+  let total=0,filled=0,parTotal=0;
+  for(let h=0;h<holes;h++){
+    const v=parseInt(document.getElementById('ph-'+h)?.value);
+    if(!isNaN(v)&&v>0){total+=v;parTotal+=pars[h]||4;filled++;}
+  }
+  const el=document.getElementById('past-running-total');
+  if(el&&filled>0){
+    const diff=total-parTotal;
+    el.textContent=`${filled}/${holes} holes \u00b7 ${total} strokes \u00b7 ${diff>=0?'+':''}${diff} vs par`;
+  } else if(el){el.textContent='';}
 }
 
 async function submitPastRound(){
   if(!isPro()){showProUpsell('Saving Rounds & Round History');return;}
-  const course=document.getElementById('past-course-name').value.trim();
+  const course=document.getElementById('past-course-name').value.trim()||document.getElementById('past-course-input').value.trim();
   const date=document.getElementById('past-date').value;
   const holes=window._pastHoles||18;
-  const strokes=parseInt(document.getElementById('past-strokes').value);
-  const par=parseInt(document.getElementById('past-par').value);
   const errEl=document.getElementById('past-error');
   const btn=document.getElementById('btn-log-round');
+  const holeByHole=document.getElementById('past-holeby-toggle').checked;
 
-  if(!course){errEl.textContent='Please select a course from the search results.';return;}
+  if(!course){errEl.textContent='Please select a course.';return;}
   if(!date){errEl.textContent='Please select a date.';return;}
-  if(!strokes||strokes<30){errEl.textContent='Please enter a valid score.';return;}
-  if(!par||par<27){errEl.textContent='Please enter a valid course par.';return;}
 
-  const diff=strokes-par;
+  const {pars,yardages,offset}=_getPastParsYards();
+  const playerName=currentUser.user_metadata?.first_name||currentUser.email.split('@')[0];
+  let scoreArr,totalStrokes,scorevsPar;
 
-  // Build minimal round — no hole-by-hole data
+  if(holeByHole){
+    scoreArr=[];
+    let total=0,parSum=0,filled=0;
+    for(let h=0;h<holes;h++){
+      const v=parseInt(document.getElementById('ph-'+h)?.value);
+      if(!isNaN(v)&&v>0){scoreArr.push(v);total+=v;parSum+=pars[h]||4;filled++;}
+      else{scoreArr.push(null);}
+    }
+    if(filled<holes){errEl.textContent='Please enter a score for every hole.';return;}
+    totalStrokes=total;
+    scorevsPar=total-parSum;
+  } else {
+    const strokes=parseInt(document.getElementById('past-strokes').value);
+    const par=parseInt(document.getElementById('past-par').value);
+    if(!strokes||strokes<30){errEl.textContent='Please enter a valid score.';return;}
+    if(!par||par<27){errEl.textContent='Please enter a valid course par.';return;}
+    scoreArr=Array(holes).fill(null);
+    totalStrokes=strokes;
+    scorevsPar=strokes-par;
+  }
+
   const roundData={
     user_id:currentUser.id,
     course_name:course,
-    tee_name:null,
-    holes:holes,
-    pars:Array(holes).fill(Math.round(par/holes)),
-    yardages:Array(holes).fill(0),
-    players:[currentUser.user_metadata?.first_name||currentUser.email.split('@')[0]],
-    scores:[Array(holes).fill(null)], // no hole-by-hole
-    total_strokes:strokes,
-    score_vs_par:diff,
+    tee_name:window._pastSelectedTee?window._pastSelectedTee.name:null,
+    holes,
+    hole_offset:offset||0,
+    pars,
+    yardages,
+    players:[playerName],
+    scores:[scoreArr],
+    total_strokes:totalStrokes,
+    score_vs_par:scorevsPar,
     played_at:new Date(date).toISOString(),
   };
 
   btn.disabled=true;btn.textContent='Saving...';
   errEl.textContent='';
-
   const {error}=await supa.from('rounds').insert(roundData);
   btn.disabled=false;btn.textContent='Save Round';
-
   if(error){errEl.textContent='Error saving round. Try again.';return;}
 
   // Clear form
@@ -3165,10 +3265,49 @@ async function submitPastRound(){
   document.getElementById('past-course-results').innerHTML='';
   document.getElementById('past-strokes').value='';
   document.getElementById('past-par').value='';
-
+  window._pastCourseData=null;
+  window._pastSelectedTee=null;
   closePastRound();
 }
 
+
+function _showPastTees(courseData){
+  const teeSection=document.getElementById('past-tee-section');
+  const teeBtns=document.getElementById('past-tee-btns');
+  const tees=courseData.tees||[];
+  if(!tees.length){
+    teeSection.style.display='none';
+    window._pastSelectedTee=null;
+    // Use par from first tee or generic
+    const par=courseData.par||72;
+    document.getElementById('past-par').value=par;
+    return;
+  }
+  teeSection.style.display='block';
+  teeBtns.innerHTML='';
+  tees.forEach((tee,i)=>{
+    const totalPar=tee.pars?tee.pars.reduce((a,b)=>a+b,0):0;
+    const totalYds=tee.yardages?tee.yardages.reduce((a,b)=>a+b,0):0;
+    const btn=document.createElement('button');
+    btn.className='tee-btn'+(i===0?' active':'');
+    btn.textContent=tee.name+(totalYds?` (${totalYds})`:'');
+    btn.onclick=()=>{
+      teeBtns.querySelectorAll('.tee-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      window._pastSelectedTee=tee;
+      document.getElementById('past-par').value=totalPar||72;
+      // Show front/back selector if 9 holes selected and 18-hole data
+      const has18=tee.pars&&tee.pars.length>=18;
+      document.getElementById('past-nine-selector').style.display=(window._pastHoles===9&&has18)?'block':'none';
+      _rebuildPastGrid();
+    };
+    teeBtns.appendChild(btn);
+    if(i===0){
+      window._pastSelectedTee=tee;
+      document.getElementById('past-par').value=totalPar||72;
+    }
+  });
+}
 
 let pastSearchTimer=null;
 function debouncedPastSearch(){clearTimeout(pastSearchTimer);pastSearchTimer=setTimeout(searchPastCourse,300);}
@@ -3195,25 +3334,43 @@ async function searchPastCourse(){
       const div=document.createElement('div');
       div.className='course-item';
       div.innerHTML='<div class="cn">'+c.name+'</div><div class="cl">'+c.location+'</div>';
-      div.onclick=()=>{
-        document.getElementById('past-course-name').value=c.name;
-        document.getElementById('past-course-input').value=c.name;
-        if(c.par){
-          document.getElementById('past-par').value=c.par;
-        }
+      div.onclick=async()=>{
+        window._pastCourseData=c;
+        document.getElementById('past-course-name').value=c.name||c.course_name||'';
+        document.getElementById('past-course-input').value=c.name||c.course_name||'';
         results.style.display='none';
         results.innerHTML='';
+        // If API course with no tees, fetch full data
+        if(c.api_id&&(!c.tees||!c.tees.length)){
+          document.getElementById('past-tee-section').style.display='block';
+          document.getElementById('past-tee-btns').innerHTML='<span style="font-size:.75rem;color:var(--tan);">Loading tees...</span>';
+          try{
+            const resp=await fetch(API_BASE+'/courses/'+c.api_id,{headers:{'Authorization':'Key '+API_KEY}});
+            const data=await resp.json();
+            const course=data.course||data;
+            const maleTees=(course.tees?.male||[]).map(t=>({
+              name:t.tee_name||t.name,
+              pars:t.holes?t.holes.map(h=>h.par||4):[],
+              yardages:t.holes?t.holes.map(h=>h.yardage||0):[],
+            })).filter(t=>t.pars.length);
+            c.tees=maleTees;
+            window._pastCourseData=c;
+          }catch(e){
+            document.getElementById('past-tee-btns').innerHTML='';
+          }
+        }
+        _showPastTees(c);
       };
       results.appendChild(div);
     });
   }
 
   // Show local matches immediately
-  const localCombined=localMatches.map(c=>{
-    const tee=c.tees&&c.tees[0];
-    const par=tee?tee.pars.reduce((a,b)=>a+b,0):null;
-    return {name:c.name,location:(c.city||'')+(c.state?', '+c.state:''),par};
-  });
+  const localCombined=localMatches.map(c=>({
+    ...c,
+    location:(c.city||'')+(c.state?', '+c.state:''),
+    par:c.tees&&c.tees[0]?c.tees[0].pars.reduce((a,b)=>a+b,0):null
+  }));
   if(localCombined.length) renderPastResults(localCombined);
 
   try{
@@ -3224,10 +3381,11 @@ async function searchPastCourse(){
     const combined=[
       ...localCombined,
       ...apiCourses.filter(c=>!localNames.has(c.course_name.toLowerCase())).map(c=>{
-        const tees=[...(c.tees?.male||[]),(c.tees?.female||[])];
+        const tees=[...(c.tees?.male||[]),...(c.tees?.female||[])];
         const firstTee=tees[0];
         const par=firstTee&&firstTee.holes?firstTee.holes.reduce((a,h)=>a+(h.par||0),0):null;
-        return {name:c.course_name,location:(c.location?.city||'')+(c.location?.state?', '+c.location.state:''),par};
+        // Store api_id for full fetch on selection
+        return {name:c.course_name,location:(c.location?.city||'')+(c.location?.state?', '+c.location.state:''),par,api_id:c.id,tees:[]};
       })
     ];
     renderPastResults(combined);
@@ -5548,26 +5706,52 @@ document.addEventListener('DOMContentLoaded', function(){
       <input type="hidden" id="past-course-name">
     </div>
 
+    <div class="past-field" id="past-tee-section" style="display:none;">
+      <label>Tees Played</label>
+      <div id="past-tee-btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;"></div>
+    </div>
+
     <div class="past-field">
       <label>Date Played</label>
       <input type="date" id="past-date" style="width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;height:44px;line-height:44px;padding:0 14px;font-size:.95rem;">
     </div>
+
     <div class="past-field">
       <label>Holes</label>
       <div class="holes-btn-group">
         <button class="holes-btn" id="past-holes-9" data-holes="9" onclick="setPastHoles(9)">9</button>
         <button class="holes-btn active" id="past-holes-18" data-holes="18" onclick="setPastHoles(18)">18</button>
       </div>
+      <div id="past-nine-selector" style="display:none;margin-top:8px;">
+        <div style="font-size:.75rem;color:var(--tan);margin-bottom:6px;">Which 9?</div>
+        <div style="display:flex;gap:8px;">
+          <button class="holes-btn active" id="past-nine-front" onclick="setPastNine('front')">Front 9</button>
+          <button class="holes-btn" id="past-nine-back" onclick="setPastNine('back')">Back 9</button>
+        </div>
+      </div>
     </div>
 
-    <div class="past-field-row">
-      <div class="past-field">
-        <label>Your Score</label>
-        <input type="number" id="past-strokes" placeholder="e.g. 88" min="30" max="180">
-      </div>
-      <div class="past-field">
-        <label>Course Par</label>
-        <input type="number" id="past-par" placeholder="e.g. 72" min="27" max="74">
+    <div class="past-field" id="past-holeby-toggle-row">
+      <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+        <span>Enter hole-by-hole scores</span>
+        <input type="checkbox" id="past-holeby-toggle" onchange="togglePastHoleByHole()" style="width:18px;height:18px;accent-color:var(--gold);">
+      </label>
+    </div>
+
+    <div id="past-holeby-section" style="display:none;margin-top:4px;">
+      <div id="past-holeby-grid" style="overflow-x:auto;"></div>
+    </div>
+
+    <div id="past-total-section">
+      <div class="past-field-row">
+        <div class="past-field">
+          <label>Your Score</label>
+          <input type="number" id="past-strokes" placeholder="e.g. 88" min="30" max="180">
+        </div>
+        <div class="past-field">
+          <label>Course Par</label>
+          <input type="number" id="past-par" placeholder="e.g. 72" min="27" max="74">
+        </div>
       </div>
     </div>
 
