@@ -3167,50 +3167,110 @@ function togglePastHoleByHole(){
 function _rebuildPastGrid(){
   if(!document.getElementById('past-holeby-toggle').checked)return;
   const holes=window._pastHoles||18;
-  const {pars,offset}=_getPastParsYards();
-  const grid=document.getElementById('past-holeby-grid');
-  let html='<table style="width:100%;border-collapse:collapse;font-size:.78rem;">';
-  // Header row
-  html+='<tr><td style="padding:4px 6px;color:var(--tan);font-size:.68rem;">HOLE</td>';
-  for(let h=0;h<holes;h++) html+=`<td style="text-align:center;padding:4px 3px;color:var(--gold);font-weight:600;">${h+1+offset}</td>`;
-  html+='</tr>';
-  // Par row
-  html+='<tr><td style="padding:4px 6px;color:var(--tan);font-size:.68rem;">PAR</td>';
-  for(let h=0;h<holes;h++) html+=`<td style="text-align:center;padding:4px 3px;color:var(--tan);">${pars[h]||4}</td>`;
-  html+='</tr>';
-  // Yardage row
-  const {yardages}=_getPastParsYards();
+  const {pars,yardages,offset}=_getPastParsYards();
   const hasYds=yardages.some(y=>y>0);
-  if(hasYds){
-    html+='<tr><td style="padding:4px 6px;color:var(--tan);font-size:.68rem;">YDS</td>';
-    for(let h=0;h<holes;h++) html+=`<td style="text-align:center;padding:4px 3px;color:var(--tan);font-size:.68rem;">${yardages[h]||'-'}</td>`;
-    html+='</tr>';
-  }
-  // Score row
-  html+='<tr><td style="padding:4px 6px;color:var(--tan);font-size:.68rem;">SCORE</td>';
+  const split18=holes===18;
+  const grid=document.getElementById('past-holeby-grid');
+
+  // Build header row
+  let holeHeaders='<td style="padding:4px 6px;color:var(--tan);font-size:.68rem;font-weight:600;">HOLE</td>';
   for(let h=0;h<holes;h++){
-    html+=`<td style="padding:2px 2px;"><input type="number" id="ph-${h}" min="1" max="15" 
-      oninput="_updatePastTotal()" 
+    holeHeaders+=`<td style="text-align:center;padding:4px 3px;color:var(--gold);font-weight:600;">${h+1+offset}</td>`;
+    if(split18&&h===8) holeHeaders+='<td style="text-align:center;padding:4px 6px;color:var(--gold);font-size:.68rem;font-weight:600;background:rgba(0,0,0,.2);">OUT</td>';
+  }
+  holeHeaders+='<td style="text-align:center;padding:4px 6px;color:var(--gold);font-size:.68rem;font-weight:600;">TOT</td>';
+
+  // Par row
+  let parCells='<td style="padding:4px 6px;color:var(--tan);font-size:.68rem;">PAR</td>';
+  let parOut=0,parIn=0;
+  for(let h=0;h<holes;h++){
+    const p=pars[h]||4;
+    if(h<9)parOut+=p; else parIn+=p;
+    parCells+=`<td style="text-align:center;padding:4px 3px;color:var(--tan);">${p}</td>`;
+    if(split18&&h===8) parCells+=`<td style="text-align:center;padding:4px 6px;color:var(--tan);background:rgba(0,0,0,.2);">${parOut}</td>`;
+  }
+  parCells+=`<td style="text-align:center;padding:4px 6px;color:var(--tan);">${parOut+parIn}</td>`;
+
+  // Yardage row
+  let ydsCells='';
+  if(hasYds){
+    ydsCells='<td style="padding:4px 6px;color:var(--tan);font-size:.68rem;">YDS</td>';
+    let yOut=0,yIn=0;
+    for(let h=0;h<holes;h++){
+      const y=yardages[h]||0;
+      if(h<9)yOut+=y; else yIn+=y;
+      ydsCells+=`<td style="text-align:center;padding:4px 3px;color:var(--tan);font-size:.65rem;">${y||'-'}</td>`;
+      if(split18&&h===8) ydsCells+=`<td style="text-align:center;padding:4px 6px;color:var(--tan);font-size:.65rem;background:rgba(0,0,0,.2);">${yOut}</td>`;
+    }
+    ydsCells+=`<td style="text-align:center;padding:4px 6px;color:var(--tan);font-size:.65rem;">${yOut+yIn}</td>`;
+  }
+
+  // Score row
+  let scoreCells='<td style="padding:4px 6px;color:var(--tan);font-size:.68rem;">SCORE</td>';
+  for(let h=0;h<holes;h++){
+    scoreCells+=`<td style="padding:2px 2px;"><input type="number" id="ph-${h}" min="1" max="15"
+      oninput="_onPastScoreInput(${h},${holes})"
       style="width:32px;text-align:center;background:rgba(0,0,0,.3);border:1px solid rgba(245,240,232,.2);border-radius:4px;padding:4px 2px;color:var(--cream);font-size:.82rem;outline:none;-moz-appearance:textfield;"
       placeholder="${pars[h]||4}"></td>`;
+    if(split18&&h===8) scoreCells+='<td id="past-out-cell" style="text-align:center;padding:4px 6px;color:var(--tan);font-size:.78rem;font-weight:600;background:rgba(0,0,0,.2);">-</td>';
   }
-  html+='</tr></table>';
-  // Running total display
+  scoreCells+='<td id="past-tot-cell" style="text-align:center;padding:4px 6px;color:var(--cream);font-size:.82rem;font-weight:600;">-</td>';
+
+  let html=`<div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:.78rem;">
+      <tr>${holeHeaders}</tr>
+      <tr>${parCells}</tr>
+      ${hasYds?`<tr>${ydsCells}</tr>`:''}
+      <tr>${scoreCells}</tr>
+    </table>
+  </div>`;
   html+='<div id="past-running-total" style="margin-top:8px;font-size:.8rem;color:var(--tan);text-align:right;"></div>';
   grid.innerHTML=html;
 }
 
-function _updatePastTotal(){
-  const holes=window._pastHoles||18;
+function _onPastScoreInput(h, holes){
+  const inp=document.getElementById('ph-'+h);
+  const val=parseInt(inp.value);
+  // Auto-advance to next hole once a valid score is entered
+  if(!isNaN(val)&&val>=1&&val<=15){
+    const next=document.getElementById('ph-'+(h+1));
+    if(next){setTimeout(()=>{next.focus();next.select();},50);}
+  }
+  _updatePastTotal(holes);
+}
+
+function _updatePastTotal(holes){
+  holes=holes||window._pastHoles||18;
   const {pars}=_getPastParsYards();
-  let total=0,filled=0,parTotal=0;
+  const split18=holes===18;
+  let total=0,filled=0,front=0,frontPar=0;
+
   for(let h=0;h<holes;h++){
     const v=parseInt(document.getElementById('ph-'+h)?.value);
-    if(!isNaN(v)&&v>0){total+=v;parTotal+=pars[h]||4;filled++;}
+    if(!isNaN(v)&&v>0){
+      total+=v;filled++;
+      if(h<9){front+=v;frontPar+=pars[h]||4;}
+    }
   }
+
+  // Update OUT cell
+  if(split18){
+    const outCell=document.getElementById('past-out-cell');
+    if(outCell){
+      const frontFilled=Array.from({length:9},(_,h)=>parseInt(document.getElementById('ph-'+h)?.value)).filter(v=>!isNaN(v)&&v>0);
+      outCell.textContent=frontFilled.length===9?front:'-';
+    }
+  }
+
+  // Update TOT cell
+  const totCell=document.getElementById('past-tot-cell');
+  if(totCell) totCell.textContent=filled>0?total:'-';
+
+  // Running summary
   const el=document.getElementById('past-running-total');
   if(el&&filled>0){
-    const diff=total-parTotal;
+    const parSum=pars.slice(0,filled).reduce((a,b)=>a+b,0);
+    const diff=total-parSum;
     el.textContent=`${filled}/${holes} holes \u00b7 ${total} strokes \u00b7 ${diff>=0?'+':''}${diff} vs par`;
   } else if(el){el.textContent='';}
 }
