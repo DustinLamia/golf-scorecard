@@ -287,6 +287,12 @@
 
   /* ── Versus Mode ── */
   .versus-format-btns{display:flex;gap:8px;flex-wrap:wrap;}
+  .toggle-switch{position:relative;width:44px;height:24px;flex-shrink:0;}
+  .toggle-switch input{opacity:0;width:0;height:0;}
+  .toggle-track{position:absolute;inset:0;background:rgba(245,240,232,.15);border-radius:12px;cursor:pointer;transition:background .2s;}
+  .toggle-track::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s;}
+  .toggle-switch input:checked + .toggle-track{background:var(--gold);}
+  .toggle-switch input:checked + .toggle-track::before{transform:translateX(20px);}
   .versus-format-btn{padding:7px 16px;border-radius:8px;border:1px solid rgba(245,240,232,.25);background:transparent;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;transition:all .15s;}
   .versus-format-btn.active{background:var(--gold);border-color:var(--gold);color:var(--dark);font-weight:600;}
   .pro-gate-note{font-size:.72rem;color:var(--tan);margin-top:8px;padding:8px 12px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:8px;}
@@ -3172,6 +3178,14 @@ function _rebuildPastGrid(){
   html+='<tr><td style="padding:4px 6px;color:var(--tan);font-size:.68rem;">PAR</td>';
   for(let h=0;h<holes;h++) html+=`<td style="text-align:center;padding:4px 3px;color:var(--tan);">${pars[h]||4}</td>`;
   html+='</tr>';
+  // Yardage row
+  const {yardages}=_getPastParsYards();
+  const hasYds=yardages.some(y=>y>0);
+  if(hasYds){
+    html+='<tr><td style="padding:4px 6px;color:var(--tan);font-size:.68rem;">YDS</td>';
+    for(let h=0;h<holes;h++) html+=`<td style="text-align:center;padding:4px 3px;color:var(--tan);font-size:.68rem;">${yardages[h]||'-'}</td>`;
+    html+='</tr>';
+  }
   // Score row
   html+='<tr><td style="padding:4px 6px;color:var(--tan);font-size:.68rem;">SCORE</td>';
   for(let h=0;h<holes;h++){
@@ -3290,7 +3304,7 @@ function _showPastTees(courseData){
     const totalYds=tee.yardages?tee.yardages.reduce((a,b)=>a+b,0):0;
     const btn=document.createElement('button');
     btn.className='tee-btn'+(i===0?' active':'');
-    btn.textContent=tee.name+(totalYds?` (${totalYds})`:'');
+    btn.textContent=tee.name+(totalYds?' ('+totalYds+')':(totalPar?' · Par '+totalPar:''));
     btn.onclick=()=>{
       teeBtns.querySelectorAll('.tee-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
@@ -5734,7 +5748,10 @@ document.addEventListener('DOMContentLoaded', function(){
     <div class="past-field" id="past-holeby-toggle-row">
       <label style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
         <span>Enter hole-by-hole scores</span>
-        <input type="checkbox" id="past-holeby-toggle" onchange="togglePastHoleByHole()" style="width:18px;height:18px;accent-color:var(--gold);">
+        <label class="toggle-switch" style="flex-shrink:0;">
+          <input type="checkbox" id="past-holeby-toggle" onchange="togglePastHoleByHole()">
+          <span class="toggle-track"></span>
+        </label>
       </label>
     </div>
 
