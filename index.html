@@ -361,6 +361,11 @@
   .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;background:none;border:none;cursor:pointer;color:var(--tan);font-family:'DM Sans',sans-serif;font-size:.6rem;letter-spacing:.5px;text-transform:uppercase;transition:color .15s;}
   .nav-btn.active{color:var(--gold);}
   .nav-btn .nav-icon{font-size:1.3rem;line-height:1;}
+  .nav-btn.live-round{color:var(--gold);}
+  .nav-btn.live-round .nav-live-dot{display:inline-block;width:6px;height:6px;background:var(--gold);border-radius:50%;margin-left:3px;animation:pulse-ring 1.2s ease-out infinite;vertical-align:middle;}
+  .return-to-round-bar{display:none;background:rgba(201,168,76,.15);border-bottom:1px solid rgba(201,168,76,.3);padding:10px 16px;text-align:center;cursor:pointer;}
+  .return-to-round-bar span{color:var(--gold);font-size:.82rem;font-weight:600;letter-spacing:.5px;}
+  .return-to-round-bar:active{background:rgba(201,168,76,.25);}
   /* Push content above nav */
   body.has-nav #setup-screen,body.has-nav #scorecard-screen,body.has-nav #history-screen,body.has-nav #stats-screen,body.has-nav #past-round-screen,body.has-nav #compare-screen{padding-bottom:80px;}
 
@@ -720,6 +725,7 @@ function restoreSession(){
     refreshTotals();
     updateMatchPlayLiveBar();
     paintMatchPlayHoles();
+    updateLiveRoundNav();
     setupSpeech();
     return true;
   }catch(e){return false;}
@@ -1329,6 +1335,61 @@ function parseVoice(text){
     return;
   }
 
+  // ── Correction command: "Dustin actually got a 5 on hole 4" / "on hole 4 Dustin actually got a 5"
+  const correctionMatch=corrected.match(/actually\s+(?:got|scored|made|shot|hit)?\s*(?:a\s+)?(\w+)/i);
+  if(correctionMatch){
+    // Find hole number
+    let holeNum=null;
+    const hm=corrected.match(/(?:on\s+)?hole\s+(\w+)/i);
+    if(hm){
+      const spoken=w2n(hm[1]);
+      if(spoken){
+        const internal=spoken-holeOffset;
+        if(internal>=1&&internal<=holes)holeNum=internal;
+      }
+    }
+    // Find player name
+    let playerName=null;
+    const words=corrected.replace(/[,\.!?]/g,' ').split(/\s+/).filter(Boolean);
+    for(const w of words){
+      const match=bestNameMatch(w,players);
+      if(match){playerName=match;break;}
+    }
+    // Find score
+    const sc=scoreTermToStrokes(correctionMatch[1],holeNum?pars[holeNum-1]:4);
+    if(playerName&&sc&&sc>0&&sc<=20){
+      if(!holeNum){
+        // Default to current hole
+        const currentEl=document.querySelector('.hole-header.current');
+        holeNum=currentEl?parseInt(currentEl.id.replace('hh-','')):1;
+      }
+      const pi=players.indexOf(playerName);
+      if(pi>=0){
+        scores[pi][holeNum-1]=sc;
+        const inp=document.getElementById('s-'+pi+'-'+(holeNum-1));
+        if(inp){inp.value=sc;colorScore(pi,holeNum-1);}
+        refreshTotals();
+        saveSession();
+        updateSkinsLiveBar();
+        updateMatchPlayLiveBar();
+        const msg='\u2713 Corrected: '+playerName+' hole '+(holeNum+holeOffset-1+1)+' changed to '+sc+' ('+scoreLabel(sc,pars[holeNum-1])+')';
+        document.getElementById('voice-feedback').textContent=msg;
+        showAndSpeak(msg,5000);
+        return;
+      }
+    }
+  }
+
+  // Scramble 2v2 — route entirely to its own parser
+  if(versusMode==='scramble2v2'){
+    const handled=handleQuery(corrected);
+    if(!handled){
+      const ok=parseScrambleVoice(corrected);
+      if(!ok)document.getElementById('voice-feedback').textContent='Try: "Team A birdie Team B bogey"';
+    }
+    return;
+  }
+
   let holeNum=null;
   const hm=corrected.match(/hole\s+(\w+)/i);
   if(hm){
@@ -1638,6 +1699,7 @@ function applyScoresDirectly(hole,scoreMap){
   });
   refreshTotals();
   saveSession();
+  updateLiveRoundNav();
   document.querySelectorAll('.hole-header').forEach(h=>h.classList.remove('current'));
   const next=document.getElementById('hh-'+Math.min(hole+1,holes));
   if(next)next.classList.add('current');
@@ -3747,6 +3809,36 @@ function setActiveNav(id){
   const btn=document.getElementById('nav-'+id);
   if(btn)btn.classList.add('active');
 }
+function returnToRound(){
+  ['setup-screen','history-screen','stats-screen','compare-screen','profile-screen','past-round-screen'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  document.getElementById('scorecard-screen').style.display='block';
+  setActiveNav('play');
+  sessionStorage.setItem('vs_screen','scorecard');
+}
+
+function updateLiveRoundNav(){
+  const hasLive=!!readSession()&&players.length>0&&scores.some(ps=>ps.some(s=>s!==null));
+  const playBtn=document.getElementById('nav-play');
+  const playLabel=document.getElementById('nav-play-label');
+  if(playBtn&&playLabel){
+    if(hasLive){
+      playBtn.classList.add('live-round');
+      playLabel.innerHTML='LIVE <span class="nav-live-dot"></span>';
+      playBtn.onclick=returnToRound;
+    } else {
+      playBtn.classList.remove('live-round');
+      playLabel.textContent='Play';
+      playBtn.onclick=function(){navTo('play');};
+    }
+  }
+  ['history-return-bar','stats-return-bar','compare-return-bar','profile-return-bar'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.style.display=hasLive?'block':'none';
+  });
+}
+
 function navTo(screen){
   console.log('[VS] navTo:', screen, new Error().stack.split('\n').slice(1,4).join(' | '));
   // Hide all screens
@@ -3756,6 +3848,7 @@ function navTo(screen){
   });
   setActiveNav(screen);
   sessionStorage.setItem('vs_screen',screen);
+  updateLiveRoundNav();
   if(screen==='play'){
     document.getElementById('setup-screen').style.display='block';
   } else if(screen==='history'){
@@ -5327,18 +5420,19 @@ document.addEventListener('click',e=>{
 (function(){const b=document.getElementById('start-btn');if(b)b.textContent='Sign In to Start';})();
 // Session is now restored inside setUser() after auth resolves
 
-// Restart mic when returning to app after backgrounding
+// Restart mic and re-unlock audio when returning to app after backgrounding
 document.addEventListener('visibilitychange', function(){
   if(document.visibilityState === 'visible'){
     const onScorecard = document.getElementById('scorecard-screen') &&
                         document.getElementById('scorecard-screen').style.display !== 'none';
     if(onScorecard && players.length){
+      // Re-unlock audio — iOS suspends AudioContext and speechSynthesis when backgrounded
+      window._audioUnlocked=false;
+      unlockAudio();
+      // Restart mic
       setTimeout(()=>{
-        if(!recognition){
-          setupSpeech();
-        } else {
-          try{ recognition.start(); }catch(e){}
-        }
+        if(!recognition){ setupSpeech(); }
+        else { try{ recognition.start(); }catch(e){} }
       }, 800);
     }
   }
@@ -5373,6 +5467,9 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <!-- History Screen -->
 <div id="history-screen">
+  <div class="return-to-round-bar" id="history-return-bar" onclick="returnToRound()">
+    <span>&#9654; Return to Live Round</span>
+  </div>
   <div class="history-header">
     <h2>Round History</h2>
     <div style="display:flex;gap:8px;">
@@ -5392,6 +5489,9 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <!-- Stats Screen -->
 <div id="stats-screen">
+  <div class="return-to-round-bar" id="stats-return-bar" onclick="returnToRound()">
+    <span>&#9654; Return to Live Round</span>
+  </div>
   <div class="stats-header">
     <h2>My Stats</h2>
     <button class="btn-back" onclick="showSetupFromStats()">&#8592; Back</button>
@@ -5473,6 +5573,9 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <!-- Compare Screen -->
 <div id="compare-screen" style="display:none;">
+  <div class="return-to-round-bar" id="compare-return-bar" onclick="returnToRound()">
+    <span>&#9654; Return to Live Round</span>
+  </div>
   <div class="compare-header">
     <h2>Compare Rounds</h2>
     <button class="btn-back" onclick="navTo('play')">&#8592; Back</button>
@@ -5486,7 +5589,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <div class="bottom-nav-inner">
     <button class="nav-btn active" id="nav-play" onclick="navTo('play')">
       <span class="nav-icon">🏌️</span>
-      <span>Play</span>
+      <span id="nav-play-label">Play</span>
     </button>
     <button class="nav-btn" id="nav-history" onclick="navTo('history')">
       <span class="nav-icon">📋</span>
@@ -5510,6 +5613,9 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <!-- Profile Screen -->
 <div id="profile-screen" style="display:none;padding:20px;max-width:600px;margin:0 auto;padding-bottom:80px;">
+  <div class="return-to-round-bar" id="profile-return-bar" onclick="returnToRound()">
+    <span>&#9654; Return to Live Round</span>
+  </div>
   <h2 style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:20px;">Profile</h2>
 
   <!-- Name & Username -->
