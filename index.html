@@ -811,6 +811,85 @@ document.addEventListener('click',e=>{
 const API_KEY='BFTCFEDTFTZTS55WTT4K55SKZE';
 const API_BASE='https://api.golfcourseapi.com/v1';
 
+// Haversine distance in miles between two lat/lng points
+function haversine(lat1,lon1,lat2,lon2){
+  const R=3958.8;
+  const dLat=(lat2-lat1)*Math.PI/180;
+  const dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+async function detectNearbyCourse(){
+  if(!navigator.geolocation)return;
+  const statusEl=document.getElementById('search-status');
+  // Don't show any UI yet — silent detection
+  navigator.geolocation.getCurrentPosition(async(pos)=>{
+    const {latitude:lat,longitude:lng}=pos.coords;
+    // Check local courses first
+    let closest=null,closestDist=999;
+    COURSES.forEach(c=>{
+      if(c.lat&&c.lng){
+        const d=haversine(lat,lng,c.lat,c.lng);
+        if(d<closestDist){closestDist=d;closest=c;}
+      }
+    });
+    // If local match within 0.5 miles, pre-fill
+    if(closest&&closestDist<=0.5){
+      _prefillCourse(closest);
+      return;
+    }
+    // Try API with lat/lng
+    try{
+      const resp=await fetch(
+        `${API_BASE}/search?latitude=${lat}&longitude=${lng}&radius=0.5&per_page=5`,
+        {headers:{'Authorization':'Key '+API_KEY}}
+      );
+      const data=await resp.json();
+      const courses=(data.courses||[]).filter(c=>c.location?.country==='United States');
+      if(courses.length===1){
+        // Only one course within 0.5 miles — pre-fill it
+        const c=courses[0];
+        // Fetch full data for tees
+        const full=await fetch(`${API_BASE}/courses/${c.id}`,{headers:{'Authorization':'Key '+API_KEY}});
+        const fd=await full.json();
+        const course=fd.course||fd;
+        const maleTees=(course.tees?.male||[]).map(t=>({
+          name:t.tee_name||t.name,
+          pars:t.holes?t.holes.map(h=>h.par||4):[],
+          yardages:t.holes?t.holes.map(h=>h.yardage||0):[],
+        })).filter(t=>t.pars.length);
+        const courseObj={
+          name:c.course_name,
+          city:c.location?.city||'',
+          state:c.location?.state||'',
+          tees:maleTees,
+        };
+        _prefillCourse(courseObj);
+      } else if(courses.length>1){
+        // Multiple courses nearby — pre-fill search box with city to help narrow down
+        if(statusEl)statusEl.textContent='📍 Multiple courses nearby — search to select';
+        setTimeout(()=>{if(statusEl)statusEl.textContent='';},3000);
+      }
+    }catch(e){/* silent fail */}
+  },()=>{/* permission denied — silent fail */},{timeout:5000,maximumAge:60000});
+}
+
+function _prefillCourse(course){
+  const input=document.getElementById('course-input');
+  if(!input||input.value.trim())return; // Don't overwrite if user already typed
+  if(!course.tees||!course.tees.length)return; // Need tees to select
+  input.value=course.name;
+  // Use a dummy el since we're not coming from a click
+  const dummy={classList:{add:()=>{},remove:()=>{}}};
+  selectCourse(course,dummy);
+  const statusEl=document.getElementById('search-status');
+  if(statusEl){
+    statusEl.textContent='📍 Course detected nearby';
+    setTimeout(()=>{statusEl.textContent='';},3000);
+  }
+}
+
 async function searchCourse(){
   const query=document.getElementById('course-input').value.trim();
   const status=document.getElementById('search-status');
@@ -4176,6 +4255,10 @@ function navTo(screen){
   updateLiveRoundNav();
   if(screen==='play'){
     document.getElementById('setup-screen').style.display='block';
+    // Auto-detect nearby course if input is empty and no course selected
+    if(!selectedCourse&&!document.getElementById('course-input').value.trim()){
+      detectNearbyCourse();
+    }
   } else if(screen==='history'){
     document.getElementById('history-screen').style.display='block';
     if(!window._proStatusReady){
