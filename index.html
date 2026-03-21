@@ -3296,8 +3296,8 @@ async function loadStats(){
   const avgParsPerRound=data.length?(totalParsPerRound/data.length).toFixed(1):null;
   const avgBirdiesPerRound=data.length?(totalBirdiesPerRound/data.length).toFixed(1):null;
 
-  // Load and populate goals
-  const goals=loadGoals();
+  // Load and populate goals from Supabase
+  const goals=await loadGoalsFromServer();
   populateGoalInputs(goals,avgStrokesAll,avgParsPerRound,avgBirdiesPerRound);
 
   // Render last 10 rounds chart
@@ -3717,23 +3717,78 @@ async function searchPastCourse(){
 }
 
 // ── Goals ──
+// Goals cached in memory after loading — avoids async everywhere
+let _cachedGoals={strokes:null,pars:null,birdies:null};
+
 function loadGoals(){
-  return {
-    strokes: parseInt(localStorage.getItem('vs_goal_strokes'))||null,
-    pars: parseInt(localStorage.getItem('vs_goal_pars'))||null,
-    birdies: parseInt(localStorage.getItem('vs_goal_birdies'))||null,
-  };
+  // Return cached value (populated by loadGoalsFromServer or localStorage fallback)
+  return _cachedGoals;
 }
 
-function saveGoals(){
-  const s=document.getElementById('goal-strokes').value;
-  const p=document.getElementById('goal-pars').value;
-  const b=document.getElementById('goal-birdies').value;
-  if(s)localStorage.setItem('vs_goal_strokes',s); else localStorage.removeItem('vs_goal_strokes');
-  if(p)localStorage.setItem('vs_goal_pars',p); else localStorage.removeItem('vs_goal_pars');
-  if(b)localStorage.setItem('vs_goal_birdies',b); else localStorage.removeItem('vs_goal_birdies');
+async function loadGoalsFromServer(){
+  // Try Supabase user_metadata first
+  if(currentUser){
+    const m=currentUser.user_metadata||{};
+    if(m.goal_strokes||m.goal_pars||m.goal_birdies){
+      _cachedGoals={
+        strokes:m.goal_strokes||null,
+        pars:m.goal_pars||null,
+        birdies:m.goal_birdies||null,
+      };
+      return _cachedGoals;
+    }
+  }
+  // Fall back to localStorage (migration path for existing users)
+  const ls={
+    strokes:parseInt(localStorage.getItem('vs_goal_strokes'))||null,
+    pars:parseInt(localStorage.getItem('vs_goal_pars'))||null,
+    birdies:parseInt(localStorage.getItem('vs_goal_birdies'))||null,
+  };
+  _cachedGoals=ls;
+  // If localStorage has data and user is logged in, migrate it to Supabase silently
+  if(currentUser&&(ls.strokes||ls.pars||ls.birdies)){
+    try{
+      await supa.auth.updateUser({data:{
+        goal_strokes:ls.strokes||null,
+        goal_pars:ls.pars||null,
+        goal_birdies:ls.birdies||null,
+      }});
+      localStorage.removeItem('vs_goal_strokes');
+      localStorage.removeItem('vs_goal_pars');
+      localStorage.removeItem('vs_goal_birdies');
+    }catch(e){}
+  }
+  return _cachedGoals;
+}
+
+async function saveGoals(){
+  const s=parseInt(document.getElementById('goal-strokes').value)||null;
+  const p=parseInt(document.getElementById('goal-pars').value)||null;
+  const b=parseInt(document.getElementById('goal-birdies').value)||null;
   const btn=document.querySelector('.btn-save-goals');
-  if(btn){btn.textContent='Saved!';setTimeout(()=>btn.textContent='Save Goals',1500);}
+  if(btn){btn.textContent='Saving...';btn.disabled=true;}
+  // Update cache immediately
+  _cachedGoals={strokes:s,pars:p,birdies:b};
+  if(currentUser){
+    try{
+      const {data}=await supa.auth.updateUser({data:{
+        goal_strokes:s||null,
+        goal_pars:p||null,
+        goal_birdies:b||null,
+      }});
+      if(data?.user)currentUser=data.user;
+    }catch(e){
+      // Fallback to localStorage if Supabase fails
+      if(s)localStorage.setItem('vs_goal_strokes',s); else localStorage.removeItem('vs_goal_strokes');
+      if(p)localStorage.setItem('vs_goal_pars',p); else localStorage.removeItem('vs_goal_pars');
+      if(b)localStorage.setItem('vs_goal_birdies',b); else localStorage.removeItem('vs_goal_birdies');
+    }
+  } else {
+    if(s)localStorage.setItem('vs_goal_strokes',s); else localStorage.removeItem('vs_goal_strokes');
+    if(p)localStorage.setItem('vs_goal_pars',p); else localStorage.removeItem('vs_goal_pars');
+    if(b)localStorage.setItem('vs_goal_birdies',b); else localStorage.removeItem('vs_goal_birdies');
+  }
+  if(btn){btn.textContent='Saved!';btn.disabled=false;setTimeout(()=>btn.textContent='Save Goals',1500);}
 }
 
 function populateGoalInputs(goals, avgStrokes, avgPars, avgBirdies){
@@ -4245,7 +4300,7 @@ function toggleCourseDetail(safeId, name){
 
   const fmtD=d=>d===0?'E':d>0?'+'+d:''+d;
   const fmtDate=s=>{const d=new Date(s);return(d.getMonth()+1)+'/'+(d.getDate());};
-  const goalStrokes=parseInt(localStorage.getItem('vs_goal_strokes'))||null;
+  const goalStrokes=_cachedGoals.strokes||null;
 
   // Up to last 10 rounds at this course, chronological
   const rounds=[...c.roundList].sort((a,b)=>new Date(a.played_at)-new Date(b.played_at)).slice(-10);
