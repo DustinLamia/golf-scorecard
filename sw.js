@@ -1,7 +1,5 @@
-const CACHE = 'voicescore-v11';
-const ASSETS = [
-  '/',
-  '/index.html',
+const CACHE = 'voicescore-v12';
+const STATIC_ASSETS = [
   '/icon-192.png',
   '/icon-512.png',
   '/apple-touch-icon.png',
@@ -10,9 +8,8 @@ const ASSETS = [
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS))
+    caches.open(CACHE).then(c => c.addAll(STATIC_ASSETS))
   );
-  // Take over immediately without waiting for old SW to die
   self.skipWaiting();
 });
 
@@ -22,25 +19,36 @@ self.addEventListener('activate', e => {
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     )
   );
-  self.clients.claim();
+  // Don't call clients.claim() — it can forcibly reload active tabs mid-round
 });
 
-// Listen for skip waiting message from the page
 self.addEventListener('message', e => {
   if(e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', e => {
-  // Network first for Supabase API calls, cache first for everything else
-  if (e.request.url.includes('supabase.co') || e.request.url.includes('stripe.com')) {
+  const url = new URL(e.request.url);
+
+  // Always network-first for API calls
+  if (url.hostname.includes('supabase.co') || url.hostname.includes('stripe.com')) {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-  } else {
-    e.respondWith(
-      caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-        return res;
-      }))
-    );
+    return;
   }
+
+  // Always network-first for HTML — never serve stale index.html
+  if (url.pathname === '/' || url.pathname.endsWith('.html')) {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Cache-first for static assets (icons, manifest)
+  e.respondWith(
+    caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
+      const clone = res.clone();
+      caches.open(CACHE).then(c => c.put(e.request, clone));
+      return res;
+    }))
+  );
 });
