@@ -593,7 +593,7 @@
   <div class="bottom-controls">
     <button class="btn-sm" onclick="exportScores()">Export</button>
     <button class="btn-finish" onclick="finishRound()">Finish Round</button>
-    <button class="btn-sm danger" onclick="confirmReset()">New Round</button>
+    <button class="btn-sm danger" onclick="confirmReset()">Exit Round</button>
   </div>
 </div>
 
@@ -2391,10 +2391,10 @@ function rowDivider(ctx,y,w){
 }
 
 function confirmReset(){
-  if(confirm('Start a new round? Current scores will be lost.')){
+  if(confirm('Exit this round? Your scores will not be saved.')){
     localStorage.removeItem('vs_session');
+    document.cookie='vs_session=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;';
     isListening=false;
-    if(recognition){recognition._killed=true;try{recognition.stop();}catch(e){}}
     selectedCourse=null;selectedTee=null;
     versusMode=null;
     teamAssignment=[];
@@ -2418,12 +2418,15 @@ function confirmReset(){
     document.getElementById('tee-section').style.display='none';
     document.getElementById('selected-badge').style.display='none';
     document.getElementById('course-banner').style.display='none';
+    // Reset global round state
+    players=[];scores=[];pars=[];yardages=[];holes=9;
     // Re-fill Player 1 with logged-in user's first name
     if(currentUser){
       const firstName=currentUser.user_metadata?.first_name||currentUser.email.split('@')[0];
       const p1=document.querySelectorAll('.player-name')[0];
       if(p1)p1.value=firstName;
     }
+    updateLiveRoundNav();
   }
 }
 
