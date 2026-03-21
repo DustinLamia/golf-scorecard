@@ -1602,28 +1602,85 @@ function parseVoice(text){
 }
 
 function handleQuery(text){
-  // Detect "everyone/all/leaderboard" query
-  if(/everyone|everybody|all scores|leaderboard|standings|how is everyone|how are we|what(?:'s| is) the score|the score|current score|read.*score|score update/.test(text)){
+  // Resolve "I/me/my" to single player
+  let t=text;
+  if(players.length===1) t=t.replace(/\b(i|me|my)\b/gi,players[0].toLowerCase());
+
+  // ── "Everyone / standings / leaderboard" ──
+  if(/everyone|everybody|all scores|leaderboard|standings|how is everyone|how are we|what(?:'s| is) the score|the score|current score|read.*score|score update/.test(t)){
     speakAllScores();return true;
   }
-  // Detect single player query: "what is dustin's score", "how is scott doing", "dustin's total"
-  const patterns=[
+
+  // ── Stat questions: "how many birdies does Dustin have" ──
+  const statTerms={
+    birdie:/birdies?/i,
+    eagle:/eagles?/i,
+    par:/\bpars?\b/i,
+    bogey:/bogeys?/i,
+    double:/doubles?|double bogeys?/i,
+  };
+  for(const[stat,pattern] of Object.entries(statTerms)){
+    if(pattern.test(t)){
+      // Find which player
+      let targetName=players.length===1?players[0]:null;
+      if(!targetName){
+        for(const w of t.split(/\s+/)){
+          const m=bestNameMatch(w,players);
+          if(m){targetName=m;break;}
+        }
+      }
+      if(targetName){
+        const pi=players.indexOf(targetName);
+        let count=0;
+        scores[pi].forEach((s,hi)=>{
+          if(s===null)return;
+          const d=s-(pars[hi]||4);
+          if(stat==='birdie'&&d===-1)count++;
+          else if(stat==='eagle'&&d<=-2)count++;
+          else if(stat==='par'&&d===0)count++;
+          else if(stat==='bogey'&&d===1)count++;
+          else if(stat==='double'&&d>=2)count++;
+        });
+        const statLabel=stat==='par'?'par':(stat+'s');
+        const msg=targetName+' has '+count+' '+statLabel+(count!==1&&stat!=='par'?'':'')+' so far.';
+        showAndSpeak(msg,4000);
+        return true;
+      }
+    }
+  }
+
+  // ── Score query: "what's my score" / "what is Dustin's score" ──
+  const scorePatterns=[
     /what(?:'s| is| are)?\s+(.+?)(?:'s|s)?\s+(?:score|total|at|shooting|doing)/i,
     /how\s+is\s+(.+?)\s+(?:doing|shooting|playing)/i,
     /how(?:'s)\s+(.+?)\s+(?:doing|shooting|playing)/i,
     /(.+?)(?:'s|s)?\s+(?:score|total|current)/i,
+    /what(?:'s| is) (?:my|the) score/i,
+    /how am i doing/i,
+    /where am i/i,
   ];
-  for(const pat of patterns){
-    const m=text.match(pat);
+  for(const pat of scorePatterns){
+    const m=t.match(pat);
     if(m){
-      const raw=m[1].trim().replace(/^(is|the|a|an)\s+/i,'');
-      let name=bestNameMatch(raw,players);
-      if(!name){
-        for(const w of raw.split(/\s+/)){name=bestNameMatch(w,players);if(name)break;}
+      // Try to extract name from capture group, or use single player
+      let name=null;
+      if(m[1]){
+        const raw=m[1].trim().replace(/^(is|the|a|an)\s+/i,'');
+        name=bestNameMatch(raw,players);
+        if(!name){for(const w of raw.split(/\s+/)){name=bestNameMatch(w,players);if(name)break;}}
       }
+      if(!name&&players.length===1)name=players[0];
       if(name){speakPlayerScore(name);return true;}
     }
   }
+
+  // ── "What hole am I on" ──
+  if(/what hole|which hole|current hole/.test(t)){
+    const currentEl=document.querySelector('.hole-header.current');
+    const h=currentEl?parseInt(currentEl.id.replace('hh-',''))+holeOffset:null;
+    if(h){showAndSpeak('You are on hole '+h+'.',3000);return true;}
+  }
+
   return false;
 }
 
