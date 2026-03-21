@@ -5118,12 +5118,11 @@ const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 let currentUser=null;
 let authMode='signin'; // 'signin' | 'signup'
 
-// Listen for auth changes — this fires on load too, including after email confirmation redirect
+// Listen for auth changes — filter to only meaningful events
 supa.auth.onAuthStateChange((event,session)=>{
-  if(session){
-    setUser(session.user);
-  } else {
-    // Only show welcome if we've finished initializing (avoid flash on load)
+  if(event==='SIGNED_IN'||event==='INITIAL_SESSION'){
+    if(session)setUser(session.user);
+  } else if(event==='SIGNED_OUT'){
     if(window._authReady){clearUser();}
   }
 });
@@ -5151,6 +5150,12 @@ function setUser(user){
   // Auto-fill Player 1 with first name
   const playerInputs=document.querySelectorAll('.player-name');
   if(playerInputs[0]&&!playerInputs[0].value){playerInputs[0].value=firstName;}
+  // Only do navigation/restore on first call — not on token refreshes
+  if(window._userInitialized){
+    loadProStatus();
+    return;
+  }
+  window._userInitialized=true;
   // Hide welcome screen
   document.getElementById('welcome-screen').style.display='none';
   document.getElementById('main-header').style.display='block';
@@ -5182,6 +5187,7 @@ function setUser(user){
 
 function clearUser(){
   currentUser=null;
+  window._userInitialized=false;
   const btn=document.getElementById('auth-btn');
   const startBtn=document.getElementById('start-btn');
   if(btn){btn.textContent='Sign In';btn.classList.remove('signed-in');}
