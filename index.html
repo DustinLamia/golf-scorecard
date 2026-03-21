@@ -1353,9 +1353,13 @@ function parseVoice(text){
   // ── Correction command: "Dustin actually got a 5 on hole 4" / "on hole 4 Dustin actually got a 5"
   const correctionMatch=corrected.match(/actually\s+(?:got|scored|made|shot|hit)?\s*(?:a\s+)?(\w+)/i);
   if(correctionMatch){
+    // Resolve "I/me/my" to single player name before searching
+    let correctedForSearch=corrected;
+    if(players.length===1) correctedForSearch=corrected.replace(/\b(i|me|my)\b/gi,players[0].toLowerCase());
+
     // Find hole number
     let holeNum=null;
-    const hm=corrected.match(/(?:on\s+)?hole\s+(\w+)/i);
+    const hm=correctedForSearch.match(/(?:on\s+)?hole\s+(\w+)/i);
     if(hm){
       const spoken=w2n(hm[1]);
       if(spoken){
@@ -1365,16 +1369,17 @@ function parseVoice(text){
     }
     // Find player name
     let playerName=null;
-    const words=corrected.replace(/[,\.!?]/g,' ').split(/\s+/).filter(Boolean);
+    const words=correctedForSearch.replace(/[,\.!?]/g,' ').split(/\s+/).filter(Boolean);
     for(const w of words){
       const match=bestNameMatch(w,players);
       if(match){playerName=match;break;}
     }
+    // Single player fallback
+    if(!playerName&&players.length===1)playerName=players[0];
     // Find score
     const sc=scoreTermToStrokes(correctionMatch[1],holeNum?pars[holeNum-1]:4);
     if(playerName&&sc&&sc>0&&sc<=20){
       if(!holeNum){
-        // Default to current hole
         const currentEl=document.querySelector('.hole-header.current');
         holeNum=currentEl?parseInt(currentEl.id.replace('hh-','')):1;
       }
@@ -1387,7 +1392,8 @@ function parseVoice(text){
         saveSession();
         updateSkinsLiveBar();
         updateMatchPlayLiveBar();
-        const msg='\u2713 Corrected: '+playerName+' hole '+(holeNum+holeOffset-1+1)+' changed to '+sc+' ('+scoreLabel(sc,pars[holeNum-1])+')';
+        const displayHole=holeNum+holeOffset;
+        const msg='\u2713 Corrected: '+playerName+' hole '+displayHole+' \u2192 '+sc+' ('+scoreLabel(sc,pars[holeNum-1])+')';
         document.getElementById('voice-feedback').textContent=msg;
         showAndSpeak(msg,5000);
         return;
