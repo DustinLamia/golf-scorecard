@@ -674,10 +674,9 @@ function saveSession(){
     const data={players,holes,pars,yardages,scores,selectedCourse,selectedTee,holeOffset};
     const json=JSON.stringify(data);
     localStorage.setItem('vs_session',json);
-    // Also save to cookie as fallback for iOS Safari ITP which can wipe localStorage
-    const expires=new Date(Date.now()+24*60*60*1000).toUTCString(); // 24 hours
+    const expires=new Date(Date.now()+24*60*60*1000).toUTCString();
     document.cookie='vs_session='+encodeURIComponent(json)+';expires='+expires+';path=/;SameSite=Lax';
-    console.log('[VS] saveSession — saved, players:',players,'scores[0]:',scores[0]);
+    console.log('[VS] saveSession OK — ls:', !!localStorage.getItem('vs_session'), 'players:', players);
   }catch(e){console.error('[VS] saveSession ERROR:',e);}
 }
 function clearSession(){
@@ -5159,7 +5158,9 @@ function setUser(user){
   closeAuthModal();
   loadProStatus();
   // If an active round is saved, restore it — otherwise navigate to last screen
-  if(readSession()){
+  const sessionRaw = readSession();
+  console.log('[VS] setUser — readSession:', !!sessionRaw, '— ls direct:', !!localStorage.getItem('vs_session'));
+  if(sessionRaw){
     restoreSession();
   } else {
     const lastScreen=sessionStorage.getItem('vs_screen')||'play';
