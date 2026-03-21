@@ -5609,26 +5609,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <script>
     if('serviceWorker' in navigator){
       window.addEventListener('load', ()=>{
-        navigator.serviceWorker.register('/sw.js').then(reg => {
-          if(reg.waiting) reg.waiting.postMessage({type:'SKIP_WAITING'});
-          reg.addEventListener('updatefound', () => {
-            const newSW = reg.installing;
-            newSW.addEventListener('statechange', () => {
-              if(newSW.state === 'installed' && navigator.serviceWorker.controller) {
-                // Only auto-activate if no active round in progress
-                if(!localStorage.getItem('vs_session')){
-                  newSW.postMessage({type:'SKIP_WAITING'});
-                }
-              }
-            });
-          });
-        }).catch(()=>{});
-        // Only reload on controller change if no active round
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          if(!localStorage.getItem('vs_session')){
-            window.location.reload();
-          }
-        });
+        navigator.serviceWorker.register('/sw.js').catch(()=>{});
       });
     }
 
