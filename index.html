@@ -674,12 +674,28 @@ function saveSession(){
     const data={players,holes,pars,yardages,scores,selectedCourse,selectedTee,holeOffset};
     const json=JSON.stringify(data);
     localStorage.setItem('vs_session',json);
+    // Also save to cookie as fallback for iOS Safari ITP which can wipe localStorage
+    const expires=new Date(Date.now()+24*60*60*1000).toUTCString(); // 24 hours
+    document.cookie='vs_session='+encodeURIComponent(json)+';expires='+expires+';path=/;SameSite=Lax';
     console.log('[VS] saveSession — saved, players:',players,'scores[0]:',scores[0]);
   }catch(e){console.error('[VS] saveSession ERROR:',e);}
 }
+function clearSession(){
+  localStorage.removeItem('vs_session');
+  document.cookie='vs_session=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;';
+}
+function readSession(){
+  // Try localStorage first, fall back to cookie
+  let raw=localStorage.getItem('vs_session');
+  if(!raw){
+    const match=document.cookie.split(';').map(c=>c.trim()).find(c=>c.startsWith('vs_session='));
+    if(match)raw=decodeURIComponent(match.slice('vs_session='.length));
+  }
+  return raw;
+}
 function restoreSession(){
   try{
-    const raw=localStorage.getItem('vs_session');
+    const raw=readSession();
     console.log('[VS] restoreSession — raw exists:', !!raw);
     if(!raw)return false;
     const s=JSON.parse(raw);
@@ -5136,10 +5152,19 @@ function setUser(user){
   // Auto-fill Player 1 with first name
   const playerInputs=document.querySelectorAll('.player-name');
   if(playerInputs[0]&&!playerInputs[0].value){playerInputs[0].value=firstName;}
-  hideWelcomeScreen();
-  closeAuthModal();
+  // Hide welcome screen
+  document.getElementById('welcome-screen').style.display='none';
+  document.getElementById('main-header').style.display='block';
   showBottomNav();
+  closeAuthModal();
   loadProStatus();
+  // If an active round is saved, restore it — otherwise navigate to last screen
+  if(readSession()){
+    restoreSession();
+  } else {
+    const lastScreen=sessionStorage.getItem('vs_screen')||'play';
+    navTo(lastScreen);
+  }
   // Handle return from Stripe checkout
   const urlParams=new URLSearchParams(window.location.search);
   if(urlParams.get('checkout')==='success'){
@@ -5189,10 +5214,6 @@ function hideWelcomeScreen(){
   document.getElementById('welcome-screen').style.display='none';
   document.getElementById('main-header').style.display='block';
   showBottomNav();
-  // If an active round is in progress, don't navigate away — let restoreSession keep the scorecard
-  const hasSession=localStorage.getItem('vs_session');
-  console.log('[VS] hideWelcomeScreen — hasSession:', !!hasSession);
-  if(hasSession){return;}
   const lastScreen=sessionStorage.getItem('vs_screen')||'play';
   navTo(lastScreen);
 }
@@ -5294,8 +5315,7 @@ document.addEventListener('click',e=>{
 
 // Set initial button state
 (function(){const b=document.getElementById('start-btn');if(b)b.textContent='Sign In to Start';})();
-// Restore session on page load (survives refresh)
-restoreSession();
+// Session is now restored inside setUser() after auth resolves
 
 // Restart mic when returning to app after backgrounding
 document.addEventListener('visibilitychange', function(){
