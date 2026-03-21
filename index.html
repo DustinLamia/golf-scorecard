@@ -1472,21 +1472,26 @@ function parseVoice(text){
         updateLiveRoundNav();
         updateSkinsLiveBar();
         updateMatchPlayLiveBar();
-        // Advance to next hole if all players now have a score on this hole
+        // Advance to the first hole that still needs a score
         const allScored=players.every((_,pIdx)=>scores[pIdx][holeNum-1]!==null);
         if(allScored){
-          document.querySelectorAll('.hole-header').forEach(h=>h.classList.remove('current'));
-          const nextHole=Math.min(holeNum+1,holes);
-          const nextEl=document.getElementById('hh-'+nextHole);
-          if(nextEl){
-            nextEl.classList.add('current');
-            setTimeout(()=>{
-              const wrapper=document.querySelector('.scorecard-wrapper');
-              if(wrapper){
-                const cellLeft=nextEl.offsetLeft;
-                wrapper.scrollLeft=Math.max(0,cellLeft-wrapper.clientWidth/3);
-              }
-            },100);
+          let nextHole=null;
+          for(let h=0;h<holes;h++){
+            if(players.some((_,pIdx)=>scores[pIdx][h]===null)){nextHole=h+1;break;}
+          }
+          if(nextHole){
+            document.querySelectorAll('.hole-header').forEach(h=>h.classList.remove('current'));
+            const nextEl=document.getElementById('hh-'+nextHole);
+            if(nextEl){
+              nextEl.classList.add('current');
+              setTimeout(()=>{
+                const wrapper=document.querySelector('.scorecard-wrapper');
+                if(wrapper){
+                  const cellLeft=nextEl.offsetLeft;
+                  wrapper.scrollLeft=Math.max(0,cellLeft-wrapper.clientWidth/3);
+                }
+              },100);
+            }
           }
         }
         const displayHole=holeNum+holeOffset;
