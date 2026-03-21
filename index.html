@@ -598,7 +598,7 @@
   </div>
   <div class="bottom-controls">
     <button class="btn-sm" onclick="exportScores()">Export</button>
-    <button class="btn-finish" onclick="finishRound()">Finish Round</button>
+    <button class="btn-finish" onclick="finishRound()">Finish &amp; Save Round</button>
     <button class="btn-sm danger" onclick="confirmReset()">Exit Round</button>
   </div>
 </div>
@@ -4450,7 +4450,7 @@ async function finishRound(){
   const btn=document.querySelector('.btn-finish');
   if(btn){btn.textContent='Saving...';btn.disabled=true;}
   const {error}=await supa.from('rounds').insert(roundData);
-  if(btn){btn.textContent='Finish Round';btn.disabled=false;}
+  if(btn){btn.textContent='Finish & Save Round';btn.disabled=false;}
   if(error){
     document.getElementById('voice-feedback').textContent='Error saving round. Try again.';
     setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},4000);
@@ -4460,7 +4460,31 @@ async function finishRound(){
   setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
   localStorage.removeItem('vs_session');
   document.cookie='vs_session=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;';
-  if(confirm('Round saved! Start a new round?')){resetRound();}
+  showPostRoundPrompt();
+}
+
+function showPostRoundPrompt(){
+  const overlay=document.createElement('div');
+  overlay.id='post-round-prompt';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML=`
+    <div style="background:#1e3d1a;border:1px solid rgba(201,168,76,.35);border-radius:16px;padding:28px 24px;width:100%;max-width:360px;text-align:center;">
+      <div style="font-size:1.5rem;margin-bottom:8px;">&#127920;</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px;color:var(--gold);margin-bottom:6px;">Round Saved!</div>
+      <div style="font-size:.85rem;color:var(--tan);margin-bottom:22px;">Want to share your scorecard?</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button onclick="document.getElementById('post-round-prompt').remove();exportScores();setTimeout(()=>resetRound(),500);"
+          style="padding:12px;background:var(--gold);border:none;border-radius:8px;font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;color:var(--dark);cursor:pointer;">
+          &#128247; Share Scorecard
+        </button>
+        <button onclick="document.getElementById('post-round-prompt').remove();resetRound();"
+          style="padding:12px;background:transparent;border:1px solid rgba(245,240,232,.25);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.875rem;color:var(--cream);cursor:pointer;">
+          Skip &mdash; Start New Round
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
 }
 
 async function openHistory(){navTo('history');}
