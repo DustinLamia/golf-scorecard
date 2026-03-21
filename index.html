@@ -3748,7 +3748,7 @@ function setActiveNav(id){
   if(btn)btn.classList.add('active');
 }
 function navTo(screen){
-  console.log('[VS] navTo:', screen, '— stack:', new Error().stack.split('\n')[2]?.trim());
+  console.log('[VS] navTo:', screen, new Error().stack.split('\n').slice(1,4).join(' | '));
   // Hide all screens
   ['setup-screen','scorecard-screen','history-screen','stats-screen','past-round-screen','profile-screen','compare-screen'].forEach(id=>{
     const el=document.getElementById(id);
@@ -5118,19 +5118,22 @@ const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 let currentUser=null;
 let authMode='signin'; // 'signin' | 'signup'
 
-// Listen for auth changes — filter to only meaningful events
+// Listen for auth changes — only react to explicit sign in/out, not initial session
 supa.auth.onAuthStateChange((event,session)=>{
-  if(event==='SIGNED_IN'||event==='INITIAL_SESSION'){
+  console.log('[VS] onAuthStateChange event:', event, 'hasSession:', !!session);
+  if(event==='SIGNED_IN'){
     if(session)setUser(session.user);
   } else if(event==='SIGNED_OUT'){
     if(window._authReady){clearUser();}
   }
+  // Ignore INITIAL_SESSION and TOKEN_REFRESHED — handled by getSession() below
 });
 
-// Init: check existing session
+// Init: check existing session once, then decide what to show
 (async()=>{
   const {data:{session}}=await supa.auth.getSession();
   window._authReady=true;
+  console.log('[VS] getSession result:', !!session);
   if(session){
     setUser(session.user);
   } else {
