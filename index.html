@@ -670,11 +670,17 @@ let recognition=null,isListening=false;
 let selectedCourse=null,selectedTee=null;
 
 function saveSession(){
-  try{localStorage.setItem('vs_session',JSON.stringify({players,holes,pars,yardages,scores,selectedCourse,selectedTee,holeOffset}));}catch(e){}
+  try{
+    const data={players,holes,pars,yardages,scores,selectedCourse,selectedTee,holeOffset};
+    const json=JSON.stringify(data);
+    localStorage.setItem('vs_session',json);
+    console.log('[VS] saveSession — saved, players:',players,'scores[0]:',scores[0]);
+  }catch(e){console.error('[VS] saveSession ERROR:',e);}
 }
 function restoreSession(){
   try{
     const raw=localStorage.getItem('vs_session');
+    console.log('[VS] restoreSession — raw exists:', !!raw);
     if(!raw)return false;
     const s=JSON.parse(raw);
     if(!s.players||!s.players.length||!s.scores)return false;
@@ -3727,6 +3733,7 @@ function setActiveNav(id){
   if(btn)btn.classList.add('active');
 }
 function navTo(screen){
+  console.log('[VS] navTo:', screen, '— stack:', new Error().stack.split('\n')[2]?.trim());
   // Hide all screens
   ['setup-screen','scorecard-screen','history-screen','stats-screen','past-round-screen','profile-screen','compare-screen'].forEach(id=>{
     const el=document.getElementById(id);
@@ -5183,7 +5190,9 @@ function hideWelcomeScreen(){
   document.getElementById('main-header').style.display='block';
   showBottomNav();
   // If an active round is in progress, don't navigate away — let restoreSession keep the scorecard
-  if(localStorage.getItem('vs_session')){return;}
+  const hasSession=localStorage.getItem('vs_session');
+  console.log('[VS] hideWelcomeScreen — hasSession:', !!hasSession);
+  if(hasSession){return;}
   const lastScreen=sessionStorage.getItem('vs_screen')||'play';
   navTo(lastScreen);
 }
