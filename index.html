@@ -670,11 +670,11 @@ let recognition=null,isListening=false;
 let selectedCourse=null,selectedTee=null;
 
 function saveSession(){
-  try{sessionStorage.setItem('vs_session',JSON.stringify({players,holes,pars,yardages,scores,selectedCourse,selectedTee,holeOffset}));}catch(e){}
+  try{localStorage.setItem('vs_session',JSON.stringify({players,holes,pars,yardages,scores,selectedCourse,selectedTee,holeOffset}));}catch(e){}
 }
 function restoreSession(){
   try{
-    const raw=sessionStorage.getItem('vs_session');
+    const raw=localStorage.getItem('vs_session');
     if(!raw)return false;
     const s=JSON.parse(raw);
     if(!s.players||!s.players.length||!s.scores)return false;
@@ -2309,7 +2309,7 @@ function rowDivider(ctx,y,w){
 
 function confirmReset(){
   if(confirm('Start a new round? Current scores will be lost.')){
-    sessionStorage.removeItem('vs_session');
+    localStorage.removeItem('vs_session');
     isListening=false;
     if(recognition){recognition._killed=true;try{recognition.stop();}catch(e){}}
     selectedCourse=null;selectedTee=null;
@@ -3855,6 +3855,7 @@ async function finishRound(){
   }
   document.getElementById('voice-feedback').textContent='Round saved!';
   setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
+  localStorage.removeItem('vs_session');
   if(confirm('Round saved! Start a new round?')){confirmReset();}
 }
 
@@ -5284,6 +5285,31 @@ document.addEventListener('click',e=>{
 (function(){const b=document.getElementById('start-btn');if(b)b.textContent='Sign In to Start';})();
 // Restore session on page load (survives refresh)
 restoreSession();
+
+// Restart mic when returning to app after backgrounding (iOS kills mic when tab is hidden)
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'visible'){
+    // Only restart if we're on the scorecard screen with an active round
+    const onScorecard = document.getElementById('scorecard-screen') &&
+                        document.getElementById('scorecard-screen').style.display !== 'none';
+    if(onScorecard && players.length){
+      // Small delay to let iOS settle before requesting mic
+      setTimeout(()=>{
+        if(recognition){
+          recognition._killed = false;
+          try{ recognition.stop(); }catch(e){}
+          setTimeout(()=>{
+            try{ recognition.start(); }catch(e){}
+          }, 400);
+        } else {
+          setupSpeech();
+        }
+        const wakeStatus = document.getElementById('wake-status');
+        if(wakeStatus) wakeStatus.textContent = '\uD83C\uDF99 Wake word active';
+      }, 600);
+    }
+  }
+});
 
 // Wire up welcome screen buttons after DOM is ready
 document.addEventListener('DOMContentLoaded', function(){
