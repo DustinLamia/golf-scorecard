@@ -1945,6 +1945,23 @@ function applyScoresDirectly(hole,scoreMap){
   updateSkinsLiveBar();
   updateMatchPlayLiveBar();
   paintMatchPlayHoles();
+  // Check if match play is now mathematically over
+  if((versusMode==='matchplay1v1'||versusMode==='matchplay2v2'||versusMode==='scramble2v2')&&!window._matchClosedPrompted){
+    let mp=null;
+    if(versusMode==='matchplay1v1') mp=computeMatchPlay1v1();
+    else if(versusMode==='matchplay2v2') mp=computeMatchPlay2v2();
+    else mp=computeScramble2v2();
+    if(mp&&mp.closed&&mp.holesLeft>0){
+      window._matchClosedPrompted=true;
+      const winner=versusMode==='matchplay1v1'
+        ?(mp.p1Up>0?mp.p1Name:mp.p2Name)
+        :(mp.teamAUp>0?(mp.teamA?mp.teamA.join('/'):mp.teamAName):(mp.teamB?mp.teamB.join('/'):mp.teamBName));
+      const result=mp.closedReason||'';
+      setTimeout(()=>{
+        showMatchClosedPrompt(winner,result,mp.holesLeft);
+      },800);
+    }
+  }
 }
 
 function exportScores(){
@@ -2633,6 +2650,7 @@ function confirmReset(){
 }
 
 function resetRound(){
+  window._matchClosedPrompted=false;
   isListening=false;
   if(recognition){recognition._killed=true;try{recognition.stop();}catch(e){}}
   selectedCourse=null;selectedTee=null;
@@ -5526,6 +5544,35 @@ function updateMatchPlayLiveBar() {
     else { const lead = teamAUp > 0 ? teamAName : teamAUp < 0 ? teamBName : null; detailEl.textContent = (lead ? lead + ' leads' : 'All Square') + ' · Thru ' + holesPlayed; }
     holesEl.textContent = holesLeft > 0 ? holesLeft + ' left' : 'Final';
   }
+}
+
+function showMatchClosedPrompt(winner, result, holesLeft){
+  const overlay=document.createElement('div');
+  overlay.id='match-closed-prompt';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML=`
+    <div style="background:#1e3d1a;border:1px solid rgba(201,168,76,.35);border-radius:16px;padding:28px 24px;width:100%;max-width:360px;text-align:center;">
+      <div style="font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;color:var(--gold);margin-bottom:8px;">MATCH OVER</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:2rem;letter-spacing:2px;color:var(--cream);margin-bottom:4px;">${result}</div>
+      <div style="font-size:.9rem;color:var(--tan);margin-bottom:20px;">${winner} wins &middot; ${holesLeft} hole${holesLeft!==1?'s':''} remaining</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button onclick="document.getElementById('match-closed-prompt').remove();showMPResults();" 
+          style="padding:12px;background:var(--gold);border:none;border-radius:8px;font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;color:var(--dark);cursor:pointer;">
+          Save &amp; End Round
+        </button>
+        <button onclick="document.getElementById('match-closed-prompt').remove();" 
+          style="padding:12px;background:transparent;border:1px solid rgba(245,240,232,.25);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.875rem;color:var(--cream);cursor:pointer;">
+          Keep Scoring (Finish All ${holes} Holes)
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function showMPResults(){
+  showMatchPlayResults();
+  document.getElementById('mp-results-overlay').classList.add('open');
 }
 
 function showMatchPlayResults() {
