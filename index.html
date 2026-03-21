@@ -2394,40 +2394,43 @@ function confirmReset(){
   if(confirm('Exit this round? Your scores will not be saved.')){
     localStorage.removeItem('vs_session');
     document.cookie='vs_session=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;';
-    isListening=false;
-    selectedCourse=null;selectedTee=null;
-    versusMode=null;
-    teamAssignment=[];
-    teamSlots={a0:0,a1:1,b0:2,b1:3};
-    window.scrambleScores=null;
-    selectedNine='front';
-    holeOffset=0;
-    const vProNote=document.getElementById('versus-pro-note');if(vProNote)vProNote.style.display='none';
-    document.querySelectorAll('.versus-format-btn').forEach(b=>b.classList.toggle('active',b.dataset.format==='none'));
-    const ns=document.getElementById('nine-selector');if(ns)ns.classList.remove('show');
-    const nf=document.getElementById('nine-front');if(nf)nf.classList.add('active');
-    const nb=document.getElementById('nine-back');if(nb)nb.classList.remove('active');
-    const slb=document.getElementById('skins-live-bar');if(slb)slb.style.display='none';
-    const mlb=document.getElementById('mp-live-bar');if(mlb)mlb.style.display='none';
-    const tb=document.getElementById('team-builder');if(tb)tb.style.display='none';
-    document.getElementById('scorecard-screen').style.display='none';
-    document.getElementById('setup-screen').style.display='block';
-    document.getElementById('course-results').innerHTML='';
-    document.getElementById('course-input').value='';
-    document.getElementById('search-status').textContent='';
-    document.getElementById('tee-section').style.display='none';
-    document.getElementById('selected-badge').style.display='none';
-    document.getElementById('course-banner').style.display='none';
-    // Reset global round state
-    players=[];scores=[];pars=[];yardages=[];holes=9;
-    // Re-fill Player 1 with logged-in user's first name
-    if(currentUser){
-      const firstName=currentUser.user_metadata?.first_name||currentUser.email.split('@')[0];
-      const p1=document.querySelectorAll('.player-name')[0];
-      if(p1)p1.value=firstName;
-    }
-    updateLiveRoundNav();
+    resetRound();
   }
+}
+
+function resetRound(){
+  isListening=false;
+  if(recognition){recognition._killed=true;try{recognition.stop();}catch(e){}}
+  selectedCourse=null;selectedTee=null;
+  versusMode=null;
+  teamAssignment=[];
+  teamSlots={a0:0,a1:1,b0:2,b1:3};
+  window.scrambleScores=null;
+  selectedNine='front';
+  holeOffset=0;
+  const vProNote=document.getElementById('versus-pro-note');if(vProNote)vProNote.style.display='none';
+  document.querySelectorAll('.versus-format-btn').forEach(b=>b.classList.toggle('active',b.dataset.format==='none'));
+  const ns=document.getElementById('nine-selector');if(ns)ns.classList.remove('show');
+  const nf=document.getElementById('nine-front');if(nf)nf.classList.add('active');
+  const nb=document.getElementById('nine-back');if(nb)nb.classList.remove('active');
+  const slb=document.getElementById('skins-live-bar');if(slb)slb.style.display='none';
+  const mlb=document.getElementById('mp-live-bar');if(mlb)mlb.style.display='none';
+  const tb=document.getElementById('team-builder');if(tb)tb.style.display='none';
+  document.getElementById('scorecard-screen').style.display='none';
+  document.getElementById('setup-screen').style.display='block';
+  document.getElementById('course-results').innerHTML='';
+  document.getElementById('course-input').value='';
+  document.getElementById('search-status').textContent='';
+  document.getElementById('tee-section').style.display='none';
+  document.getElementById('selected-badge').style.display='none';
+  document.getElementById('course-banner').style.display='none';
+  players=[];scores=[];pars=[];yardages=[];holes=9;
+  if(currentUser){
+    const firstName=currentUser.user_metadata?.first_name||currentUser.email.split('@')[0];
+    const p1=document.querySelectorAll('.player-name')[0];
+    if(p1)p1.value=firstName;
+  }
+  updateLiveRoundNav();
 }
 
 
@@ -3974,7 +3977,8 @@ async function finishRound(){
   document.getElementById('voice-feedback').textContent='Round saved!';
   setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
   localStorage.removeItem('vs_session');
-  if(confirm('Round saved! Start a new round?')){confirmReset();}
+  document.cookie='vs_session=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;';
+  if(confirm('Round saved! Start a new round?')){resetRound();}
 }
 
 async function openHistory(){navTo('history');}
