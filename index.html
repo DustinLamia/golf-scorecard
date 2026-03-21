@@ -5182,6 +5182,8 @@ function hideWelcomeScreen(){
   document.getElementById('welcome-screen').style.display='none';
   document.getElementById('main-header').style.display='block';
   showBottomNav();
+  // If an active round is in progress, don't navigate away — let restoreSession keep the scorecard
+  if(localStorage.getItem('vs_session')){return;}
   const lastScreen=sessionStorage.getItem('vs_screen')||'play';
   navTo(lastScreen);
 }
@@ -5286,27 +5288,19 @@ document.addEventListener('click',e=>{
 // Restore session on page load (survives refresh)
 restoreSession();
 
-// Restart mic when returning to app after backgrounding (iOS kills mic when tab is hidden)
+// Restart mic when returning to app after backgrounding
 document.addEventListener('visibilitychange', function(){
   if(document.visibilityState === 'visible'){
-    // Only restart if we're on the scorecard screen with an active round
     const onScorecard = document.getElementById('scorecard-screen') &&
                         document.getElementById('scorecard-screen').style.display !== 'none';
     if(onScorecard && players.length){
-      // Small delay to let iOS settle before requesting mic
       setTimeout(()=>{
-        if(recognition){
-          recognition._killed = false;
-          try{ recognition.stop(); }catch(e){}
-          setTimeout(()=>{
-            try{ recognition.start(); }catch(e){}
-          }, 400);
-        } else {
+        if(!recognition){
           setupSpeech();
+        } else {
+          try{ recognition.start(); }catch(e){}
         }
-        const wakeStatus = document.getElementById('wake-status');
-        if(wakeStatus) wakeStatus.textContent = '\uD83C\uDF99 Wake word active';
-      }, 600);
+      }, 800);
     }
   }
 });
