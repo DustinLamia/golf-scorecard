@@ -1390,8 +1390,26 @@ function parseVoice(text){
         if(inp){inp.value=sc;colorScore(pi,holeNum-1);}
         refreshTotals();
         saveSession();
+        updateLiveRoundNav();
         updateSkinsLiveBar();
         updateMatchPlayLiveBar();
+        // Advance to next hole if all players now have a score on this hole
+        const allScored=players.every((_,pIdx)=>scores[pIdx][holeNum-1]!==null);
+        if(allScored){
+          document.querySelectorAll('.hole-header').forEach(h=>h.classList.remove('current'));
+          const nextHole=Math.min(holeNum+1,holes);
+          const nextEl=document.getElementById('hh-'+nextHole);
+          if(nextEl){
+            nextEl.classList.add('current');
+            setTimeout(()=>{
+              const wrapper=document.querySelector('.scorecard-wrapper');
+              if(wrapper){
+                const cellLeft=nextEl.offsetLeft;
+                wrapper.scrollLeft=Math.max(0,cellLeft-wrapper.clientWidth/3);
+              }
+            },100);
+          }
+        }
         const displayHole=holeNum+holeOffset;
         const msg='\u2713 Corrected: '+playerName+' hole '+displayHole+' \u2192 '+sc+' ('+scoreLabel(sc,pars[holeNum-1])+')';
         document.getElementById('voice-feedback').textContent=msg;
