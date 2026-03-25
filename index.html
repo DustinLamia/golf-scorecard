@@ -4469,7 +4469,13 @@ function navTo(screen){
       const lastName=m.last_name||'';
       const fullName=(firstName+' '+lastName).trim()||'Your Name';
       const initials=((firstName[0]||'')+(lastName[0]||'')).toUpperCase()||'?';
-      document.getElementById('profile-avatar').textContent=initials;
+      const avatarEl=document.getElementById('profile-avatar');
+      const avatarUrl=m.avatar_url||m.picture||null;
+      if(avatarUrl){
+        avatarEl.innerHTML='<img src="'+avatarUrl+'" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentElement.textContent=''+initials+''">';
+      } else {
+        avatarEl.textContent=initials;
+      }
       document.getElementById('profile-display-name').textContent=fullName;
       document.getElementById('profile-username-display').textContent=m.username?('@'+m.username):'';
       // Member since
