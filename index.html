@@ -570,7 +570,7 @@
     <button class="voice-btn" id="voice-btn" onclick="toggleListening()">
       <svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-1.5 4v6a1.5 1.5 0 0 0 3 0V5a1.5 1.5 0 0 0-3 0zM5 10a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 0 1 2 0 8 8 0 0 1-7 7.93V21h2a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2h2v-2.07A8 8 0 0 1 4 11a1 1 0 0 1 1-1z"/></svg>
     </button>
-    <div class="voice-hint" id="voice-hint">Say <strong style="color:var(--gold)">"Voice Score"</strong> or tap mic</div>
+    <div class="voice-hint" id="voice-hint">Say <strong style="color:var(--gold)">"Voice Score"</strong> or tap mic &nbsp;<button onclick="showVoiceHelp()" style="background:none;border:1px solid rgba(245,240,232,.3);border-radius:50%;width:18px;height:18px;color:var(--tan);font-size:.65rem;cursor:pointer;padding:0;line-height:1;vertical-align:middle;">?</button></div>
     <div style="font-size:.68rem;color:var(--tan);margin-top:4px;text-align:center;letter-spacing:.5px;" id="wake-status">&#127908; Wake word active</div>
     <div class="voice-transcript" id="voice-transcript"></div>
     <div class="voice-feedback" id="voice-feedback"></div>
@@ -1049,6 +1049,13 @@ function startRound(){
   }
   buildTable();
   setupSpeech();
+  // Auto-show voice instructions on first ever round
+  if(!localStorage.getItem('vs_help_seen')){
+    setTimeout(()=>{
+      document.getElementById('voice-help-overlay').style.display='flex';
+      localStorage.setItem('vs_help_seen','1');
+    },600);
+  }
 }
 
 function buildTable(){
@@ -4602,6 +4609,10 @@ function showPostRoundPrompt(showUpgradeAfter=false){
   };
 }
 
+function showVoiceHelp(){
+  document.getElementById('voice-help-overlay').style.display='flex';
+}
+
 function updateFreeRoundsIndicator(){
   const el=document.getElementById('free-rounds-indicator');
   if(!el)return;
@@ -6525,6 +6536,81 @@ document.addEventListener('DOMContentLoaded', function(){
     </div>
     <div id="onboard-error" style="font-size:.78rem;color:#f0a090;min-height:18px;margin-bottom:10px;text-align:center;"></div>
     <button onclick="submitOnboarding()" id="onboard-submit" style="width:100%;padding:13px;background:var(--gold);border:none;border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:2px;color:var(--dark);cursor:pointer;">Let's Play</button>
+  </div>
+</div>
+
+<!-- Voice Help Modal -->
+<div id="voice-help-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;">
+  <div style="background:#1e3d1a;border:1px solid rgba(201,168,76,.3);border-radius:16px;padding:28px 24px;width:100%;max-width:420px;margin:auto;position:relative;">
+    <button onclick="document.getElementById('voice-help-overlay').style.display='none';" style="position:absolute;top:12px;right:14px;background:none;border:none;color:var(--tan);font-size:1.3rem;cursor:pointer;line-height:1;">&times;</button>
+    <h2 style="font-family:'Bebas Neue',cursive;font-size:1.5rem;letter-spacing:3px;color:var(--gold);margin-bottom:4px;">How to Score by Voice</h2>
+    <p style="font-size:.75rem;color:var(--tan);margin-bottom:20px;line-height:1.5;">Keep your phone in your pocket and score hands-free.</p>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <div style="background:rgba(0,0,0,.2);border-radius:10px;padding:14px;">
+        <div style="font-size:.7rem;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">1. Wake Word</div>
+        <p style="font-size:.82rem;color:var(--cream);line-height:1.6;margin:0;">Say <strong style="color:var(--gold);">"VoiceScore"</strong> then pause <strong>0.5 to 1 second</strong> to let it register before speaking your score.</p>
+      </div>
+
+      <div style="background:rgba(0,0,0,.2);border-radius:10px;padding:14px;">
+        <div style="font-size:.7rem;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">2. Solo Round</div>
+        <p style="font-size:.82rem;color:var(--cream);line-height:1.6;margin:0;">Say the wake word then your score:</p>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;">
+          <div style="font-size:.8rem;color:var(--tan);font-style:italic;">"VoiceScore... I got a birdie"</div>
+          <div style="font-size:.8rem;color:var(--tan);font-style:italic;">"VoiceScore... I got a 5"</div>
+          <div style="font-size:.8rem;color:var(--tan);font-style:italic;">"VoiceScore... par"</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,0,0,.2);border-radius:10px;padding:14px;">
+        <div style="font-size:.7rem;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">3. Multiple Players</div>
+        <p style="font-size:.82rem;color:var(--cream);line-height:1.6;margin:0;">Say all players in one breath after the wake word:</p>
+        <div style="margin-top:8px;">
+          <div style="font-size:.8rem;color:var(--tan);font-style:italic;">"VoiceScore... Dustin got a 5 Brian got a par Scott got a bogey"</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,0,0,.2);border-radius:10px;padding:14px;">
+        <div style="font-size:.7rem;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">4. Score Words</div>
+        <p style="font-size:.82rem;color:var(--cream);line-height:1.6;margin:0;">All of these work: <strong>eagle, birdie, par, bogey, double, triple</strong> — or just say the number like <strong>"got a 4"</strong>.</p>
+      </div>
+
+      <div style="background:rgba(0,0,0,.2);border-radius:10px;padding:14px;">
+        <div style="font-size:.7rem;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">5. Fixing a Mistake</div>
+        <p style="font-size:.82rem;color:var(--cream);line-height:1.6;margin:0;">Made an error? Just say:</p>
+        <div style="margin-top:8px;">
+          <div style="font-size:.8rem;color:var(--tan);font-style:italic;">"VoiceScore... on hole 5 Dustin actually got a bogey"</div>
+        </div>
+        <p style="font-size:.78rem;color:var(--tan);margin-top:8px;margin-bottom:0;">It will correct the score and you can keep playing.</p>
+      </div>
+
+      <div style="background:rgba(0,0,0,.2);border-radius:10px;padding:14px;">
+        <div style="font-size:.7rem;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">6. Ask Questions</div>
+        <p style="font-size:.82rem;color:var(--cream);line-height:1.6;margin:0;">VoiceScore can answer mid-round:</p>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px;">
+          <div style="font-size:.8rem;color:var(--tan);font-style:italic;">"VoiceScore... what's my score"</div>
+          <div style="font-size:.8rem;color:var(--tan);font-style:italic;">"VoiceScore... what are the standings"</div>
+          <div style="font-size:.8rem;color:var(--tan);font-style:italic;">"VoiceScore... how many birdies do I have"</div>
+          <div style="font-size:.8rem;color:var(--tan);font-style:italic;">"VoiceScore... what hole am I on"</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:10px;padding:14px;">
+        <div style="font-size:.7rem;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Tips for Best Results</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:.8rem;color:var(--tan);">&#8226; Speak clearly and at a normal pace</div>
+          <div style="font-size:.8rem;color:var(--tan);">&#8226; On windy days, turn slightly away from the wind</div>
+          <div style="font-size:.8rem;color:var(--tan);">&#8226; Give the wake word a full second before your score</div>
+          <div style="font-size:.8rem;color:var(--tan);">&#8226; If the mic stops, tap the mic button to re-activate</div>
+          <div style="font-size:.8rem;color:var(--tan);">&#8226; Keep your screen on or tap mic again after your phone sleeps</div>
+          <div style="font-size:.8rem;color:var(--tan);">&#8226; VoiceScore stops listening about 2.5 seconds after you finish speaking — no need to tap anything</div>
+        </div>
+      </div>
+
+    </div>
+
+    <button onclick="document.getElementById('voice-help-overlay').style.display='none';" style="width:100%;margin-top:20px;padding:12px;background:var(--gold);border:none;border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;color:var(--dark);cursor:pointer;">Got It</button>
   </div>
 </div>
 
