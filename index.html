@@ -1065,6 +1065,8 @@ function startRound(){
   }
   buildTable();
   setupSpeech();
+  window._roundActive=true;
+  requestWakeLock();
   // Auto-show voice instructions on first ever round
   if(!localStorage.getItem('vs_help_seen')){
     setTimeout(()=>{
@@ -1832,6 +1834,25 @@ function unlockAudio(){
   // Start silent audio loop to keep AudioContext alive on locked screen
   startSilentAudioLoop();
 }
+
+async function requestWakeLock(){
+  if(!('wakeLock' in navigator))return;
+  try{
+    window._wakeLock=await navigator.wakeLock.request('screen');
+    window._wakeLock.addEventListener('release',()=>{window._wakeLock=null;});
+  }catch(e){}
+}
+
+function releaseWakeLock(){
+  if(window._wakeLock){window._wakeLock.release();window._wakeLock=null;}
+}
+
+// Re-request wake lock when tab becomes visible again
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&window._roundActive){
+    requestWakeLock();
+  }
+});
 
 function startSilentAudioLoop(){
   if(window._silentLoopActive)return;
@@ -2747,9 +2768,11 @@ function confirmReset(){
 
 function resetRound(){
   window._matchClosedPrompted=false;
+  window._roundActive=false;
   isListening=false;
   if(recognition){recognition._killed=true;try{recognition.stop();}catch(e){}}
   stopSilentAudioLoop();
+  releaseWakeLock();
   window._audioUnlocked=false;
   selectedCourse=null;selectedTee=null;
   versusMode=null;
@@ -6812,7 +6835,8 @@ document.addEventListener('DOMContentLoaded', function(){
           <div style="font-size:.8rem;color:var(--tan);">&#8226; On windy days, turn slightly away from the wind</div>
           <div style="font-size:.8rem;color:var(--tan);">&#8226; Give the wake word a full second before your score</div>
           <div style="font-size:.8rem;color:var(--tan);">&#8226; If the mic stops, tap the mic button to re-activate</div>
-          <div style="font-size:.8rem;color:var(--tan);">&#8226; Keep your screen on or tap mic again after your phone sleeps</div>
+          <div style="font-size:.8rem;color:var(--tan);">&#8226; VoiceScore keeps your screen on automatically during a round — no need to change any settings</div>
+          <div style="font-size:.8rem;color:var(--tan);">&#8226; You can score with your screen locked — say VoiceScore and your score normally. Score readback still works but the listening beeps won't play</div>
           <div style="font-size:.8rem;color:var(--tan);">&#8226; VoiceScore stops listening about 2.5 seconds after you finish speaking — no need to tap anything</div>
         </div>
       </div>
