@@ -1169,7 +1169,32 @@ function updatePar(hi,val){
     if(inEl)inEl.textContent=pars.slice(9,18).reduce((a,b)=>a+b,0);
   }
 }
-function manualScore(pi,hi,val){scores[pi][hi]=val?parseInt(val):null;colorScore(pi,hi);refreshTotals();saveSession();updateSkinsLiveBar();updateMatchPlayLiveBar();paintMatchPlayHoles();}
+function manualScore(pi,hi,val){
+  scores[pi][hi]=val?parseInt(val):null;
+  colorScore(pi,hi);refreshTotals();saveSession();updateSkinsLiveBar();updateMatchPlayLiveBar();paintMatchPlayHoles();
+  if(!val)return;
+  const allScored=players.every((_,pIdx)=>scores[pIdx][hi]!==null);
+  if(allScored){
+    let nextHole=null;
+    for(let h=0;h<holes;h++){
+      if(players.some((_,pIdx)=>scores[pIdx][h]===null)){nextHole=h+1;break;}
+    }
+    if(nextHole){
+      document.querySelectorAll('.hole-header').forEach(h=>h.classList.remove('current'));
+      const nextEl=document.getElementById('hh-'+nextHole);
+      if(nextEl){
+        nextEl.classList.add('current');
+        setTimeout(()=>{
+          const wrapper=document.querySelector('.scorecard-wrapper');
+          if(wrapper){
+            const cellLeft=nextEl.offsetLeft;
+            wrapper.scrollLeft=Math.max(0,cellLeft-wrapper.clientWidth/3);
+          }
+        },150);
+      }
+    }
+  }
+}
 function colorScore(pi,hi){
   const inp=document.getElementById('s-'+pi+'-'+hi);
   if(!inp)return;
