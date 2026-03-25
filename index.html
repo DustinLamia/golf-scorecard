@@ -3068,7 +3068,7 @@ function shareStats(){
   y+=8;
   ctx.strokeStyle='rgba(201,168,76,0.1)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
-  ctx.font='500 10px "DM Sans",sans-serif'; ctx.fillStyle=CREAM; ctx.textAlign='center';
+  ctx.font='500 10px "DM Sans",sans-serif'; ctx.fillStyle='rgba(245,240,232,0.9)'; ctx.textAlign='center';
   ctx.fillText('voicescore.app',W/2,y+18);
 
   canvas.toBlob(blob=>{
@@ -3217,7 +3217,7 @@ function shareH2H(){
 
   // Footer
   ctx.font='400 9px "DM Sans",sans-serif'; ctx.letterSpacing='.3px';
-  ctx.fillStyle='rgba(245,240,232,0.55)'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(245,240,232,0.9)'; ctx.textAlign='center';
   ctx.fillText('voicescore.app',W/2,y+22);
 
   canvas.toBlob(blob=>{
