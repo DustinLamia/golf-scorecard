@@ -1882,7 +1882,11 @@ async function requestWakeLock(){
   if(!('wakeLock' in navigator))return;
   try{
     window._wakeLock=await navigator.wakeLock.request('screen');
-    window._wakeLock.addEventListener('release',()=>{window._wakeLock=null;});
+    window._wakeLock.addEventListener('release',()=>{
+      window._wakeLock=null;
+      // If round is still active, re-request immediately
+      if(window._roundActive)setTimeout(requestWakeLock,500);
+    });
   }catch(e){}
 }
 
