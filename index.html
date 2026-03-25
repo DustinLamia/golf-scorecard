@@ -6467,13 +6467,18 @@ function setUser(user){
     document.getElementById('google-onboard-overlay').style.display='flex';
     return;
   }
-  // If an active round is saved, restore it — otherwise always go to play
+  // If an active round is saved, restore it
+  // On fresh sign in go to play; on page refresh restore last screen
   const sessionRaw = readSession();
   console.log('[VS] setUser — readSession:', !!sessionRaw, '— ls direct:', !!localStorage.getItem('vs_session'));
   if(sessionRaw){
     restoreSession();
-  } else {
+  } else if(window._freshSignIn){
+    window._freshSignIn=false;
     navTo('play');
+  } else {
+    const lastScreen=localStorage.getItem('vs_last_screen');
+    navTo(lastScreen||'play');
   }
   // Handle return from Stripe checkout
   const urlParams=new URLSearchParams(window.location.search);
@@ -6525,6 +6530,7 @@ function hideWelcomeScreen(){
   document.getElementById('welcome-screen').style.display='none';
   document.getElementById('main-header').style.display='block';
   showBottomNav();
+  window._freshSignIn=true;
   navTo('play');
 }
 
@@ -6589,6 +6595,7 @@ async function submitAuth(){
   if(authMode==='signup'&&result.data?.user?.id){
     await upsertProfile(result.data.user.id,{username,first_name:firstName,last_name:lastName,display_name:firstName+' '+lastName});
   }
+  window._freshSignIn=true;
   closeAuthModal();
 }
 
@@ -6632,6 +6639,7 @@ async function submitOnboarding(){
   const p1=document.querySelectorAll('.player-name')[0];
   if(p1&&!p1.value)p1.value=firstName;
   const sessionRaw=readSession();
+  window._freshSignIn=true;
   if(sessionRaw){restoreSession();}else{navTo('play');}
   // Show voice instructions to new Google users
   setTimeout(()=>{
