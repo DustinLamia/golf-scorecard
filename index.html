@@ -1106,6 +1106,7 @@ function startRound(){
   buildTable();
   setupSpeech();
   window._roundActive=true;
+  window._roundCounted=false;
   requestWakeLock();
   // Auto-show voice instructions on first ever round
   if(!localStorage.getItem('vs_help_seen')){
@@ -1234,10 +1235,24 @@ function updatePar(hi,val){
     if(inEl)inEl.textContent=pars.slice(9,18).reduce((a,b)=>a+b,0);
   }
 }
+function countRoundIfNeeded(holeIndex){
+  // Count the round once all players have scored hole 5 (index 4)
+  if(window._roundCounted||isPro()||!currentUser)return;
+  if(holeIndex<4)return; // hole 5 = index 4
+  const hole5Complete=players.every((_,pIdx)=>scores[pIdx][4]!==null);
+  if(!hole5Complete)return;
+  window._roundCounted=true;
+  const newCount=(window._freeRoundsUsed||0)+1;
+  window._freeRoundsUsed=newCount;
+  supa.from('profiles').update({free_rounds_used:newCount}).eq('id',currentUser.id);
+  updateFreeRoundsIndicator();
+}
+
 function manualScore(pi,hi,val){
   scores[pi][hi]=val?parseInt(val):null;
   colorScore(pi,hi);refreshTotals();saveSession();updateSkinsLiveBar();updateMatchPlayLiveBar();paintMatchPlayHoles();
   if(!val)return;
+  countRoundIfNeeded(hi);
   const allScored=players.every((_,pIdx)=>scores[pIdx][hi]!==null);
   if(allScored){
     let nextHole=null;
@@ -1579,6 +1594,7 @@ function parseVoice(text){
         updateSkinsLiveBar();
         updateMatchPlayLiveBar();
         // Advance to the first hole that still needs a score
+        countRoundIfNeeded(holeNum-1);
         const allScored=players.every((_,pIdx)=>scores[pIdx][holeNum-1]!==null);
         if(allScored){
           let nextHole=null;
@@ -4788,11 +4804,7 @@ async function finishRound(){
   localStorage.removeItem('vs_session');
   document.cookie='vs_session=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;';
   if(!isPro()){
-    const newCount=(window._freeRoundsUsed||0)+1;
-    window._freeRoundsUsed=newCount;
-    await supa.from('profiles').update({free_rounds_used:newCount}).eq('id',currentUser.id);
-    updateFreeRoundsIndicator();
-    if(newCount>=3){
+    if((window._freeRoundsUsed||0)>=3){
       showPostRoundPrompt(true);
       return;
     }
