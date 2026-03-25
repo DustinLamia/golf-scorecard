@@ -5959,6 +5959,15 @@ function setUser(user){
   showBottomNav();
   closeAuthModal();
   loadProStatus();
+  // Backfill profiles table from user_metadata on first sign in (handles email signup after confirmation)
+  const m=user.user_metadata||{};
+  if(m.username){
+    supa.from('profiles').select('username').eq('id',user.id).single().then(({data})=>{
+      if(!data||!data.username){
+        upsertProfile(user.id,{username:m.username,first_name:m.first_name||'',last_name:m.last_name||'',display_name:(m.first_name||'')+' '+(m.last_name||'')});
+      }
+    });
+  }
   // Detect new Google users with no profile set yet
   const isGoogleUser=(user.identities||[]).some(i=>i.provider==='google');
   const hasProfile=user.user_metadata?.first_name||user.user_metadata?.username;
