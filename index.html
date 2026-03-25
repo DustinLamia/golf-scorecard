@@ -6467,14 +6467,13 @@ function setUser(user){
     document.getElementById('google-onboard-overlay').style.display='flex';
     return;
   }
-  // If an active round is saved, restore it — otherwise navigate to last screen
+  // If an active round is saved, restore it — otherwise always go to play
   const sessionRaw = readSession();
   console.log('[VS] setUser — readSession:', !!sessionRaw, '— ls direct:', !!localStorage.getItem('vs_session'));
   if(sessionRaw){
     restoreSession();
   } else {
-    const lastScreen=localStorage.getItem('vs_last_screen');
-    navTo(lastScreen&&lastScreen!=='play'?lastScreen:'play');
+    navTo('play');
   }
   // Handle return from Stripe checkout
   const urlParams=new URLSearchParams(window.location.search);
