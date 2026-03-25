@@ -1407,7 +1407,9 @@ function setupSpeech(){
   recognition.onend=()=>{
     // Always restart — we need continuous wake-word monitoring
     if(!recognition._killed){
-      setTimeout(()=>{try{recognition.start();}catch(ex){}},300);
+      setTimeout(()=>{
+        if(!recognition._killed){try{recognition.start();}catch(ex){}}
+      },500);
     }
   };
 
@@ -1896,11 +1898,7 @@ function releaseWakeLock(){
 }
 
 // Re-request wake lock when tab becomes visible again
-document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&window._roundActive){
-    requestWakeLock();
-  }
-});
+
 
 function startSilentAudioLoop(){
   if(window._silentLoopActive)return;
@@ -6707,20 +6705,33 @@ document.addEventListener('click',e=>{
 (function(){const b=document.getElementById('start-btn');if(b)b.textContent='Sign In to Start';})();
 // Session is now restored inside setUser() after auth resolves
 
-// Restart mic and re-unlock audio when returning to app after backgrounding
+// Unified visibility handler — handles wake lock + mic + audio on return from background
 document.addEventListener('visibilitychange', function(){
-  if(document.visibilityState === 'visible'){
-    const onScorecard = document.getElementById('scorecard-screen') &&
-                        document.getElementById('scorecard-screen').style.display !== 'none';
-    if(onScorecard && players.length){
-      // Re-unlock audio — iOS suspends AudioContext and speechSynthesis when backgrounded
+  if(document.visibilityState==='visible'){
+    // Re-request wake lock if round is active
+    if(window._roundActive) requestWakeLock();
+
+    const onScorecard=document.getElementById('scorecard-screen')&&
+                      document.getElementById('scorecard-screen').style.display!=='none';
+    if(onScorecard&&players.length){
+      // Reset listening state — prevents stale mid-command state
+      isListening=false;
+      setListeningUI(false);
+      // Re-unlock audio
       window._audioUnlocked=false;
       unlockAudio();
-      // Restart mic
+      // Cleanly restart recognition after a short delay
       setTimeout(()=>{
-        if(!recognition){ setupSpeech(); }
-        else { try{ recognition.start(); }catch(e){} }
-      }, 800);
+        if(!recognition){
+          setupSpeech();
+        } else if(!recognition._killed){
+          // Stop first to ensure clean state, then restart
+          try{recognition.stop();}catch(e){}
+          setTimeout(()=>{
+            try{recognition.start();}catch(e){}
+          },300);
+        }
+      },600);
     }
   }
 });
