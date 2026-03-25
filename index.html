@@ -559,6 +559,9 @@
 
   <div id="free-rounds-indicator" style="display:none;text-align:center;font-size:.78rem;color:var(--tan);margin-bottom:8px;letter-spacing:.3px;"></div>
   <button class="btn-start" id="start-btn" onclick="startRound()">Start Round</button>
+  <div style="text-align:center;margin-top:12px;">
+    <span onclick="shareVoiceScore()" style="font-size:.75rem;color:var(--tan);cursor:pointer;text-decoration:underline;text-underline-offset:3px;letter-spacing:.3px;">Share VoiceScore with a friend</span>
+  </div>
 </div>
 
 <div id="scorecard-screen" style="display:none;">
@@ -4653,6 +4656,19 @@ function showPostRoundPrompt(showUpgradeAfter=false){
   };
 }
 
+function shareVoiceScore(){
+  const text='Score your golf round hands-free with VoiceScore. No more touching your phone on the course.';
+  const url='https://voicescore.app';
+  if(navigator.share){
+    navigator.share({title:'VoiceScore',text:text,url:url}).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(url).then(()=>{
+      const toast=document.getElementById('vs-toast');
+      if(toast){toast.textContent='Link copied!';toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2500);}
+    });
+  }
+}
+
 function showVoiceHelp(){
   document.getElementById('voice-help-overlay').style.display='flex';
 }
@@ -6607,11 +6623,18 @@ document.addEventListener('DOMContentLoaded', function(){
   </div>
 
   <!-- Plan -->
-  <div style="background:rgba(245,240,232,.06);border:1px solid rgba(201,168,76,.25);border-radius:12px;padding:20px;">
+  <div style="background:rgba(245,240,232,.06);border:1px solid rgba(201,168,76,.25);border-radius:12px;padding:20px;margin-bottom:12px;">
     <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Plan</div>
     <div id="profile-plan-status" style="font-size:.95rem;color:var(--cream);margin-bottom:4px;">Free</div>
     <div id="profile-plan-desc" style="font-size:.78rem;color:var(--tan);margin-bottom:16px;">Upgrade to Pro for stats, handicap tracking, and round history.</div>
     <button id="profile-go-pro-btn" onclick="launchStripeCheckout()" style="padding:10px 20px;border-radius:8px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $14.99</button>
+  </div>
+
+  <!-- Share -->
+  <div style="background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:20px;text-align:center;">
+    <div style="font-size:.82rem;color:var(--cream);margin-bottom:4px;">Know a golfer who would love this?</div>
+    <div style="font-size:.75rem;color:var(--tan);margin-bottom:14px;">Share VoiceScore with your playing partners.</div>
+    <button onclick="shareVoiceScore()" style="padding:10px 24px;border-radius:8px;border:1px solid rgba(245,240,232,.3);background:transparent;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;cursor:pointer;">Share VoiceScore</button>
   </div>
 </div>
 <!-- Skins Results Overlay -->
