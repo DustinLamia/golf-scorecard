@@ -5203,25 +5203,27 @@ function renderProStatus() {
 
 async function loadProfileStats(){
   if(!isPro()||!currentUser)return;
-  const {data:rounds}=await supa.from('rounds').select('total_strokes,score_vs_par,pars').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  const {data:rounds}=await supa.from('rounds').select('total_strokes,score_vs_par,pars').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(100);
   if(!rounds||!rounds.length)return;
+  const validRounds=rounds.filter(r=>r.total_strokes!=null&&r.total_strokes>0);
+  if(!validRounds.length)return;
   // Rounds played
-  document.getElementById('profile-stat-rounds').textContent=rounds.length;
+  document.getElementById('profile-stat-rounds').textContent=validRounds.length;
   // Best round (lowest strokes)
-  const best=rounds.reduce((b,r)=>r.total_strokes<b?r.total_strokes:b,rounds[0].total_strokes);
+  const best=validRounds.reduce((b,r)=>r.total_strokes<b?r.total_strokes:b,validRounds[0].total_strokes);
   document.getElementById('profile-stat-best').textContent=best;
   // Scoring average
-  const avg=rounds.reduce((s,r)=>s+r.total_strokes,0)/rounds.length;
+  const avg=validRounds.reduce((s,r)=>s+r.total_strokes,0)/validRounds.length;
   document.getElementById('profile-stat-avg').textContent=avg.toFixed(1);
   // vs par average
-  const validPar=rounds.filter(r=>r.score_vs_par!=null);
+  const validPar=validRounds.filter(r=>r.score_vs_par!=null);
   if(validPar.length){
     const avgPar=validPar.reduce((s,r)=>s+r.score_vs_par,0)/validPar.length;
     const sign=avgPar>=0?'+':'';
     document.getElementById('profile-stat-avg-par').textContent='('+sign+avgPar.toFixed(1)+')';
   }
   // Handicap index
-  const hcpRounds=rounds.filter(r=>r.score_vs_par!=null).slice(0,20);
+  const hcpRounds=validRounds.filter(r=>r.score_vs_par!=null).slice(0,20);
   if(hcpRounds.length>=3){
     const diffs=hcpRounds.map(r=>r.score_vs_par*0.96);
     const take=Math.max(1,Math.floor(hcpRounds.length*0.4));
