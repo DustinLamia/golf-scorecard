@@ -464,6 +464,30 @@ function mpIdentify(id, props){try{if(typeof mixpanel!=='undefined'){mixpanel.id
     </div>
   </div>
   <div class="welcome-signin">Already have an account? <span id="btn-welcome-signin">Sign In</span></div>
+
+  <!-- Social Icons -->
+  <div style="display:flex;gap:20px;align-items:center;justify-content:center;margin-top:24px;">
+    <a href="https://x.com/VoiceScoreApp" target="_blank" style="color:var(--tan);transition:color .2s;" onmouseover="this.style.color='var(--cream)'" onmouseout="this.style.color='var(--tan)'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+    </a>
+    <a href="https://www.instagram.com/voicescoreapp/" target="_blank" style="color:var(--tan);transition:color .2s;" onmouseover="this.style.color='var(--cream)'" onmouseout="this.style.color='var(--tan)'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+    </a>
+    <a href="https://www.tiktok.com/@voicescore" target="_blank" style="color:var(--tan);transition:color .2s;" onmouseover="this.style.color='var(--cream)'" onmouseout="this.style.color='var(--tan)'">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.53V6.77a4.85 4.85 0 01-1.01-.08z"/></svg>
+    </a>
+  </div>
+
+  <!-- Footer Links -->
+  <div style="display:flex;gap:20px;align-items:center;justify-content:center;margin-top:16px;margin-bottom:8px;flex-wrap:wrap;">
+    <span onclick="showModal('faq')" style="font-size:.72rem;color:var(--tan);cursor:pointer;text-decoration:underline;text-underline-offset:3px;letter-spacing:.5px;">FAQ</span>
+    <span style="font-size:.72rem;color:rgba(245,240,232,.2);">|</span>
+    <span onclick="showModal('privacy')" style="font-size:.72rem;color:var(--tan);cursor:pointer;text-decoration:underline;text-underline-offset:3px;letter-spacing:.5px;">Privacy Policy</span>
+    <span style="font-size:.72rem;color:rgba(245,240,232,.2);">|</span>
+    <span onclick="showModal('terms')" style="font-size:.72rem;color:var(--tan);cursor:pointer;text-decoration:underline;text-underline-offset:3px;letter-spacing:.5px;">Terms of Service</span>
+    <span style="font-size:.72rem;color:rgba(245,240,232,.2);">|</span>
+    <span onclick="showModal('contact')" style="font-size:.72rem;color:var(--tan);cursor:pointer;text-decoration:underline;text-underline-offset:3px;letter-spacing:.5px;">Contact</span>
+  </div>
 </div>
 
 <header style="display:none;text-align:center;" id="main-header">
@@ -4750,6 +4774,104 @@ function shareVoiceScore(){
   }
 }
 
+function closeFooterModal(){
+  document.getElementById('footer-modal-overlay').style.display='none';
+}
+
+function showModal(type){
+  const overlay=document.getElementById('footer-modal-overlay');
+  const content=document.getElementById('footer-modal-content');
+  const h='font-family:"Bebas Neue",cursive;font-size:1.4rem;letter-spacing:3px;color:var(--gold);margin-bottom:16px;';
+  const sh='font-size:.72rem;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin:16px 0 6px;';
+  const p='font-size:.82rem;color:var(--tan);line-height:1.7;margin-bottom:8px;';
+
+  const modals={
+    faq:`
+      <h2 style="${h}">FAQ</h2>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        ${[
+          ['What is VoiceScore?','VoiceScore is a hands-free golf scoring app. Say your score out loud and VoiceScore records it automatically — no touching your phone on the course.'],
+          ['How does voice scoring work?','Say the wake word "VoiceScore" then pause half a second, then say your score. For example: "VoiceScore... Dustin got a birdie" or "VoiceScore... I got a 5". VoiceScore listens for 2.5 seconds after you stop speaking.'],
+          ['Does it work with multiple players?','Yes — up to 4 players per round. Say all players in one breath after the wake word: "VoiceScore... Dustin got a 5 Brian got a par Scott got a bogey".'],
+          ['What if I score a hole wrong?','Just say "VoiceScore... on hole 5 Dustin actually got a bogey" and it will correct the score.'],
+          ['Does it work with the screen locked?','Yes — voice scoring and score readback both work with your screen locked. The screen also stays on automatically during a round so you never have to touch your phone.'],
+          ['What courses are supported?','VoiceScore uses a real golf course database with thousands of courses and accurate hole yardages and pars. Search by course name or city.'],
+          ['What is included in the free plan?','The free plan includes 3 full rounds of voice scoring, real course data, up to 4 players per round, and scorecard export.'],
+          ['What does Pro include?','Pro includes unlimited voice scoring, every round saved to your account, full stats dashboard, automatic handicap tracking, multi-round comparison, goals tracker, and Skins and Match Play modes. One-time payment of $14.99.'],
+          ['Is the Pro payment a subscription?','No — Pro is a one-time payment of $14.99. Pay once and keep it forever.'],
+          ['What platforms does VoiceScore work on?','VoiceScore works in Safari on iPhone and iPad, and in Chrome on Android and desktop. For the best experience use Safari on iPhone.'],
+        ].map(([q,a])=>`
+          <details style="border-bottom:1px solid rgba(245,240,232,.08);padding:10px 0;">
+            <summary style="font-size:.85rem;color:var(--cream);cursor:pointer;font-weight:500;list-style:none;display:flex;justify-content:space-between;align-items:center;">${q}<span style="color:var(--gold);font-size:1rem;">+</span></summary>
+            <div style="font-size:.8rem;color:var(--tan);line-height:1.6;margin-top:8px;padding-right:16px;">${a}</div>
+          </details>
+        `).join('')}
+      </div>`,
+
+    privacy:`
+      <h2 style="${h}">Privacy Policy</h2>
+      <p style="${p}">Last updated: March 2026</p>
+      <p style="${p}">VoiceScore ("we", "us", or "our") is committed to protecting your privacy. This policy explains how we collect, use, and protect your information.</p>
+      <div style="${sh}">Information We Collect</div>
+      <p style="${p}">We collect information you provide when creating an account (name, email, username), round data you record while using the app (scores, course selections, dates), and payment information processed securely through Stripe. We do not store your credit card details.</p>
+      <div style="${sh}">How We Use Your Information</div>
+      <p style="${p}">We use your information to provide and improve VoiceScore, save your rounds and stats, process payments, and communicate with you about your account. We do not sell your personal data to third parties.</p>
+      <div style="${sh}">Voice Data</div>
+      <p style="${p}">VoiceScore uses your device's microphone only while you are actively scoring a round. Voice recognition is processed entirely on your device using your browser's built-in speech recognition. We do not record, store, or transmit your voice data.</p>
+      <div style="${sh}">Analytics</div>
+      <p style="${p}">We use Mixpanel to collect anonymized usage analytics to help improve the app. This includes events like rounds started, features used, and upgrade conversions. No personally identifiable voice data is tracked.</p>
+      <div style="${sh}">Data Storage</div>
+      <p style="${p}">Your data is stored securely using Supabase with industry-standard encryption. You can request deletion of your account and all associated data at any time by contacting us.</p>
+      <div style="${sh}">Contact</div>
+      <p style="${p}">Questions about this policy? Email us at support@voicescore.app</p>`,
+
+    terms:`
+      <h2 style="${h}">Terms of Service</h2>
+      <p style="${p}">Last updated: March 2026</p>
+      <p style="${p}">By using VoiceScore you agree to these terms. Please read them carefully.</p>
+      <div style="${sh}">Use of Service</div>
+      <p style="${p}">VoiceScore is provided for personal, non-commercial use. You agree not to misuse the service, attempt to access it in unauthorized ways, or use it for any unlawful purpose.</p>
+      <div style="${sh}">Accounts</div>
+      <p style="${p}">You are responsible for maintaining the security of your account and for all activity that occurs under it. You must provide accurate information when creating an account.</p>
+      <div style="${sh}">Pro Subscription</div>
+      <p style="${p}">The Pro plan is a one-time payment of $14.99 USD that grants lifetime access to Pro features. All payments are processed securely through Stripe. We do not offer refunds except where required by law.</p>
+      <div style="${sh}">Intellectual Property</div>
+      <p style="${p}">VoiceScore and all its content, features, and functionality are owned by VoiceScore and protected by copyright and other intellectual property laws.</p>
+      <div style="${sh}">Disclaimer</div>
+      <p style="${p}">VoiceScore is provided "as is" without warranties of any kind. We are not responsible for any errors in score recording or any decisions made based on data within the app.</p>
+      <div style="${sh}">Changes to Terms</div>
+      <p style="${p}">We may update these terms from time to time. Continued use of VoiceScore after changes constitutes acceptance of the new terms.</p>
+      <div style="${sh}">Contact</div>
+      <p style="${p}">Questions? Email us at support@voicescore.app</p>`,
+
+    contact:`
+      <h2 style="${h}">Contact Us</h2>
+      <p style="${p}">Have a question, found a bug, or want to share feedback? We'd love to hear from you.</p>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px;">
+        <a href="mailto:support@voicescore.app" style="display:flex;align-items:center;gap:12px;background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:10px;padding:14px;text-decoration:none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          <div><div style="font-size:.85rem;color:var(--cream);font-weight:500;">Email Support</div><div style="font-size:.75rem;color:var(--tan);">support@voicescore.app</div></div>
+        </a>
+        <a href="https://x.com/VoiceScoreApp" target="_blank" style="display:flex;align-items:center;gap:12px;background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:10px;padding:14px;text-decoration:none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--gold)"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          <div><div style="font-size:.85rem;color:var(--cream);font-weight:500;">X (Twitter)</div><div style="font-size:.75rem;color:var(--tan);">@VoiceScoreApp</div></div>
+        </a>
+        <a href="https://www.instagram.com/voicescoreapp/" target="_blank" style="display:flex;align-items:center;gap:12px;background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:10px;padding:14px;text-decoration:none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--gold)"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          <div><div style="font-size:.85rem;color:var(--cream);font-weight:500;">Instagram</div><div style="font-size:.75rem;color:var(--tan);">@voicescoreapp</div></div>
+        </a>
+        <a href="https://www.tiktok.com/@voicescore" target="_blank" style="display:flex;align-items:center;gap:12px;background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:10px;padding:14px;text-decoration:none;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--gold)"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.53V6.77a4.85 4.85 0 01-1.01-.08z"/></svg>
+          <div><div style="font-size:.85rem;color:var(--cream);font-weight:500;">TikTok</div><div style="font-size:.75rem;color:var(--tan);">@voicescore</div></div>
+        </a>
+      </div>`
+  };
+
+  content.innerHTML=modals[type]||'';
+  overlay.style.display='flex';
+  overlay.scrollTop=0;
+}
+
 function showVoiceHelp(){
   document.getElementById('voice-help-overlay').style.display='flex';
 }
@@ -6855,6 +6977,14 @@ document.addEventListener('DOMContentLoaded', function(){
     </div>
 
     <button onclick="document.getElementById('voice-help-overlay').style.display='none';" style="width:100%;margin-top:20px;padding:12px;background:var(--gold);border:none;border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;color:var(--dark);cursor:pointer;">Got It</button>
+  </div>
+</div>
+
+<!-- Footer Modals -->
+<div id="footer-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;">
+  <div style="background:#1e3d1a;border:1px solid rgba(201,168,76,.3);border-radius:16px;padding:28px 24px;width:100%;max-width:480px;margin:auto;position:relative;">
+    <button onclick="closeFooterModal()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:var(--tan);font-size:1.3rem;cursor:pointer;line-height:1;">&times;</button>
+    <div id="footer-modal-content"></div>
   </div>
 </div>
 
