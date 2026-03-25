@@ -4419,7 +4419,6 @@ function navTo(screen){
       document.getElementById('profile-last-name').value=m.last_name||'';
       document.getElementById('profile-username').value=m.username||'';
       document.getElementById('profile-name-msg').textContent='';
-      // Show Link Google button only for email/password users who haven't linked Google yet
       const providers=(currentUser.identities||[]).map(i=>i.provider);
       const linkWrap=document.getElementById('profile-link-google-wrap');
       if(linkWrap){linkWrap.style.display=providers.includes('google')?'none':'block';}
@@ -5861,11 +5860,10 @@ function setUser(user){
   showBottomNav();
   closeAuthModal();
   loadProStatus();
-  // Detect new Google users with no name/username set yet
+  // Detect new Google users with no profile set yet
   const isGoogleUser=(user.identities||[]).some(i=>i.provider==='google');
   const hasProfile=user.user_metadata?.first_name||user.user_metadata?.username;
   if(isGoogleUser&&!hasProfile){
-    // Pre-fill from Google profile data if available
     const gMeta=user.user_metadata||{};
     if(gMeta.full_name){
       const parts=gMeta.full_name.split(' ');
@@ -6019,10 +6017,14 @@ async function submitOnboarding(){
   const errEl=document.getElementById('onboard-error');
   const btn=document.getElementById('onboard-submit');
   if(!firstName||!username){errEl.textContent='First name and username are required.';return;}
-  btn.disabled=true;btn.textContent='Saving...';
+  btn.disabled=true;btn.textContent='Checking...';
+  const available=await checkUsernameAvailable(username,currentUser.id);
+  if(!available){errEl.textContent='That username is already taken. Try another.';btn.disabled=false;btn.textContent="Let's Play";return;}
+  btn.textContent='Saving...';
   const {data,error}=await supa.auth.updateUser({data:{first_name:firstName,last_name:lastName,username}});
   if(error){errEl.textContent=error.message;btn.disabled=false;btn.textContent="Let's Play";return;}
   currentUser=data.user;
+  await upsertProfile(currentUser.id,{username,first_name:firstName,last_name:lastName,display_name:firstName+' '+lastName});
   document.getElementById('google-onboard-overlay').style.display='none';
   const navBtn=document.getElementById('auth-btn');
   if(navBtn){navBtn.textContent=firstName;navBtn.classList.add('signed-in');}
@@ -6037,17 +6039,32 @@ async function signOut(){
   closeUserMenu();
 }
 
+async function checkUsernameAvailable(username, currentUserId){
+  if(!username)return true;
+  const {data,error}=await supa.from('profiles').select('id').eq('username',username).neq('id',currentUserId).maybeSingle();
+  if(error)return true; // fail open
+  return !data; // true = available
+}
+
+async function upsertProfile(userId, fields){
+  await supa.from('profiles').upsert({id:userId,...fields},{onConflict:'id'});
+}
+
 async function saveProfileName(){
   const msgEl=document.getElementById('profile-name-msg');
   const firstName=document.getElementById('profile-first-name').value.trim();
   const lastName=document.getElementById('profile-last-name').value.trim();
   const username=document.getElementById('profile-username').value.trim();
   if(!firstName){msgEl.style.color='#f0a090';msgEl.textContent='First name is required.';return;}
-  msgEl.style.color='var(--tan)';msgEl.textContent='Saving...';
+  if(!username){msgEl.style.color='#f0a090';msgEl.textContent='Username is required.';return;}
+  msgEl.style.color='var(--tan)';msgEl.textContent='Checking username...';
+  const available=await checkUsernameAvailable(username,currentUser.id);
+  if(!available){msgEl.style.color='#f0a090';msgEl.textContent='That username is already taken.';return;}
+  msgEl.textContent='Saving...';
   const {data,error}=await supa.auth.updateUser({data:{first_name:firstName,last_name:lastName,username}});
   if(error){msgEl.style.color='#f0a090';msgEl.textContent=error.message;return;}
   currentUser=data.user;
-  // Update Player 1 name on setup screen if it matches the old first name
+  await upsertProfile(currentUser.id,{username,first_name:firstName,last_name:lastName,display_name:firstName+' '+lastName});
   const p1Input=document.getElementById('player-name-0');
   const oldFirst=document.getElementById('profile-first-name').value.trim();
   if(p1Input&&(p1Input.value===oldFirst||p1Input.value==='')){p1Input.value=firstName;}
@@ -6374,7 +6391,7 @@ document.addEventListener('DOMContentLoaded', function(){
 <!-- Google Onboarding Modal -->
 <div id="google-onboard-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#1e3d1a;border:1px solid rgba(201,168,76,.3);border-radius:16px;padding:28px 24px;width:100%;max-width:380px;">
-    <div style="text-align:center;margin-bottom:6px;">&#9971;</div>
+    <div style="text-align:center;margin-bottom:6px;font-size:2rem;">&#9971;</div>
     <h2 style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;text-align:center;">One Last Thing</h2>
     <p style="font-size:.78rem;color:var(--tan);margin-bottom:20px;text-align:center;">Set your name and username so your scorecards look great.</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
