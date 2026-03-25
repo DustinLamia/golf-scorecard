@@ -3374,40 +3374,7 @@ async function loadStats(){
 
       </div>
 
-      <div class="goals-card" style="grid-column:span 2;">
-        <div class="stat-label">My Goals (per round)</div>
-        <div class="goal-row">
-          <div>
-            <div class="goal-text">Break</div>
-            <div class="goal-avg" id="goal-avg-strokes"></div>
-          </div>
-          <div class="goal-input-wrap">
-            <input class="goal-input" type="number" id="goal-strokes" min="50" max="150" placeholder="--">
-            <span class="goal-unit">strokes</span>
-          </div>
-        </div>
-        <div class="goal-row">
-          <div>
-            <div class="goal-text">Make at least</div>
-            <div class="goal-avg" id="goal-avg-pars"></div>
-          </div>
-          <div class="goal-input-wrap">
-            <input class="goal-input" type="number" id="goal-pars" min="0" max="18" placeholder="--">
-            <span class="goal-unit">pars or better</span>
-          </div>
-        </div>
-        <div class="goal-row">
-          <div>
-            <div class="goal-text">Make at least</div>
-            <div class="goal-avg" id="goal-avg-birdies"></div>
-          </div>
-          <div class="goal-input-wrap">
-            <input class="goal-input" type="number" id="goal-birdies" min="0" max="18" placeholder="--">
-            <span class="goal-unit">birdies</span>
-          </div>
-        </div>
-        <button class="btn-save-goals" onclick="saveGoals()">Save Goals</button>
-      </div>
+
 
     </div>
   </div>
@@ -4569,6 +4536,14 @@ function navTo(screen){
       document.getElementById('profile-last-name').value=m.last_name||'';
       document.getElementById('profile-username').value=m.username||'';
       document.getElementById('profile-name-msg').textContent='';
+      // Populate read-only fields
+      document.getElementById('profile-readonly-first').textContent=m.first_name||'--';
+      document.getElementById('profile-readonly-last').textContent=m.last_name||'--';
+      document.getElementById('profile-readonly-username').textContent=m.username?('@'+m.username):'--';
+      // Reset to read-only view
+      document.getElementById('profile-name-readonly').style.display='block';
+      document.getElementById('profile-name-edit').style.display='none';
+      document.getElementById('profile-name-edit-btn').textContent='Edit';
       // Profile header
       const firstName=m.first_name||'';
       const lastName=m.last_name||'';
@@ -4773,6 +4748,69 @@ function shareVoiceScore(){
       if(toast){toast.textContent='Link copied!';toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2500);}
     });
   }
+}
+
+function toggleProfileNameEdit(){
+  const readonly=document.getElementById('profile-name-readonly');
+  const edit=document.getElementById('profile-name-edit');
+  const btn=document.getElementById('profile-name-edit-btn');
+  const isEditing=edit.style.display!=='none';
+  if(isEditing){
+    // Cancel — revert to readonly
+    const m=currentUser?.user_metadata||{};
+    document.getElementById('profile-first-name').value=m.first_name||'';
+    document.getElementById('profile-last-name').value=m.last_name||'';
+    document.getElementById('profile-username').value=m.username||'';
+    document.getElementById('profile-name-msg').textContent='';
+    readonly.style.display='block';
+    edit.style.display='none';
+    btn.textContent='Edit';
+  } else {
+    readonly.style.display='none';
+    edit.style.display='block';
+    btn.textContent='Cancel';
+    document.getElementById('profile-first-name').focus();
+  }
+}
+
+function toggleProfileGoalsEdit(){
+  const readonly=document.getElementById('profile-goals-readonly');
+  const edit=document.getElementById('profile-goals-edit');
+  const btn=document.getElementById('profile-goals-edit-btn');
+  const isEditing=edit.style.display!=='none';
+  if(isEditing){
+    readonly.style.display='block';
+    edit.style.display='none';
+    btn.textContent='Edit';
+  } else {
+    // Pre-fill from cache
+    const goals=loadGoals();
+    const gs=document.getElementById('goal-strokes');
+    const gp=document.getElementById('goal-pars');
+    const gb=document.getElementById('goal-birdies');
+    if(gs&&goals.strokes)gs.value=goals.strokes;
+    if(gp&&goals.pars)gp.value=goals.pars;
+    if(gb&&goals.birdies)gb.value=goals.birdies;
+    readonly.style.display='none';
+    edit.style.display='block';
+    btn.textContent='Cancel';
+  }
+}
+
+async function saveGoalsFromProfile(){
+  await saveGoals();
+  loadGoalsIntoProfile();
+  toggleProfileGoalsEdit();
+}
+
+function loadGoalsIntoProfile(){
+  const goals=loadGoals();
+  const sd=document.getElementById('profile-goal-strokes-display');
+  const pd=document.getElementById('profile-goal-pars-display');
+  const bd=document.getElementById('profile-goal-birdies-display');
+  if(sd)sd.textContent=goals.strokes?goals.strokes+' strokes':'--';
+  if(pd)pd.textContent=goals.pars!==null&&goals.pars!==undefined?goals.pars:'--';
+  if(bd)bd.textContent=goals.birdies!==null&&goals.birdies!==undefined?goals.birdies:'--';
 }
 
 function closeFooterModal(){
@@ -5431,18 +5469,21 @@ function renderProStatus() {
   const proBadge = document.getElementById('profile-pro-badge');
   const statsSection = document.getElementById('profile-stats-section');
   if (!planEl || !goBtnEl) return;
+  const goalsSection = document.getElementById('profile-goals-section');
   if (currentIsPro) {
     planEl.innerHTML = '<span style="color:var(--gold);font-weight:700;">PRO</span>';
     if (planDesc) planDesc.textContent = 'You have lifetime access to all Pro features.';
     goBtnEl.style.display = 'none';
     if (proBadge) proBadge.style.display = 'block';
     if (statsSection) statsSection.style.display = 'block';
+    if (goalsSection) { goalsSection.style.display = 'block'; loadGoalsIntoProfile(); }
   } else {
     planEl.textContent = 'Free';
     if (planDesc) planDesc.textContent = 'Upgrade to Pro for stats, handicap tracking, and round history.';
     goBtnEl.style.display = 'inline-block';
     if (proBadge) proBadge.style.display = 'none';
     if (statsSection) statsSection.style.display = 'none';
+    if (goalsSection) goalsSection.style.display = 'none';
   }
 }
 
@@ -6517,6 +6558,20 @@ async function saveProfileName(){
   setTimeout(()=>{msgEl.textContent='';},3000);
   const nudge=document.getElementById('profile-complete-nudge');
   if(nudge)nudge.style.display='none';
+  // Update read-only display and collapse edit view
+  const m=currentUser?.user_metadata||{};
+  const roFirst=document.getElementById('profile-readonly-first');
+  const roLast=document.getElementById('profile-readonly-last');
+  const roUser=document.getElementById('profile-readonly-username');
+  if(roFirst)roFirst.textContent=m.first_name||'--';
+  if(roLast)roLast.textContent=m.last_name||'--';
+  if(roUser)roUser.textContent=m.username?('@'+m.username):'--';
+  const readonly=document.getElementById('profile-name-readonly');
+  const edit=document.getElementById('profile-name-edit');
+  const btn=document.getElementById('profile-name-edit-btn');
+  if(readonly)readonly.style.display='block';
+  if(edit)edit.style.display='none';
+  if(btn)btn.textContent='Edit';
 }
 
 function toggleUserMenu(){
@@ -6807,30 +6862,102 @@ document.addEventListener('DOMContentLoaded', function(){
     </div>
   </div>
 
-  <!-- Name & Username -->
+  <!-- Name & Username — Read-only with Edit toggle -->
   <div style="background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:20px;margin-bottom:12px;">
-    <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;">Name &amp; Username</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-      <div>
-        <label style="font-size:.72rem;color:var(--tan);display:block;margin-bottom:4px;">First Name</label>
-        <input id="profile-first-name" type="text" placeholder="First name"
-          style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1px solid rgba(245,240,232,.2);background:rgba(255,255,255,.07);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;">Name &amp; Username</div>
+      <button id="profile-name-edit-btn" onclick="toggleProfileNameEdit()" style="background:none;border:1px solid rgba(201,168,76,.4);border-radius:6px;padding:4px 12px;color:var(--gold);font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;">Edit</button>
+    </div>
+    <!-- Read-only view -->
+    <div id="profile-name-readonly">
+      <div style="display:flex;gap:10px;margin-bottom:8px;">
+        <div style="flex:1;">
+          <div style="font-size:.68rem;color:var(--tan);margin-bottom:2px;">First Name</div>
+          <div id="profile-readonly-first" style="font-size:.92rem;color:var(--cream);">--</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:.68rem;color:var(--tan);margin-bottom:2px;">Last Name</div>
+          <div id="profile-readonly-last" style="font-size:.92rem;color:var(--cream);">--</div>
+        </div>
       </div>
       <div>
-        <label style="font-size:.72rem;color:var(--tan);display:block;margin-bottom:4px;">Last Name</label>
-        <input id="profile-last-name" type="text" placeholder="Last name"
-          style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1px solid rgba(245,240,232,.2);background:rgba(255,255,255,.07);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;">
+        <div style="font-size:.68rem;color:var(--tan);margin-bottom:2px;">Username</div>
+        <div id="profile-readonly-username" style="font-size:.92rem;color:var(--cream);">--</div>
       </div>
     </div>
-    <div style="margin-bottom:14px;">
-      <label style="font-size:.72rem;color:var(--tan);display:block;margin-bottom:4px;">Username</label>
-      <input id="profile-username" type="text" placeholder="Username"
-        style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1px solid rgba(245,240,232,.2);background:rgba(255,255,255,.07);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;">
+    <!-- Edit view (hidden by default) -->
+    <div id="profile-name-edit" style="display:none;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label style="font-size:.72rem;color:var(--tan);display:block;margin-bottom:4px;">First Name</label>
+          <input id="profile-first-name" type="text" placeholder="First name"
+            style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1px solid rgba(245,240,232,.2);background:rgba(255,255,255,.07);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;">
+        </div>
+        <div>
+          <label style="font-size:.72rem;color:var(--tan);display:block;margin-bottom:4px;">Last Name</label>
+          <input id="profile-last-name" type="text" placeholder="Last name"
+            style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1px solid rgba(245,240,232,.2);background:rgba(255,255,255,.07);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;">
+        </div>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:.72rem;color:var(--tan);display:block;margin-bottom:4px;">Username</label>
+        <input id="profile-username" type="text" placeholder="Username"
+          style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1px solid rgba(245,240,232,.2);background:rgba(255,255,255,.07);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;">
+      </div>
+      <div style="font-size:.73rem;color:var(--tan);margin-bottom:14px;opacity:.8;">First name is used as your default player name on scorecards.</div>
+      <div id="profile-name-msg" style="font-size:.8rem;min-height:18px;margin-bottom:10px;"></div>
+      <div id="profile-complete-nudge" style="display:none;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:.78rem;color:var(--gold);line-height:1.5;">Tap Save to finish setting up your username.</div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="saveProfileName()" style="padding:10px 22px;border-radius:8px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:.95rem;letter-spacing:1.5px;cursor:pointer;">Save</button>
+        <button onclick="toggleProfileNameEdit()" style="padding:10px 18px;border-radius:8px;border:1px solid rgba(245,240,232,.2);background:transparent;color:var(--tan);font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;">Cancel</button>
+      </div>
     </div>
-    <div style="font-size:.73rem;color:var(--tan);margin-bottom:14px;opacity:.8;">First name is used as your default player name on scorecards.</div>
-    <div id="profile-name-msg" style="font-size:.8rem;min-height:18px;margin-bottom:10px;"></div>
-    <div id="profile-complete-nudge" style="display:none;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:.78rem;color:var(--gold);line-height:1.5;">Your profile is almost complete — tap Save Changes to finish setting up your username.</div>
-    <button onclick="saveProfileName()" style="padding:10px 22px;border-radius:8px;border:1px solid rgba(201,168,76,.5);background:transparent;color:var(--gold);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;">Save Changes</button>
+  </div>
+
+  <!-- Goals (Pro only) -->
+  <div id="profile-goals-section" style="display:none;background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:20px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;">My Goals</div>
+      <button id="profile-goals-edit-btn" onclick="toggleProfileGoalsEdit()" style="background:none;border:1px solid rgba(201,168,76,.4);border-radius:6px;padding:4px 12px;color:var(--gold);font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer;">Edit</button>
+    </div>
+    <!-- Read-only goals -->
+    <div id="profile-goals-readonly">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:.82rem;color:var(--tan);">Break</div>
+          <div id="profile-goal-strokes-display" style="font-size:.92rem;color:var(--cream);">--</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:.82rem;color:var(--tan);">Pars or better</div>
+          <div id="profile-goal-pars-display" style="font-size:.92rem;color:var(--cream);">--</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:.82rem;color:var(--tan);">Birdies</div>
+          <div id="profile-goal-birdies-display" style="font-size:.92rem;color:var(--cream);">--</div>
+        </div>
+      </div>
+    </div>
+    <!-- Edit goals -->
+    <div id="profile-goals-edit" style="display:none;">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div style="font-size:.82rem;color:var(--tan);">Break (strokes)</div>
+          <input class="goal-input" type="number" id="goal-strokes" min="50" max="150" placeholder="--" style="width:72px;">
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div style="font-size:.82rem;color:var(--tan);">Pars or better</div>
+          <input class="goal-input" type="number" id="goal-pars" min="0" max="18" placeholder="--" style="width:72px;">
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div style="font-size:.82rem;color:var(--tan);">Birdies</div>
+          <input class="goal-input" type="number" id="goal-birdies" min="0" max="18" placeholder="--" style="width:72px;">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button onclick="saveGoalsFromProfile()" style="padding:10px 22px;border-radius:8px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:.95rem;letter-spacing:1.5px;cursor:pointer;">Save</button>
+        <button onclick="toggleProfileGoalsEdit()" style="padding:10px 18px;border-radius:8px;border:1px solid rgba(245,240,232,.2);background:transparent;color:var(--tan);font-family:'DM Sans',sans-serif;font-size:.85rem;cursor:pointer;">Cancel</button>
+      </div>
+    </div>
   </div>
 
   <!-- Account -->
