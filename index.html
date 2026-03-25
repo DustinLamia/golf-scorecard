@@ -5485,7 +5485,7 @@ function renderProStatus() {
     goBtnEl.style.display = 'none';
     if (proBadge) proBadge.style.display = 'block';
     if (statsSection) statsSection.style.display = 'block';
-    if (goalsSection) { goalsSection.style.display = 'block'; loadGoalsIntoProfile(); }
+    if (goalsSection) { goalsSection.style.display = 'block'; loadGoalsFromServer().then(()=>loadGoalsIntoProfile()); }
   } else {
     planEl.textContent = 'Free';
     if (planDesc) planDesc.textContent = 'Upgrade to Pro for stats, handicap tracking, and round history.';
