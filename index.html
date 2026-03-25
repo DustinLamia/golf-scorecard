@@ -6363,8 +6363,7 @@ function setUser(user){
   if(sessionRaw){
     restoreSession();
   } else {
-    const lastScreen=sessionStorage.getItem('vs_screen')||'play';
-    navTo(lastScreen);
+    navTo('play');
   }
   // Handle return from Stripe checkout
   const urlParams=new URLSearchParams(window.location.search);
@@ -6524,7 +6523,7 @@ async function submitOnboarding(){
   const p1=document.querySelectorAll('.player-name')[0];
   if(p1&&!p1.value)p1.value=firstName;
   const sessionRaw=readSession();
-  if(sessionRaw){restoreSession();}else{const lastScreen=sessionStorage.getItem('vs_screen')||'play';navTo(lastScreen);}
+  if(sessionRaw){restoreSession();}else{navTo('play');}
 }
 
 async function signOut(){
