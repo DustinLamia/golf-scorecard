@@ -401,6 +401,15 @@
   .user-menu-item:hover{background:rgba(245,240,232,.1);}
   .user-menu-item.danger{color:rgba(192,57,43,.9);}
 </style>
+<!-- Mixpanel -->
+<script src="https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js"></script>
+<script>
+  mixpanel.init('320beb52ce29', {debug: false, track_pageview: true, persistence: 'localStorage'});
+</script>
+<script>
+function mpTrack(event, props){try{if(typeof mixpanel!=='undefined')mixpanel.track(event,props||{});}catch(e){}}
+function mpIdentify(id, props){try{if(typeof mixpanel!=='undefined'){mixpanel.identify(id);if(props)mixpanel.people.set(props);}}catch(e){}}
+</script>
 </head>
 <body>
 
@@ -1022,6 +1031,7 @@ function startRound(){
     const used=window._freeRoundsUsed||0;
     if(used>=3){showProUpsell('Unlimited Voice Scoring');return;}
   }
+  mpTrack('Round Started',{players:document.querySelectorAll('.player-name[value]').length||1,holes:holes,versus_mode:versusMode||'none'});
   unlockAudio();
   const inputs=document.querySelectorAll('.player-name');
   players=[];
@@ -4601,6 +4611,7 @@ async function finishRound(){
     return;
   }
   if(btn){btn.textContent='Round Saved';btn.disabled=true;}
+  mpTrack('Round Saved',{is_pro:currentIsPro,free_rounds_used:window._freeRoundsUsed||0});
   document.getElementById('voice-feedback').textContent='Round saved!';
   setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
   localStorage.removeItem('vs_session');
@@ -4657,6 +4668,7 @@ function showPostRoundPrompt(showUpgradeAfter=false){
 }
 
 function shareVoiceScore(){
+  mpTrack('Shared VoiceScore');
   const text='Score your golf round hands-free with VoiceScore. No more touching your phone on the course.';
   const url='https://voicescore.app';
   if(navigator.share){
@@ -4691,6 +4703,7 @@ function updateFreeRoundsIndicator(){
 }
 
 function showFreeRoundsUpgradePrompt(){
+  mpTrack('Upgrade Prompt Shown',{trigger:'round_3_complete'});
   const overlay=document.createElement('div');
   overlay.id='free-rounds-prompt';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -5278,6 +5291,7 @@ async function loadProfileStats(){
 }
 
 async function launchStripeCheckout() {
+  mpTrack('Go Pro Clicked');
   if (!currentUser) { openAuthModal(); return; }
   const btn = document.getElementById('profile-go-pro-btn');
   if (btn) { btn.textContent = 'Loading...'; btn.disabled = true; }
@@ -6070,6 +6084,7 @@ function setUser(user){
     return;
   }
   window._userInitialized=true;
+  mpIdentify(user.id,{email:user.email,name:user.user_metadata?.first_name||'',is_pro:currentIsPro});
   // Hide welcome screen
   document.getElementById('welcome-screen').style.display='none';
   document.getElementById('main-header').style.display='block';
@@ -6209,6 +6224,7 @@ async function submitAuth(){
     result=await supa.auth.signInWithPassword({email,password});
   } else {
     result=await supa.auth.signUp({email,password,options:{data:{first_name:firstName,last_name:lastName,username}}});
+    if(!result.error)mpTrack('Sign Up',{method:'email'});
   }
   btn.disabled=false;
   btn.textContent=authMode==='signin'?'Sign In':'Create Account';
@@ -6225,6 +6241,7 @@ async function submitAuth(){
 }
 
 async function signInWithGoogle(){
+  mpTrack('Sign Up',{method:'google'});
   const {error}=await supa.auth.signInWithOAuth({
     provider:'google',
     options:{redirectTo:'https://voicescore.app'}
