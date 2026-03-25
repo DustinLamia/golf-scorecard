@@ -3100,6 +3100,152 @@ function shareStats(){
   }
 }
 
+function shareH2H(){
+  const s=window._h2hSnapshot;
+  if(!s)return;
+  const{rA,rB,allRows}=s;
+
+  const DPR=2;
+  const W=390;
+  const PAD=20;
+  const GOLD='#c9a84c',CREAM='#f5f0e8',TAN='#a89060';
+  const GREEN='#5bc85b',RED='#e07060';
+
+  const rowH=40;
+  const headerH=64+12;
+  const roundCardsH=70+12;
+  const tableH=allRows.length*rowH+2;
+  const footerH=36;
+  const H=headerH+roundCardsH+tableH+footerH;
+
+  const canvas=document.createElement('canvas');
+  canvas.width=W*DPR; canvas.height=H*DPR;
+  const ctx=canvas.getContext('2d');
+  ctx.scale(DPR,DPR);
+
+  // Background
+  const bg=ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#233d1e'); bg.addColorStop(0.6,'#1a2e17'); bg.addColorStop(1,'#162613');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(201,168,76,0.2)'; ctx.lineWidth=1;
+  roundRect(ctx,1,1,W-2,H-2,0); ctx.stroke();
+
+  // Header bar
+  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(0,0,W,64);
+  ctx.strokeStyle='rgba(201,168,76,0.2)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,64); ctx.lineTo(W,64); ctx.stroke();
+  ctx.font='bold 28px "Bebas Neue",serif'; ctx.letterSpacing='3px';
+  ctx.fillStyle=CREAM; ctx.textAlign='left';
+  ctx.fillText('VOICESCORE',PAD,40);
+  ctx.font='7.5px "DM Sans",sans-serif'; ctx.letterSpacing='0.8px';
+  ctx.fillStyle='rgba(245,240,232,0.45)';
+  ctx.fillText('HANDS FREE · GOLF SCORECARD & STAT TRACKING',PAD,52);
+  ctx.font='600 10px "DM Sans",sans-serif'; ctx.letterSpacing='1px';
+  ctx.fillStyle=GOLD; ctx.textAlign='right';
+  ctx.fillText('HEAD TO HEAD',W-PAD,38);
+  const username=currentUser?(currentUser.user_metadata?.username||currentUser.email.split('@')[0]):'';
+  if(username){
+    ctx.font='400 9px "DM Sans",sans-serif'; ctx.letterSpacing='0px';
+    ctx.fillStyle=TAN; ctx.textAlign='right';
+    ctx.fillText(username,W-PAD,52);
+  }
+  ctx.letterSpacing='0px';
+
+  // Round cards
+  let y=64+12;
+  const fmtDate=s=>{const d=new Date(s);return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate();};
+  const cardW=(W-PAD*2-8)/2;
+
+  // Round A card
+  ctx.fillStyle='rgba(201,168,76,.08)';
+  roundRect(ctx,PAD,y,cardW,60,8); ctx.fill();
+  ctx.strokeStyle='rgba(201,168,76,.35)'; ctx.lineWidth=1;
+  roundRect(ctx,PAD,y,cardW,60,8); ctx.stroke();
+  ctx.font='500 7px "DM Sans",sans-serif'; ctx.letterSpacing='1px';
+  ctx.fillStyle=GOLD; ctx.textAlign='left';
+  ctx.fillText('ROUND A',PAD+10,y+14);
+  ctx.font='500 10px "DM Sans",sans-serif'; ctx.letterSpacing='0px';
+  ctx.fillStyle=CREAM;
+  ctx.fillText((rA.course_name||'Unknown').substring(0,22),PAD+10,y+30);
+  ctx.font='400 9px "DM Sans",sans-serif';
+  ctx.fillStyle=TAN;
+  ctx.fillText(fmtDate(rA.played_at),PAD+10,y+46);
+
+  // Round B card
+  const bx=PAD+cardW+8;
+  ctx.fillStyle='rgba(245,240,232,.05)';
+  roundRect(ctx,bx,y,cardW,60,8); ctx.fill();
+  ctx.strokeStyle='rgba(245,240,232,.15)'; ctx.lineWidth=1;
+  roundRect(ctx,bx,y,cardW,60,8); ctx.stroke();
+  ctx.font='500 7px "DM Sans",sans-serif'; ctx.letterSpacing='1px';
+  ctx.fillStyle=TAN; ctx.textAlign='left';
+  ctx.fillText('ROUND B',bx+10,y+14);
+  ctx.font='500 10px "DM Sans",sans-serif'; ctx.letterSpacing='0px';
+  ctx.fillStyle=CREAM;
+  ctx.fillText((rB.course_name||'Unknown').substring(0,22),bx+10,y+30);
+  ctx.font='400 9px "DM Sans",sans-serif';
+  ctx.fillStyle=TAN;
+  ctx.fillText(fmtDate(rB.played_at),bx+10,y+46);
+
+  y+=60+12;
+
+  // Table rows
+  ctx.fillStyle='rgba(245,240,232,.06)';
+  roundRect(ctx,PAD,y,W-PAD*2,tableH,10); ctx.fill();
+
+  function relColor(val,otherVal,lib=true){
+    const nv=parseFloat(val),no=parseFloat(otherVal);
+    if(isNaN(nv)||isNaN(no)||nv===no)return CREAM;
+    return (lib?(nv<no):(nv>no))?GREEN:RED;
+  }
+
+  allRows.forEach(([label,a,b,lib],i)=>{
+    const ry=y+i*rowH;
+    if(i>0){
+      ctx.strokeStyle='rgba(245,240,232,.06)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(PAD+10,ry); ctx.lineTo(W-PAD-10,ry); ctx.stroke();
+    }
+    const mid=W/2;
+    // Label
+    ctx.font='500 9px "DM Sans",sans-serif'; ctx.letterSpacing='.5px';
+    ctx.fillStyle=TAN; ctx.textAlign='center';
+    ctx.fillText(label.toUpperCase(),mid,ry+rowH/2+4);
+    // Value A
+    ctx.font='bold 16px "Bebas Neue",serif'; ctx.letterSpacing='1px';
+    ctx.fillStyle=relColor(a,b,lib); ctx.textAlign='center';
+    ctx.fillText(String(a),PAD+(W/2-PAD)/2,ry+rowH/2+5);
+    // Value B
+    ctx.fillStyle=relColor(b,a,lib);
+    ctx.fillText(String(b),W/2+(W/2-PAD)/2,ry+rowH/2+5);
+  });
+
+  y+=tableH;
+
+  // Footer
+  ctx.font='400 9px "DM Sans",sans-serif'; ctx.letterSpacing='.3px';
+  ctx.fillStyle='rgba(245,240,232,0.3)'; ctx.textAlign='center';
+  ctx.fillText('voicescore.app',W/2,y+22);
+
+  // Show overlay
+  canvas.toBlob(blob=>{
+    const url=URL.createObjectURL(blob);
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;';
+    const img=document.createElement('img');
+    img.src=url; img.style.cssText='max-width:100%;max-height:70vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.6);';
+    const hint=document.createElement('div');
+    hint.style.cssText='color:rgba(245,240,232,.6);font-size:.8rem;font-family:"DM Sans",sans-serif;';
+    hint.textContent='Press and hold image to save or share';
+    const dlBtn=document.createElement('button');
+    dlBtn.style.cssText='padding:10px 24px;border-radius:8px;border:1px solid rgba(201,168,76,.5);background:transparent;color:#c9a84c;font-family:"DM Sans",sans-serif;font-size:.85rem;cursor:pointer;';
+    dlBtn.textContent='Download PNG';
+    dlBtn.onclick=()=>{const a=document.createElement('a');a.href=url;a.download='voicescore-h2h.png';a.click();};
+    overlay.appendChild(img); overlay.appendChild(hint); overlay.appendChild(dlBtn);
+    overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+    document.body.appendChild(overlay);
+  });
+}
+
 async function loadStats(){
   const el=document.getElementById('stats-content');
   if(!isPro()){
@@ -4319,6 +4465,10 @@ function renderH2H(){
 
   // Hole by hole chart (only if both LIVE)
   el.innerHTML=headerHtml+`<div style="background:rgba(245,240,232,.06);border-radius:12px;overflow:hidden;">${rowsHtml}</div>`;
+  // Show share button and store snapshot
+  const shareBtn=document.getElementById('share-h2h-btn');
+  if(shareBtn)shareBtn.style.display='flex';
+  window._h2hSnapshot={rA,rB,allRows};
   if(!bothLive&&data.length>=2&&!(statsA&&statsB)){
     el.innerHTML+=`<div style="font-size:.72rem;color:var(--tan);text-align:center;margin-top:10px;font-style:italic;">Hole-by-hole chart available when both rounds are scored live.</div>`;
   }
@@ -6638,7 +6788,7 @@ document.addEventListener('DOMContentLoaded', function(){
     <div style="display:flex;align-items:center;gap:10px;">
       <button onclick="shareStats()" style="background:none;border:none;cursor:pointer;color:var(--gold);display:flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;font-size:.78rem;padding:6px 8px;border-radius:8px;border:1px solid rgba(201,168,76,.3);" title="Share Stats">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        Share
+        Share Stats
       </button>
       <button class="btn-back" onclick="showSetupFromStats()">&#8592; Back</button>
     </div>
@@ -6754,7 +6904,13 @@ document.addEventListener('DOMContentLoaded', function(){
   </div>
   <div class="compare-header">
     <h2>Compare Rounds</h2>
-    <button class="btn-back" onclick="navTo('play')">&#8592; Back</button>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button onclick="shareH2H()" id="share-h2h-btn" style="display:none;background:none;border:none;cursor:pointer;color:var(--gold);display:flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;font-size:.78rem;padding:6px 8px;border-radius:8px;border:1px solid rgba(201,168,76,.3);" title="Share H2H">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share H2H
+      </button>
+      <button class="btn-back" onclick="navTo('play')">&#8592; Back</button>
+    </div>
   </div>
   <div id="compare-content"><div class="stats-loading">Loading...</div></div>
 </div>
