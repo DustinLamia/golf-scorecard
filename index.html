@@ -6037,6 +6037,10 @@ async function submitAuth(){
   const btn=document.getElementById('auth-submit');
   if(!email||!password){errEl.textContent='Please fill in all fields.';return;}
   if(authMode==='signup'&&(!firstName||!lastName||!username)){errEl.textContent='Please fill in all fields.';return;}
+  if(authMode==='signup'&&username){
+    const available=await checkUsernameAvailable(username,'00000000-0000-0000-0000-000000000000');
+    if(!available){errEl.textContent='That username is already taken.';return;}
+  }
   btn.disabled=true;btn.textContent='...';
   errEl.textContent='';
   let result;
@@ -6052,6 +6056,9 @@ async function submitAuth(){
     errEl.style.color='var(--gold)';
     errEl.textContent='Check your email to confirm your account.';
     return;
+  }
+  if(authMode==='signup'&&result.data?.user?.id){
+    await upsertProfile(result.data.user.id,{username,first_name:firstName,last_name:lastName,display_name:firstName+' '+lastName});
   }
   closeAuthModal();
 }
