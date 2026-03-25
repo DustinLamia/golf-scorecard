@@ -418,7 +418,7 @@
 <div id="welcome-screen" style="display:flex;">
   <div class="welcome-logo">
     <h1>VoiceScore</h1>
-    <p>Hands Free &middot; Golf Scorecard</p>
+    <p>Hands Free &middot; Golf Scorecard &amp; Stat Tracking</p>
   </div>
   <div class="welcome-tiers">
     <div class="tier-card tier-free">
@@ -456,7 +456,7 @@
 
 <header style="display:none;text-align:center;" id="main-header">
   <h1 style="font-family:'Bebas Neue',cursive;font-size:clamp(2.8rem,10vw,4.2rem);letter-spacing:6px;color:var(--cream);text-shadow:2px 3px 0 rgba(0,0,0,.35),0 0 30px rgba(255,220,100,.15);margin:0 0 2px;">VoiceScore</h1>
-  <p style="font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;">Hands Free &middot; Golf Scorecard</p>
+  <p style="font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;">Hands Free &middot; Golf Scorecard &amp; Stat Tracking</p>
   <button class="auth-btn" id="auth-btn" onclick="toggleUserMenu()" style="display:none;">Sign In</button>
   <div class="user-menu" id="user-menu">
     <div class="user-menu-email" id="user-menu-email"></div>
@@ -2235,7 +2235,11 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
   ctx.font='bold 36px "Bebas Neue", serif';
   ctx.letterSpacing='4px';
   ctx.fillStyle=CREAM;
-  ctx.fillText('VOICESCORE',CARD_PAD,TOP_H-16);
+  ctx.fillText('VOICESCORE',CARD_PAD,TOP_H-18);
+  ctx.font='10px "DM Sans", sans-serif';
+  ctx.letterSpacing='1.5px';
+  ctx.fillStyle='rgba(245,240,232,0.45)';
+  ctx.fillText('HANDS FREE · GOLF SCORECARD & STAT TRACKING',CARD_PAD,TOP_H-5);
 
   // ── Table ──
   let y=TOP_H;
