@@ -569,10 +569,6 @@ function mpIdentify(id, props){try{if(typeof mixpanel!=='undefined'){mixpanel.id
     </div>
   </div>
 
-  <div id="pro-nudge-banner" style="display:none;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:10px 14px;margin-bottom:10px;display:none;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;">
-    <div style="font-size:.78rem;color:var(--tan);line-height:1.4;">Enjoying VoiceScore? Upgrade to Pro to save your rounds and track your stats.</div>
-    <span onclick="launchStripeCheckout()" style="font-size:.75rem;color:var(--gold);cursor:pointer;text-decoration:underline;white-space:nowrap;flex-shrink:0;">Go Pro</span>
-  </div>
   <div id="free-rounds-indicator" style="display:none;text-align:center;font-size:.78rem;color:var(--tan);margin-bottom:8px;letter-spacing:.3px;"></div>
   <button class="btn-start" id="start-btn" onclick="startRound()">Start Round</button>
   <div style="text-align:center;margin-top:12px;">
@@ -4583,6 +4579,11 @@ function navTo(screen){
       // Link Google button
       const linkWrap=document.getElementById('profile-link-google-wrap');
       if(linkWrap){linkWrap.style.display=isGoogle?'none':'block';}
+      // Check if username is missing from profiles table and show nudge
+      supa.from('profiles').select('username').eq('id',currentUser.id).single().then(({data})=>{
+        const nudge=document.getElementById('profile-complete-nudge');
+        if(nudge){nudge.style.display=(!data||!data.username)?'block':'none';}
+      });
     }
     if(!window._proStatusReady){
       loadProStatus().then(()=>{ renderProStatus(); loadProfileStats(); });
@@ -4759,18 +4760,14 @@ function updateFreeRoundsIndicator(){
   if(!currentUser||isPro()){el.style.display='none';return;}
   const used=window._freeRoundsUsed||0;
   const remaining=3-used;
-  const nudge=document.getElementById('pro-nudge-banner');
   if(remaining<=0){
     el.style.display='block';
     el.style.color='#f0a090';
     el.innerHTML='You\'ve used all 3 free rounds &mdash; <span onclick="showProUpsell(\'Unlimited Voice Scoring\')" style="color:var(--gold);cursor:pointer;text-decoration:underline;">Upgrade to Pro</span>';
-    if(nudge)nudge.style.display='none';
   } else {
     el.style.display='block';
     el.style.color='var(--tan)';
     el.textContent=used+' of 3 free rounds used';
-    // Show subtle nudge banner after rounds 1 and 2
-    if(nudge)nudge.style.display=used>=1?'flex':'none';
   }
 }
 
@@ -6310,13 +6307,6 @@ async function submitAuth(){
     await upsertProfile(result.data.user.id,{username,first_name:firstName,last_name:lastName,display_name:firstName+' '+lastName});
   }
   closeAuthModal();
-  // Show voice instructions to new signups so they know how to use the app
-  if(authMode==='signup'&&result.data?.session){
-    setTimeout(()=>{
-      document.getElementById('voice-help-overlay').style.display='flex';
-      localStorage.setItem('vs_help_seen','1');
-    },800);
-  }
 }
 
 async function signInWithGoogle(){
@@ -6360,11 +6350,6 @@ async function submitOnboarding(){
   if(p1&&!p1.value)p1.value=firstName;
   const sessionRaw=readSession();
   if(sessionRaw){restoreSession();}else{const lastScreen=sessionStorage.getItem('vs_screen')||'play';navTo(lastScreen);}
-  // Show voice instructions to new Google users
-  setTimeout(()=>{
-    document.getElementById('voice-help-overlay').style.display='flex';
-    localStorage.setItem('vs_help_seen','1');
-  },800);
 }
 
 async function signOut(){
@@ -6403,6 +6388,8 @@ async function saveProfileName(){
   if(p1Input&&(p1Input.value===oldFirst||p1Input.value==='')){p1Input.value=firstName;}
   msgEl.style.color='#7ec8f5';msgEl.textContent='Saved!';
   setTimeout(()=>{msgEl.textContent='';},3000);
+  const nudge=document.getElementById('profile-complete-nudge');
+  if(nudge)nudge.style.display='none';
 }
 
 function toggleUserMenu(){
@@ -6709,6 +6696,7 @@ document.addEventListener('DOMContentLoaded', function(){
     </div>
     <div style="font-size:.73rem;color:var(--tan);margin-bottom:14px;opacity:.8;">First name is used as your default player name on scorecards.</div>
     <div id="profile-name-msg" style="font-size:.8rem;min-height:18px;margin-bottom:10px;"></div>
+    <div id="profile-complete-nudge" style="display:none;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:.78rem;color:var(--gold);line-height:1.5;">Your profile is almost complete — tap Save Changes to finish setting up your username.</div>
     <button onclick="saveProfileName()" style="padding:10px 22px;border-radius:8px;border:1px solid rgba(201,168,76,.5);background:transparent;color:var(--gold);font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;">Save Changes</button>
   </div>
 
