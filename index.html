@@ -226,6 +226,7 @@
   .goal-avg{font-size:.75rem;color:var(--tan);margin-top:4px;}
   .goal-input-wrap{display:flex;align-items:center;gap:10px;flex-shrink:0;}
   .goal-input{width:72px;background:rgba(0,0,0,.35);border:1px solid rgba(245,240,232,.2);border-radius:10px;padding:12px 10px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:1.4rem;text-align:center;outline:none;}
+  .goal-input::placeholder{color:rgba(245,240,232,.3);font-size:1rem;}
   .goal-input:focus{border-color:var(--gold);}
   .goal-unit{font-size:.8rem;color:var(--tan);white-space:nowrap;}
   .btn-save-goals{width:100%;padding:16px;background:var(--gold);border:none;border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;color:var(--dark);cursor:pointer;margin-top:16px;}
@@ -6942,15 +6943,15 @@ document.addEventListener('DOMContentLoaded', function(){
       <div style="display:flex;flex-direction:column;gap:14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
           <div style="font-size:.82rem;color:var(--tan);">Break (strokes)</div>
-          <input class="goal-input" type="number" id="goal-strokes" min="50" max="150" placeholder="--" style="width:72px;">
+          <input class="goal-input" type="number" id="goal-strokes" min="50" max="150" placeholder="e.g. 90" style="width:72px;">
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
           <div style="font-size:.82rem;color:var(--tan);">Pars or better</div>
-          <input class="goal-input" type="number" id="goal-pars" min="0" max="18" placeholder="--" style="width:72px;">
+          <input class="goal-input" type="number" id="goal-pars" min="0" max="18" placeholder="e.g. 6" style="width:72px;">
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
           <div style="font-size:.82rem;color:var(--tan);">Birdies</div>
-          <input class="goal-input" type="number" id="goal-birdies" min="0" max="18" placeholder="--" style="width:72px;">
+          <input class="goal-input" type="number" id="goal-birdies" min="0" max="18" placeholder="e.g. 1" style="width:72px;">
         </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:16px;">
