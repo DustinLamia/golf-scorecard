@@ -4516,12 +4516,13 @@ async function finishRound(){
   const btn=document.querySelector('.btn-finish');
   if(btn){btn.textContent='Saving...';btn.disabled=true;}
   const {error}=await supa.from('rounds').insert(roundData);
-  if(btn){btn.textContent='Finish & Save Round';btn.disabled=false;}
   if(error){
+    if(btn){btn.textContent='Finish & Save Round';btn.disabled=false;}
     document.getElementById('voice-feedback').textContent='Error saving round. Try again.';
     setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},4000);
     return;
   }
+  if(btn){btn.textContent='Round Saved';btn.disabled=true;}
   document.getElementById('voice-feedback').textContent='Round saved!';
   setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
   localStorage.removeItem('vs_session');
@@ -4532,14 +4533,14 @@ async function finishRound(){
     await supa.from('profiles').update({free_rounds_used:newCount}).eq('id',currentUser.id);
     updateFreeRoundsIndicator();
     if(newCount>=3){
-      showFreeRoundsUpgradePrompt();
+      showPostRoundPrompt(true);
       return;
     }
   }
   showPostRoundPrompt();
 }
 
-function showPostRoundPrompt(){
+function showPostRoundPrompt(showUpgradeAfter=false){
   const overlay=document.createElement('div');
   overlay.id='post-round-prompt';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -4549,11 +4550,11 @@ function showPostRoundPrompt(){
       <div style="font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px;color:var(--gold);margin-bottom:6px;">Round Saved!</div>
       <div style="font-size:.85rem;color:var(--tan);margin-bottom:22px;">Want to share your scorecard?</div>
       <div style="display:flex;flex-direction:column;gap:10px;">
-        <button onclick="document.getElementById('post-round-prompt').remove();exportScores();setTimeout(()=>resetRound(),500);"
+        <button id="post-round-share-btn"
           style="padding:12px;background:var(--gold);border:none;border-radius:8px;font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;color:var(--dark);cursor:pointer;">
           &#128247; Share Scorecard
         </button>
-        <button onclick="document.getElementById('post-round-prompt').remove();resetRound();"
+        <button id="post-round-skip-btn"
           style="padding:12px;background:transparent;border:1px solid rgba(245,240,232,.25);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.875rem;color:var(--cream);cursor:pointer;">
           Skip &mdash; Start New Round
         </button>
@@ -4561,6 +4562,19 @@ function showPostRoundPrompt(){
     </div>
   `;
   document.body.appendChild(overlay);
+  document.getElementById('post-round-share-btn').onclick=()=>{
+    overlay.remove();
+    exportScores();
+    setTimeout(()=>{
+      if(showUpgradeAfter){showFreeRoundsUpgradePrompt();}
+      else{resetRound();}
+    },800);
+  };
+  document.getElementById('post-round-skip-btn').onclick=()=>{
+    overlay.remove();
+    if(showUpgradeAfter){showFreeRoundsUpgradePrompt();}
+    else{resetRound();}
+  };
 }
 
 function updateFreeRoundsIndicator(){
@@ -4594,10 +4608,6 @@ function showFreeRoundsUpgradePrompt(){
         <button onclick="document.getElementById('free-rounds-prompt').remove();launchStripeCheckout();"
           style="padding:13px;background:var(--gold);border:none;border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:2px;color:var(--dark);cursor:pointer;">
           Go Pro &mdash; $14.99
-        </button>
-        <button onclick="document.getElementById('free-rounds-prompt').remove();exportScores();setTimeout(()=>resetRound(),500);"
-          style="padding:11px;background:transparent;border:1px solid rgba(245,240,232,.25);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--cream);cursor:pointer;">
-          &#128247; Share Scorecard First
         </button>
         <button onclick="document.getElementById('free-rounds-prompt').remove();resetRound();"
           style="padding:11px;background:transparent;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--tan);cursor:pointer;">
