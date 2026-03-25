@@ -4456,20 +4456,40 @@ function navTo(screen){
     } else { loadStats(); }
   } else if(screen==='profile'){
     document.getElementById('profile-screen').style.display='block';
-    const emailEl=document.getElementById('profile-email');
-    if(emailEl&&currentUser)emailEl.textContent=currentUser.email;
-    // Pre-fill name fields
     if(currentUser){
       const m=currentUser.user_metadata||{};
+      // Pre-fill edit fields
       document.getElementById('profile-first-name').value=m.first_name||'';
       document.getElementById('profile-last-name').value=m.last_name||'';
       document.getElementById('profile-username').value=m.username||'';
       document.getElementById('profile-name-msg').textContent='';
+      // Profile header
+      const firstName=m.first_name||'';
+      const lastName=m.last_name||'';
+      const fullName=(firstName+' '+lastName).trim()||'Your Name';
+      const initials=((firstName[0]||'')+(lastName[0]||'')).toUpperCase()||'?';
+      document.getElementById('profile-avatar').textContent=initials;
+      document.getElementById('profile-display-name').textContent=fullName;
+      document.getElementById('profile-username-display').textContent=m.username?('@'+m.username):'';
+      // Member since
+      const created=currentUser.created_at;
+      if(created){
+        const d=new Date(created);
+        document.getElementById('profile-member-since').textContent='Member since '+d.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      }
+      // Email with Google badge
+      const emailEl=document.getElementById('profile-email');
       const providers=(currentUser.identities||[]).map(i=>i.provider);
+      const isGoogle=providers.includes('google');
+      emailEl.innerHTML=isGoogle
+        ? '<svg width="14" height="14" viewBox="0 0 48 48" style="flex-shrink:0;"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>'+currentUser.email+'</span>'
+        : '<span>'+currentUser.email+'</span>';
+      // Link Google button
       const linkWrap=document.getElementById('profile-link-google-wrap');
-      if(linkWrap){linkWrap.style.display=providers.includes('google')?'none':'block';}
+      if(linkWrap){linkWrap.style.display=isGoogle?'none':'block';}
     }
     renderProStatus();
+    loadProfileStats();
   } else if(screen==='compare'){
     document.getElementById('compare-screen').style.display='block';
     if(!window._proStatusReady){
@@ -5163,15 +5183,52 @@ function renderProStatus() {
   const planEl = document.getElementById('profile-plan-status');
   const planDesc = document.getElementById('profile-plan-desc');
   const goBtnEl = document.getElementById('profile-go-pro-btn');
+  const proBadge = document.getElementById('profile-pro-badge');
+  const statsSection = document.getElementById('profile-stats-section');
   if (!planEl || !goBtnEl) return;
   if (currentIsPro) {
     planEl.innerHTML = '<span style="color:var(--gold);font-weight:700;">PRO</span>';
     if (planDesc) planDesc.textContent = 'You have lifetime access to all Pro features.';
     goBtnEl.style.display = 'none';
+    if (proBadge) proBadge.style.display = 'block';
+    if (statsSection) statsSection.style.display = 'block';
   } else {
     planEl.textContent = 'Free';
-    if (planDesc) planDesc.textContent = 'Upgrade to Pro for stats, handicap tracking, and Versus mode.';
+    if (planDesc) planDesc.textContent = 'Upgrade to Pro for stats, handicap tracking, and round history.';
     goBtnEl.style.display = 'inline-block';
+    if (proBadge) proBadge.style.display = 'none';
+    if (statsSection) statsSection.style.display = 'none';
+  }
+}
+
+async function loadProfileStats(){
+  if(!isPro()||!currentUser)return;
+  const {data:rounds}=await supa.from('rounds').select('total_strokes,score_vs_par,pars').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  if(!rounds||!rounds.length)return;
+  // Rounds played
+  document.getElementById('profile-stat-rounds').textContent=rounds.length;
+  // Best round (lowest strokes)
+  const best=rounds.reduce((b,r)=>r.total_strokes<b?r.total_strokes:b,rounds[0].total_strokes);
+  document.getElementById('profile-stat-best').textContent=best;
+  // Scoring average
+  const avg=rounds.reduce((s,r)=>s+r.total_strokes,0)/rounds.length;
+  document.getElementById('profile-stat-avg').textContent=avg.toFixed(1);
+  // vs par average
+  const validPar=rounds.filter(r=>r.score_vs_par!=null);
+  if(validPar.length){
+    const avgPar=validPar.reduce((s,r)=>s+r.score_vs_par,0)/validPar.length;
+    const sign=avgPar>=0?'+':'';
+    document.getElementById('profile-stat-avg-par').textContent='('+sign+avgPar.toFixed(1)+')';
+  }
+  // Handicap index
+  const hcpRounds=rounds.filter(r=>r.score_vs_par!=null).slice(0,20);
+  if(hcpRounds.length>=3){
+    const diffs=hcpRounds.map(r=>r.score_vs_par*0.96);
+    const take=Math.max(1,Math.floor(hcpRounds.length*0.4));
+    const best4=diffs.sort((a,b)=>a-b).slice(0,take);
+    const hcp=best4.reduce((s,d)=>s+d,0)/best4.length;
+    const sign=hcp>=0?'+':'';
+    document.getElementById('profile-stat-handicap').textContent=sign+hcp.toFixed(1);
   }
 }
 
@@ -6447,7 +6504,42 @@ document.addEventListener('DOMContentLoaded', function(){
   <div class="return-to-round-bar" id="profile-return-bar" onclick="returnToRound()">
     <span>&#9654; Return to Live Round</span>
   </div>
-  <h2 style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:20px;">Profile</h2>
+
+  <!-- Profile Header -->
+  <div style="background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:14px;padding:20px;margin-bottom:12px;display:flex;align-items:center;gap:16px;">
+    <div id="profile-avatar" style="width:58px;height:58px;border-radius:50%;background:rgba(201,168,76,.2);border:2px solid rgba(201,168,76,.4);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',cursive;font-size:1.5rem;color:var(--gold);flex-shrink:0;">?</div>
+    <div style="flex:1;min-width:0;">
+      <div id="profile-display-name" style="font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:2px;color:var(--cream);line-height:1.2;">Your Name</div>
+      <div id="profile-username-display" style="font-size:.78rem;color:var(--tan);margin-top:2px;"></div>
+      <div id="profile-member-since" style="font-size:.72rem;color:var(--tan);opacity:.6;margin-top:3px;"></div>
+    </div>
+    <div id="profile-pro-badge" style="display:none;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.4);border-radius:6px;padding:4px 10px;font-family:'Bebas Neue',cursive;font-size:.9rem;letter-spacing:2px;color:var(--gold);flex-shrink:0;">PRO</div>
+  </div>
+
+  <!-- Stats Summary (Pro only) -->
+  <div id="profile-stats-section" style="display:none;margin-bottom:12px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:16px;text-align:center;">
+        <div id="profile-stat-rounds" style="font-family:'Bebas Neue',cursive;font-size:1.8rem;color:var(--gold);line-height:1;">--</div>
+        <div style="font-size:.68rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Rounds Played</div>
+      </div>
+      <div style="background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:16px;text-align:center;">
+        <div id="profile-stat-handicap" style="font-family:'Bebas Neue',cursive;font-size:1.8rem;color:var(--gold);line-height:1;">--</div>
+        <div style="font-size:.68rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Handicap Index</div>
+      </div>
+      <div style="background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:16px;text-align:center;">
+        <div id="profile-stat-best" style="font-family:'Bebas Neue',cursive;font-size:1.8rem;color:var(--gold);line-height:1;">--</div>
+        <div style="font-size:.68rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Best Round</div>
+      </div>
+      <div style="background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:16px;text-align:center;">
+        <div style="display:flex;align-items:baseline;justify-content:center;gap:6px;">
+          <div id="profile-stat-avg" style="font-family:'Bebas Neue',cursive;font-size:1.8rem;color:var(--gold);line-height:1;">--</div>
+          <div id="profile-stat-avg-par" style="font-family:'Bebas Neue',cursive;font-size:1rem;color:var(--tan);line-height:1;"></div>
+        </div>
+        <div style="font-size:.68rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Scoring Avg</div>
+      </div>
+    </div>
+  </div>
 
   <!-- Name & Username -->
   <div style="background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:20px;margin-bottom:12px;">
@@ -6477,7 +6569,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <!-- Account -->
   <div style="background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:20px;margin-bottom:12px;">
     <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Account</div>
-    <div id="profile-email" style="font-size:.95rem;color:var(--cream);margin-bottom:16px;"></div>
+    <div id="profile-email" style="font-size:.9rem;color:var(--cream);margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div>
     <div id="profile-link-google-wrap" style="margin-bottom:14px;display:none;">
       <button onclick="linkGoogleAccount()" style="width:100%;padding:10px;background:white;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;color:#1f1f1f;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;"><svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Link Google Account</button>
       <div id="profile-link-google-msg" style="font-size:.75rem;color:var(--tan);margin-top:6px;text-align:center;min-height:16px;"></div>
@@ -6489,7 +6581,7 @@ document.addEventListener('DOMContentLoaded', function(){
   <div style="background:rgba(245,240,232,.06);border:1px solid rgba(201,168,76,.25);border-radius:12px;padding:20px;">
     <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Plan</div>
     <div id="profile-plan-status" style="font-size:.95rem;color:var(--cream);margin-bottom:4px;">Free</div>
-    <div id="profile-plan-desc" style="font-size:.78rem;color:var(--tan);margin-bottom:16px;">Upgrade to Pro for stats, handicap tracking, and Versus mode.</div>
+    <div id="profile-plan-desc" style="font-size:.78rem;color:var(--tan);margin-bottom:16px;">Upgrade to Pro for stats, handicap tracking, and round history.</div>
     <button id="profile-go-pro-btn" onclick="launchStripeCheckout()" style="padding:10px 20px;border-radius:8px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $14.99</button>
   </div>
 </div>
