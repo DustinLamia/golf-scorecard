@@ -3358,6 +3358,7 @@ async function loadStats(){
 
 // ── Log Past Round ──
 function openPastRound(){
+  if(!isPro()){showProUpsell('Log Past Round');return;}
   document.getElementById('history-screen').style.display='none';
   document.getElementById('past-round-screen').style.display='block';
   window._pastHoles=18;
