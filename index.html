@@ -557,6 +557,7 @@
     </div>
   </div>
 
+  <div id="free-rounds-indicator" style="display:none;text-align:center;font-size:.78rem;color:var(--tan);margin-bottom:8px;letter-spacing:.3px;"></div>
   <button class="btn-start" id="start-btn" onclick="startRound()">Start Round</button>
 </div>
 
@@ -1013,6 +1014,10 @@ function startRound(){
     document.getElementById('auth-toggle').innerHTML='Already have one? <span onclick="toggleAuthMode()">Sign in</span>';
     openAuthModal();
     return;
+  }
+  if(!isPro()){
+    const used=window._freeRoundsUsed||0;
+    if(used>=3){showProUpsell('Unlimited Voice Scoring');return;}
   }
   unlockAudio();
   const inputs=document.querySelectorAll('.player-name');
@@ -4444,10 +4449,6 @@ async function finishRound(){
     setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
     return;
   }
-  if(!isPro()){
-    showProUpsell('Saving Rounds & Round History');
-    return;
-  }
   const hasScores=scores.some(playerScores=>playerScores.some(s=>s!==null));
   if(!hasScores){
     document.getElementById('voice-feedback').textContent='No scores to save yet.';
@@ -4525,6 +4526,16 @@ async function finishRound(){
   setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
   localStorage.removeItem('vs_session');
   document.cookie='vs_session=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;';
+  if(!isPro()){
+    const newCount=(window._freeRoundsUsed||0)+1;
+    window._freeRoundsUsed=newCount;
+    await supa.from('profiles').update({free_rounds_used:newCount}).eq('id',currentUser.id);
+    updateFreeRoundsIndicator();
+    if(newCount>=3){
+      showFreeRoundsUpgradePrompt();
+      return;
+    }
+  }
   showPostRoundPrompt();
 }
 
@@ -4545,6 +4556,52 @@ function showPostRoundPrompt(){
         <button onclick="document.getElementById('post-round-prompt').remove();resetRound();"
           style="padding:12px;background:transparent;border:1px solid rgba(245,240,232,.25);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.875rem;color:var(--cream);cursor:pointer;">
           Skip &mdash; Start New Round
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function updateFreeRoundsIndicator(){
+  const el=document.getElementById('free-rounds-indicator');
+  if(!el)return;
+  if(!currentUser||isPro()){el.style.display='none';return;}
+  const used=window._freeRoundsUsed||0;
+  const remaining=3-used;
+  if(remaining<=0){
+    el.style.display='block';
+    el.style.color='#f0a090';
+    el.innerHTML='You\'ve used all 3 free rounds &mdash; <span onclick="showProUpsell(\'Unlimited Voice Scoring\')" style="color:var(--gold);cursor:pointer;text-decoration:underline;">Upgrade to Pro</span>';
+  } else {
+    el.style.display='block';
+    el.style.color='var(--tan)';
+    el.textContent=used+' of 3 free rounds used';
+  }
+}
+
+function showFreeRoundsUpgradePrompt(){
+  const overlay=document.createElement('div');
+  overlay.id='free-rounds-prompt';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML=`
+    <div style="background:#1e3d1a;border:1px solid rgba(201,168,76,.4);border-radius:16px;padding:28px 24px;width:100%;max-width:360px;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:8px;">&#9971;</div>
+      <div style="font-family:'Bebas Neue',cursive;font-size:1.5rem;letter-spacing:3px;color:var(--gold);margin-bottom:8px;">Round Saved!</div>
+      <div style="font-size:.85rem;color:var(--tan);margin-bottom:6px;">You've used all 3 free rounds.</div>
+      <div style="font-size:.85rem;color:var(--cream);margin-bottom:22px;line-height:1.6;">Upgrade to Pro to keep playing and unlock your full stats, handicap, and round history.</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button onclick="document.getElementById('free-rounds-prompt').remove();launchStripeCheckout();"
+          style="padding:13px;background:var(--gold);border:none;border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:2px;color:var(--dark);cursor:pointer;">
+          Go Pro &mdash; $14.99
+        </button>
+        <button onclick="document.getElementById('free-rounds-prompt').remove();exportScores();setTimeout(()=>resetRound(),500);"
+          style="padding:11px;background:transparent;border:1px solid rgba(245,240,232,.25);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--cream);cursor:pointer;">
+          &#128247; Share Scorecard First
+        </button>
+        <button onclick="document.getElementById('free-rounds-prompt').remove();resetRound();"
+          style="padding:11px;background:transparent;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.78rem;color:var(--tan);cursor:pointer;">
+          Maybe Later
         </button>
       </div>
     </div>
@@ -5044,10 +5101,12 @@ function isPro() {
 
 async function loadProStatus() {
   if (!currentUser) { currentIsPro = false; window._proStatusReady = true; return; }
-  const { data } = await supa.from('profiles').select('is_pro').eq('id', currentUser.id).single();
+  const { data } = await supa.from('profiles').select('is_pro, free_rounds_used').eq('id', currentUser.id).single();
   currentIsPro = !!(data && data.is_pro);
+  window._freeRoundsUsed = (data && data.free_rounds_used) || 0;
   window._proStatusReady = true;
   renderProStatus();
+  updateFreeRoundsIndicator();
 }
 
 function renderProStatus() {
