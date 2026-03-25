@@ -1827,6 +1827,37 @@ function unlockAudio(){
   const u=new SpeechSynthesisUtterance(' ');
   u.volume=0.01;u.rate=1;
   window.speechSynthesis.speak(u);
+  // Start silent audio loop to keep AudioContext alive on locked screen
+  startSilentAudioLoop();
+}
+
+function startSilentAudioLoop(){
+  if(window._silentLoopActive)return;
+  try{
+    const ctx=window._audioCtx||(window._audioCtx=new(window.AudioContext||window.webkitAudioContext)());
+    if(ctx.state==='suspended')ctx.resume();
+    // Create a silent oscillator at 0 gain — inaudible but keeps the audio session alive
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    gain.gain.value=0.001; // near silent
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    window._silentOscillator=osc;
+    window._silentLoopActive=true;
+    // Resume AudioContext if it gets suspended (happens on lock/unlock)
+    window._audioKeepAlive=setInterval(()=>{
+      if(ctx.state==='suspended')ctx.resume();
+    },2000);
+  }catch(e){/* silent fail */}
+}
+
+function stopSilentAudioLoop(){
+  try{
+    if(window._silentOscillator){window._silentOscillator.stop();window._silentOscillator=null;}
+    if(window._audioKeepAlive){clearInterval(window._audioKeepAlive);window._audioKeepAlive=null;}
+    window._silentLoopActive=false;
+  }catch(e){}
 }
 
 function speakNow(btn){
@@ -2716,6 +2747,8 @@ function resetRound(){
   window._matchClosedPrompted=false;
   isListening=false;
   if(recognition){recognition._killed=true;try{recognition.stop();}catch(e){}}
+  stopSilentAudioLoop();
+  window._audioUnlocked=false;
   selectedCourse=null;selectedTee=null;
   versusMode=null;
   teamAssignment=[];
