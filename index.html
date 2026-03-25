@@ -6484,7 +6484,7 @@ function setUser(user){
       await loadProStatus();
       if(currentIsPro){
         showToast('Welcome to VoiceScore Pro!');
-        navTo('profile');
+        navTo('play');
       }
     },2000);
   }
@@ -6526,8 +6526,7 @@ function hideWelcomeScreen(){
   document.getElementById('welcome-screen').style.display='none';
   document.getElementById('main-header').style.display='block';
   showBottomNav();
-  const lastScreen=sessionStorage.getItem('vs_screen')||'play';
-  navTo(lastScreen);
+  navTo('play');
 }
 
 function openAuthModal(){
