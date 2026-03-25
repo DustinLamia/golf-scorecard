@@ -597,6 +597,10 @@ function mpIdentify(id, props){try{if(typeof mixpanel!=='undefined'){mixpanel.id
     </div>
   </div>
 
+  <div id="pro-nudge-banner" style="display:none;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:10px 14px;margin-bottom:10px;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;">
+    <div style="font-size:.78rem;color:var(--tan);line-height:1.4;">Enjoying VoiceScore? Upgrade to Pro to save your rounds and track your stats.</div>
+    <span onclick="launchStripeCheckout()" style="font-size:.75rem;color:var(--gold);cursor:pointer;text-decoration:underline;white-space:nowrap;flex-shrink:0;">Go Pro</span>
+  </div>
   <div id="free-rounds-indicator" style="display:none;text-align:center;font-size:.78rem;color:var(--tan);margin-bottom:8px;letter-spacing:.3px;"></div>
   <button class="btn-start" id="start-btn" onclick="startRound()">Start Round</button>
   <div style="background:rgba(245,240,232,.06);border:1px solid rgba(245,240,232,.12);border-radius:12px;padding:20px;text-align:center;margin-top:12px;">
@@ -5038,14 +5042,17 @@ function updateFreeRoundsIndicator(){
   if(!currentUser||isPro()){el.style.display='none';return;}
   const used=window._freeRoundsUsed||0;
   const remaining=3-used;
+  const nudge=document.getElementById('pro-nudge-banner');
   if(remaining<=0){
     el.style.display='block';
     el.style.color='#f0a090';
     el.innerHTML='You\'ve used all 3 free rounds &mdash; <span onclick="showProUpsell(\'Unlimited Voice Scoring\')" style="color:var(--gold);cursor:pointer;text-decoration:underline;">Upgrade to Pro</span>';
+    if(nudge)nudge.style.display='none';
   } else {
     el.style.display='block';
     el.style.color='var(--tan)';
     el.textContent=used+' of 3 free rounds used';
+    if(nudge)nudge.style.display=used>=1?'flex':'none';
   }
 }
 
