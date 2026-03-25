@@ -3409,9 +3409,7 @@ async function loadStats(){
     </div>
   </div>
 
-  <div style="display:flex;justify-content:center;padding:12px 20px 20px;">
-    <button onclick="shareStats()" style="padding:18px 36px;border-radius:14px;border:1px solid rgba(201,168,76,.5);background:rgba(201,168,76,.1);color:var(--gold);font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:3px;cursor:pointer;width:100%;max-width:400px;">&#128202; Share My Stats</button>
-  </div>
+
   `;
 
   // Store stats globally for canvas export
@@ -6608,7 +6606,13 @@ document.addEventListener('DOMContentLoaded', function(){
   </div>
   <div class="stats-header">
     <h2>My Stats</h2>
-    <button class="btn-back" onclick="showSetupFromStats()">&#8592; Back</button>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button onclick="shareStats()" style="background:none;border:none;cursor:pointer;color:var(--gold);display:flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;font-size:.78rem;padding:6px 8px;border-radius:8px;border:1px solid rgba(201,168,76,.3);" title="Share Stats">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Share
+      </button>
+      <button class="btn-back" onclick="showSetupFromStats()">&#8592; Back</button>
+    </div>
   </div>
   <div id="stats-content"><div class="stats-loading">Loading...</div></div>
 </div>
