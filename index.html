@@ -3636,6 +3636,7 @@ async function submitPastRound(){
   window._pastCourseData=null;
   window._pastSelectedTee=null;
   closePastRound();
+  if(isPro())loadProfileStats();
 }
 
 
@@ -4488,8 +4489,12 @@ function navTo(screen){
       const linkWrap=document.getElementById('profile-link-google-wrap');
       if(linkWrap){linkWrap.style.display=isGoogle?'none':'block';}
     }
-    renderProStatus();
-    loadProfileStats();
+    if(!window._proStatusReady){
+      loadProStatus().then(()=>{ renderProStatus(); loadProfileStats(); });
+    } else {
+      renderProStatus();
+      loadProfileStats();
+    }
   } else if(screen==='compare'){
     document.getElementById('compare-screen').style.display='block';
     if(!window._proStatusReady){
@@ -4593,6 +4598,7 @@ async function finishRound(){
       return;
     }
   }
+  if(isPro())loadProfileStats();
   showPostRoundPrompt();
 }
 
@@ -5202,7 +5208,14 @@ function renderProStatus() {
 }
 
 async function loadProfileStats(){
-  if(!isPro()||!currentUser)return;
+  if(!currentUser)return;
+  if(!currentIsPro){
+    // Wait for pro status to load then retry once
+    if(!window._proStatusReady){
+      await loadProStatus();
+    }
+    if(!currentIsPro)return;
+  }
   const {data:rounds}=await supa.from('rounds').select('total_strokes,score_vs_par,pars').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(100);
   if(!rounds||!rounds.length)return;
   const validRounds=rounds.filter(r=>r.total_strokes!=null&&r.total_strokes>0);
