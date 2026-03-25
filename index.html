@@ -5216,7 +5216,7 @@ async function loadProfileStats(){
     }
     if(!currentIsPro)return;
   }
-  const {data:rounds}=await supa.from('rounds').select('total_strokes,score_vs_par,pars').eq('user_id',currentUser.id).order('created_at',{ascending:false}).limit(100);
+  const {data:rounds}=await supa.from('rounds').select('total_strokes,score_vs_par,pars').eq('user_id',currentUser.id).limit(100);
   if(!rounds||!rounds.length)return;
   const validRounds=rounds.filter(r=>r.total_strokes!=null&&r.total_strokes>0);
   if(!validRounds.length)return;
