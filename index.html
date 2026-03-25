@@ -4316,48 +4316,7 @@ function renderH2H(){
     </div>`;
 
   // Hole by hole chart (only if both LIVE)
-  let holeChartHtml='';
-  if(bothLive&&scoresA&&scoresB&&parsA){
-    const holes=Math.min(scoresA.length,scoresB.length,parsA.length);
-    const diffsA=scoresA.slice(0,holes).map((s,i)=>s-(parsA[i]||4));
-    const diffsB=scoresB.slice(0,holes).map((s,i)=>s-(parsA[i]||4));
-    const allVals=[...diffsA,...diffsB].filter(v=>v!==null&&!isNaN(v));
-    const maxAbs=Math.max(Math.max(...allVals.map(Math.abs)),1);
-    const barH=28; // max bar height each direction
-    const totalH=barH*2+4;
-
-    const barsHtml=Array.from({length:holes},(_,i)=>{
-      const dA=diffsA[i]??0;
-      const dB=diffsB[i]??0;
-      const hA=Math.round((Math.abs(dA)/maxAbs)*barH);
-      const hB=Math.round((Math.abs(dB)/maxAbs)*barH);
-      const cA=dA<0?'#5bc85b':dA===0?'rgba(201,168,76,.5)':'#c0392b';
-      const cB=dB<0?'#4a9eff':dB===0?'rgba(201,168,76,.3)':'#e88';
-      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">
-        <div style="height:${barH}px;display:flex;align-items:flex-end;width:100%;gap:1px;">
-          <div style="flex:1;height:${hA}px;background:${cA};border-radius:2px 2px 0 0;min-height:${dA!==0?2:0}px;"></div>
-          <div style="flex:1;height:${hB}px;background:${cB};border-radius:2px 2px 0 0;min-height:${dB!==0?2:0}px;"></div>
-        </div>
-        <div style="width:100%;height:1px;background:rgba(245,240,232,.15);"></div>
-        <div style="font-size:.5rem;color:var(--tan);">${i+1}</div>
-      </div>`;
-    }).join('');
-
-    holeChartHtml=`
-      <div style="margin-top:16px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div style="font-size:.7rem;color:var(--tan);text-transform:uppercase;letter-spacing:1px;">Hole by Hole (vs Par)</div>
-          <div style="display:flex;gap:10px;font-size:.65rem;">
-            <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:#c0392b;border-radius:2px;display:inline-block;"></span><span style="width:8px;height:8px;background:#5bc85b;border-radius:2px;display:inline-block;"></span><span style="color:var(--gold);">A</span></span>
-            <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:#e07060;border-radius:2px;display:inline-block;"></span><span style="width:8px;height:8px;background:#4a9eff;border-radius:2px;display:inline-block;"></span><span style="color:var(--tan);">B</span></span>
-          </div>
-        </div>
-        <div style="display:flex;gap:2px;align-items:flex-end;height:${totalH}px;">${barsHtml}</div>
-        <div style="font-size:.6rem;color:var(--tan);margin-top:4px;">Red = over par &middot; Green = under par (A) &middot; Blue = under par (B)</div>
-      </div>`;
-  }
-
-  el.innerHTML=headerHtml+`<div style="background:rgba(245,240,232,.06);border-radius:12px;overflow:hidden;">${rowsHtml}</div>`+holeChartHtml;
+  el.innerHTML=headerHtml+`<div style="background:rgba(245,240,232,.06);border-radius:12px;overflow:hidden;">${rowsHtml}</div>`;
   if(!bothLive&&data.length>=2&&!(statsA&&statsB)){
     el.innerHTML+=`<div style="font-size:.72rem;color:var(--tan);text-align:center;margin-top:10px;font-style:italic;">Hole-by-hole chart available when both rounds are scored live.</div>`;
   }
