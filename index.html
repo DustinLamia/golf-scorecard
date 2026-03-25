@@ -4419,7 +4419,7 @@ function navTo(screen){
       document.getElementById('profile-last-name').value=m.last_name||'';
       document.getElementById('profile-username').value=m.username||'';
       document.getElementById('profile-name-msg').textContent='';
-      // Show Link Google button only for email/password users who have not linked Google yet
+      // Show Link Google button only for email/password users who haven't linked Google yet
       const providers=(currentUser.identities||[]).map(i=>i.provider);
       const linkWrap=document.getElementById('profile-link-google-wrap');
       if(linkWrap){linkWrap.style.display=providers.includes('google')?'none':'block';}
@@ -5861,6 +5861,20 @@ function setUser(user){
   showBottomNav();
   closeAuthModal();
   loadProStatus();
+  // Detect new Google users with no name/username set yet
+  const isGoogleUser=(user.identities||[]).some(i=>i.provider==='google');
+  const hasProfile=user.user_metadata?.first_name||user.user_metadata?.username;
+  if(isGoogleUser&&!hasProfile){
+    // Pre-fill from Google profile data if available
+    const gMeta=user.user_metadata||{};
+    if(gMeta.full_name){
+      const parts=gMeta.full_name.split(' ');
+      document.getElementById('onboard-first').value=parts[0]||'';
+      document.getElementById('onboard-last').value=parts.slice(1).join(' ')||'';
+    }
+    document.getElementById('google-onboard-overlay').style.display='flex';
+    return;
+  }
   // If an active round is saved, restore it — otherwise navigate to last screen
   const sessionRaw = readSession();
   console.log('[VS] setUser — readSession:', !!sessionRaw, '— ls direct:', !!localStorage.getItem('vs_session'));
@@ -5996,6 +6010,26 @@ async function linkGoogleAccount(){
     options:{redirectTo:'https://voicescore.app'}
   });
   if(error){msgEl.style.color='#f0a090';msgEl.textContent=error.message;}
+}
+
+async function submitOnboarding(){
+  const firstName=document.getElementById('onboard-first').value.trim();
+  const lastName=document.getElementById('onboard-last').value.trim();
+  const username=document.getElementById('onboard-username').value.trim();
+  const errEl=document.getElementById('onboard-error');
+  const btn=document.getElementById('onboard-submit');
+  if(!firstName||!username){errEl.textContent='First name and username are required.';return;}
+  btn.disabled=true;btn.textContent='Saving...';
+  const {data,error}=await supa.auth.updateUser({data:{first_name:firstName,last_name:lastName,username}});
+  if(error){errEl.textContent=error.message;btn.disabled=false;btn.textContent="Let's Play";return;}
+  currentUser=data.user;
+  document.getElementById('google-onboard-overlay').style.display='none';
+  const navBtn=document.getElementById('auth-btn');
+  if(navBtn){navBtn.textContent=firstName;navBtn.classList.add('signed-in');}
+  const p1=document.querySelectorAll('.player-name')[0];
+  if(p1&&!p1.value)p1.value=firstName;
+  const sessionRaw=readSession();
+  if(sessionRaw){restoreSession();}else{const lastScreen=sessionStorage.getItem('vs_screen')||'play';navTo(lastScreen);}
 }
 
 async function signOut(){
@@ -6334,6 +6368,31 @@ document.addEventListener('DOMContentLoaded', function(){
       <button class="btn-mp-close" onclick="closeMPResults()">Close</button>
       <button class="btn-mp-save" onclick="saveRoundFromMP()">Save Round</button>
     </div>
+  </div>
+</div>
+
+<!-- Google Onboarding Modal -->
+<div id="google-onboard-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#1e3d1a;border:1px solid rgba(201,168,76,.3);border-radius:16px;padding:28px 24px;width:100%;max-width:380px;">
+    <div style="text-align:center;margin-bottom:6px;">&#9971;</div>
+    <h2 style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;text-align:center;">One Last Thing</h2>
+    <p style="font-size:.78rem;color:var(--tan);margin-bottom:20px;text-align:center;">Set your name and username so your scorecards look great.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <label style="font-size:.72rem;color:var(--tan);display:block;margin-bottom:4px;">First Name</label>
+        <input id="onboard-first" type="text" placeholder="First" autocomplete="given-name" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid rgba(245,240,232,.2);background:rgba(0,0,0,.3);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:.72rem;color:var(--tan);display:block;margin-bottom:4px;">Last Name</label>
+        <input id="onboard-last" type="text" placeholder="Last" autocomplete="family-name" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid rgba(245,240,232,.2);background:rgba(0,0,0,.3);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;">
+      </div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-size:.72rem;color:var(--tan);display:block;margin-bottom:4px;">Username</label>
+      <input id="onboard-username" type="text" placeholder="e.g. dustin_golf" autocomplete="username" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:8px;border:1px solid rgba(245,240,232,.2);background:rgba(0,0,0,.3);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;">
+    </div>
+    <div id="onboard-error" style="font-size:.78rem;color:#f0a090;min-height:18px;margin-bottom:10px;text-align:center;"></div>
+    <button onclick="submitOnboarding()" id="onboard-submit" style="width:100%;padding:13px;background:var(--gold);border:none;border-radius:10px;font-family:'Bebas Neue',cursive;font-size:1.2rem;letter-spacing:2px;color:var(--dark);cursor:pointer;">Let's Play</button>
   </div>
 </div>
 
