@@ -1215,7 +1215,10 @@ function manualScore(pi,hi,val){
             const cellLeft=nextEl.offsetLeft;
             wrapper.scrollLeft=Math.max(0,cellLeft-wrapper.clientWidth/3);
           }
-        },150);
+          // Auto-focus first empty input on next hole
+          const nextInput=document.getElementById('s-0-'+(nextHole-1));
+          if(nextInput){nextInput.focus();nextInput.select();}
+        },200);
       }
     }
   }
