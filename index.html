@@ -432,6 +432,7 @@ function mpIdentify(id, props){try{if(typeof mixpanel!=='undefined'){mixpanel.id
   <div class="welcome-logo">
     <h1>VoiceScore</h1>
     <p>Hands Free &middot; Golf Scorecard &amp; Stat Tracking</p>
+    <p style="margin-top:6px;font-size:.78rem;"><span onclick="showVoiceHelp()" style="color:var(--gold);cursor:pointer;text-decoration:underline;text-underline-offset:3px;letter-spacing:.5px;">See how it works</span></p>
   </div>
   <div class="welcome-tiers">
     <div class="tier-card tier-free">
@@ -3292,25 +3293,8 @@ async function loadStats(){
             </div>`).join('')}
           </div>
         </div>
-        <div class="goals-card" style="margin:12px 16px 0;">
-          <div class="stat-label">My Goals (per round)</div>
-          <div class="goal-row">
-            <div><div class="goal-text">Break</div><div class="goal-avg">You avg 93</div></div>
-            <div class="goal-input-wrap"><input class="goal-input" type="number" value="90" disabled><span class="goal-unit">strokes</span></div>
-          </div>
-          <div class="goal-row">
-            <div><div class="goal-text">Make at least</div><div class="goal-avg">You avg 5</div></div>
-            <div class="goal-input-wrap"><input class="goal-input" type="number" value="6" disabled><span class="goal-unit">pars or better</span></div>
-          </div>
-          <div class="goal-row">
-            <div><div class="goal-text">Make at least</div><div class="goal-avg">You avg 0.8</div></div>
-            <div class="goal-input-wrap"><input class="goal-input" type="number" value="1" disabled><span class="goal-unit">birdies</span></div>
-          </div>
-          <button class="btn-save-goals" disabled>Save Goals</button>
-        </div>
-        <div style="display:flex;justify-content:center;padding:12px 20px 20px;">
-          <button style="padding:14px 36px;border-radius:12px;border:1px solid rgba(201,168,76,.5);background:rgba(201,168,76,.1);color:var(--gold);font-family:'Bebas Neue',cursive;font-size:1.15rem;letter-spacing:3px;cursor:default;">&#128202; Share My Stats</button>
-        </div>
+
+
       </div>
       <div style="position:absolute;top:80px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:20px;">
         <div style="background:rgba(15,30,13,0.96);border:1px solid rgba(201,168,76,.5);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.6);">
@@ -6642,6 +6626,11 @@ async function submitOnboarding(){
   if(p1&&!p1.value)p1.value=firstName;
   const sessionRaw=readSession();
   if(sessionRaw){restoreSession();}else{navTo('play');}
+  // Show voice instructions to new Google users
+  setTimeout(()=>{
+    document.getElementById('voice-help-overlay').style.display='flex';
+    localStorage.setItem('vs_help_seen','1');
+  },800);
 }
 
 async function signOut(){
