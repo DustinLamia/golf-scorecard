@@ -423,7 +423,7 @@
   <div class="welcome-tiers">
     <div class="tier-card tier-free">
       <h3>Free</h3>
-      <div class="tier-price">Free forever</div>
+      <div class="tier-price">Free — 3 rounds</div>
       <ul class="tier-features">
         <li>Score by voice, never touch your phone</li>
         <li>Real course data loaded automatically</li>
@@ -435,13 +435,14 @@
     <div class="tier-card tier-pro">
       <div class="tier-badge">Most Popular</div>
       <h3>Pro</h3>
-      <div class="tier-price">$6.99 &mdash; one time</div>
+      <div class="tier-price">$14.99 &mdash; one time</div>
       <ul class="tier-features">
-        <li>Everything in Free</li>
+        <li>Unlimited voice scoring</li>
         <li>Every round saved to your account</li>
-        <li>Stats dashboard</li>
+        <li>Full stats dashboard</li>
         <li>Automatic handicap tracking</li>
         <li>Multi-round comparison</li>
+        <li>Goals tracker</li>
         <li>Skins and Match Play</li>
       </ul>
       <button class="btn-tier-pro" id="btn-pro-signup">Go Pro</button>
@@ -3008,7 +3009,7 @@ async function loadStats(){
         <div style="background:rgba(15,30,13,0.96);border:1px solid rgba(201,168,76,.5);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.6);">
           <div style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;">Stats &amp; Handicap</div>
           <div style="font-size:.82rem;color:var(--tan);margin-bottom:18px;line-height:1.6;">Track your handicap, scoring trends, and performance by hole type.</div>
-          <button onclick="showProUpsell('Stats & Handicap')" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
+          <button onclick="showProUpsell('Stats & Handicap')" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $14.99</button>
           <div style="font-size:.7rem;color:var(--tan);margin-top:10px;">One-time payment. Yours forever.</div>
         </div>
       </div>`;
@@ -3948,7 +3949,7 @@ async function loadCompare(){
         <div style="background:rgba(15,30,13,0.96);border:1px solid rgba(201,168,76,.5);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.6);">
           <div style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;">Compare Rounds</div>
           <div style="font-size:.82rem;color:var(--tan);margin-bottom:18px;line-height:1.6;">See how your rounds stack up — hole by hole, front vs back, and every stat in between.</div>
-          <button onclick="showProUpsell('Compare Rounds')" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
+          <button onclick="showProUpsell('Compare Rounds')" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $14.99</button>
           <div style="font-size:.7rem;color:var(--tan);margin-top:10px;">One-time payment. Yours forever.</div>
         </div>
       </div>`;
@@ -4835,7 +4836,7 @@ async function loadHistory(){
         <div style="background:rgba(15,30,13,0.96);border:1px solid rgba(201,168,76,.5);border-radius:16px;padding:28px 24px;max-width:300px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.6);">
           <div style="font-family:'Bebas Neue',cursive;font-size:1.6rem;letter-spacing:3px;color:var(--gold);margin-bottom:6px;">Round History</div>
           <div style="font-size:.82rem;color:var(--tan);margin-bottom:18px;line-height:1.6;">Save every round, track your progress, and relive your best games.</div>
-          <button onclick="showProUpsell('Round History')" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
+          <button onclick="showProUpsell('Round History')" style="width:100%;padding:12px;border-radius:10px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $14.99</button>
           <div style="font-size:.7rem;color:var(--tan);margin-top:10px;">One-time payment. Yours forever.</div>
         </div>
       </div>`;
@@ -5069,13 +5070,13 @@ async function launchStripeCheckout() {
     const resp = await fetch('https://lzthrmmwalesunzsqjvh.supabase.co/functions/v1/stripe-create-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (await supa.auth.getSession()).data.session.access_token },
-      body: JSON.stringify({ user_id: currentUser.id, price_id: 'price_1T9euyCS4Oftbp4DoyNam3Xt', return_url: window.location.href })
+      body: JSON.stringify({ user_id: currentUser.id, price_id: 'price_1TEhvoCS4Oftbp4DPKNEDtOq', return_url: window.location.href })
     });
     const { url, error } = await resp.json();
     if (error || !url) throw new Error(error || 'No checkout URL');
     window.location.href = url;
   } catch(e) {
-    if (btn) { btn.textContent = 'Go Pro — $6.99'; btn.disabled = false; }
+    if (btn) { btn.textContent = 'Go Pro — $14.99'; btn.disabled = false; }
     alert('Checkout error: ' + e.message);
   }
 }
@@ -5954,7 +5955,7 @@ function closeAuthModal(){
 function toggleAuthMode(){
   authMode=authMode==='signin'?'signup':'signin';
   document.getElementById('auth-title').textContent=authMode==='signin'?'Sign In':'Create Account';
-  document.getElementById('auth-subtitle').textContent=authMode==='signin'?'Save your rounds and unlock Pro features.':'Free account — unlock Pro for $6.99 one-time.';
+  document.getElementById('auth-subtitle').textContent=authMode==='signin'?'Save your rounds and unlock Pro features.':'Free account — unlock Pro for $14.99 one-time.';
   document.getElementById('auth-submit').textContent=authMode==='signin'?'Sign In':'Create Account';
   document.getElementById('auth-toggle').innerHTML=authMode==='signin'?'No account? <span onclick="toggleAuthMode()">Create one free</span>':'Already have one? <span onclick="toggleAuthMode()">Sign in</span>';
   document.getElementById('auth-name-field').style.display=authMode==='signup'?'block':'none';
@@ -6360,7 +6361,7 @@ document.addEventListener('DOMContentLoaded', function(){
     <div style="font-size:.72rem;color:var(--tan);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Plan</div>
     <div id="profile-plan-status" style="font-size:.95rem;color:var(--cream);margin-bottom:4px;">Free</div>
     <div id="profile-plan-desc" style="font-size:.78rem;color:var(--tan);margin-bottom:16px;">Upgrade to Pro for stats, handicap tracking, and Versus mode.</div>
-    <button id="profile-go-pro-btn" onclick="launchStripeCheckout()" style="padding:10px 20px;border-radius:8px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $6.99</button>
+    <button id="profile-go-pro-btn" onclick="launchStripeCheckout()" style="padding:10px 20px;border-radius:8px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1rem;letter-spacing:2px;cursor:pointer;">Go Pro — $14.99</button>
   </div>
 </div>
 <!-- Skins Results Overlay -->
@@ -6436,7 +6437,7 @@ document.addEventListener('DOMContentLoaded', function(){
         <span style="color:var(--gold);">&#10003;</span> Shareable Stats Card
       </div>
     </div>
-    <button onclick="launchStripeCheckout()" style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:3px;cursor:pointer;box-shadow:0 4px 20px rgba(201,168,76,.4);margin-bottom:10px;">Go Pro — $6.99</button>
+    <button onclick="launchStripeCheckout()" style="width:100%;padding:14px;border-radius:12px;border:none;background:var(--gold);color:var(--dark);font-family:'Bebas Neue',cursive;font-size:1.3rem;letter-spacing:3px;cursor:pointer;box-shadow:0 4px 20px rgba(201,168,76,.4);margin-bottom:10px;">Go Pro — $14.99</button>
     <div style="font-size:.72rem;color:var(--tan);margin-bottom:16px;">One-time payment. Yours forever.</div>
     <button onclick="closeProUpsell()" style="background:transparent;border:none;color:var(--tan);font-size:.82rem;cursor:pointer;text-decoration:underline;">Maybe later</button>
   </div>
