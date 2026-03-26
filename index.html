@@ -1256,6 +1256,19 @@ function countRoundIfNeeded(holeIndex){
   updateFreeRoundsIndicator();
 }
 
+function forceCountRoundIfEligible(){
+  // Safety net: count the round if hole 5 is complete but wasn't counted yet
+  // Called on exit and on save to catch any missed counting
+  if(window._roundCounted||isPro()||!currentUser)return;
+  const hole5Complete=players.every((_,pIdx)=>scores[pIdx]&&scores[pIdx][4]!==null);
+  if(!hole5Complete)return;
+  window._roundCounted=true;
+  const newCount=(window._freeRoundsUsed||0)+1;
+  window._freeRoundsUsed=newCount;
+  supa.from('profiles').update({free_rounds_used:newCount}).eq('id',currentUser.id);
+  updateFreeRoundsIndicator();
+}
+
 function manualScore(pi,hi,val){
   scores[pi][hi]=val?parseInt(val):null;
   colorScore(pi,hi);refreshTotals();saveSession();updateSkinsLiveBar();updateMatchPlayLiveBar();paintMatchPlayHoles();
@@ -2823,6 +2836,7 @@ function rowDivider(ctx,y,w){
 
 function confirmReset(){
   if(confirm('Exit this round? Your scores will not be saved.')){
+    forceCountRoundIfEligible();
     localStorage.removeItem('vs_session');
     document.cookie='vs_session=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;';
     resetRound();
@@ -4806,6 +4820,7 @@ async function finishRound(){
     return;
   }
   if(btn){btn.textContent='Round Saved';btn.disabled=true;}
+  forceCountRoundIfEligible();
   mpTrack('Round Saved',{is_pro:currentIsPro,free_rounds_used:window._freeRoundsUsed||0});
   document.getElementById('voice-feedback').textContent='Round saved!';
   setTimeout(()=>{document.getElementById('voice-feedback').textContent='';},3000);
