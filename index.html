@@ -1243,7 +1243,7 @@ function updatePar(hi,val){
     if(inEl)inEl.textContent=pars.slice(9,18).reduce((a,b)=>a+b,0);
   }
 }
-function countRoundIfNeeded(holeIndex){
+async function countRoundIfNeeded(holeIndex){
   // Count the round once all players have scored hole 5 (index 4)
   if(window._roundCounted||isPro()||!currentUser)return;
   if(holeIndex<4)return; // hole 5 = index 4
@@ -1252,11 +1252,11 @@ function countRoundIfNeeded(holeIndex){
   window._roundCounted=true;
   const newCount=(window._freeRoundsUsed||0)+1;
   window._freeRoundsUsed=newCount;
-  supa.from('profiles').update({free_rounds_used:newCount}).eq('id',currentUser.id);
+  await supa.from('profiles').update({free_rounds_used:newCount}).eq('id',currentUser.id);
   updateFreeRoundsIndicator();
 }
 
-function forceCountRoundIfEligible(){
+async function forceCountRoundIfEligible(){
   // Safety net: count the round if hole 5 is complete but wasn't counted yet
   // Called on exit and on save to catch any missed counting
   if(window._roundCounted||isPro()||!currentUser)return;
@@ -1265,7 +1265,7 @@ function forceCountRoundIfEligible(){
   window._roundCounted=true;
   const newCount=(window._freeRoundsUsed||0)+1;
   window._freeRoundsUsed=newCount;
-  supa.from('profiles').update({free_rounds_used:newCount}).eq('id',currentUser.id);
+  await supa.from('profiles').update({free_rounds_used:newCount}).eq('id',currentUser.id);
   updateFreeRoundsIndicator();
 }
 
@@ -2834,9 +2834,9 @@ function rowDivider(ctx,y,w){
   ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
 }
 
-function confirmReset(){
+async function confirmReset(){
   if(confirm('Exit this round? Your scores will not be saved.')){
-    forceCountRoundIfEligible();
+    await forceCountRoundIfEligible();
     localStorage.removeItem('vs_session');
     document.cookie='vs_session=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;';
     resetRound();
