@@ -2386,7 +2386,12 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
   if(_logoImg.complete && _logoImg.naturalWidth>0){
     const logoH=52;
     const logoW=_logoImg.naturalWidth*logoH/_logoImg.naturalHeight;
-    ctx.drawImage(_logoImg,CARD_PAD,TOP_H-logoH-6,logoW,logoH);
+    ctx.drawImage(_logoImg,CARD_PAD,TOP_H-logoH-18,logoW,logoH);
+    ctx.font='7.5px "DM Sans", sans-serif';
+    ctx.letterSpacing='0.8px';
+    ctx.fillStyle='rgba(245,240,232,0.45)';
+    ctx.textAlign='left';
+    ctx.fillText('HANDS FREE · GOLF SCORECARD & STAT TRACKING',CARD_PAD,TOP_H-5);
   } else {
     ctx.font='bold 36px "Bebas Neue", serif';
     ctx.letterSpacing='4px';
@@ -2944,7 +2949,7 @@ function shareStats(){
 
   // Calculate exact height needed
   const hasHoles=s.totalHoles>0;
-  const headerH=64+12; // header + gap
+  const headerH=80+12; // header + gap
   const handicapH=86+10; // card + gap
   const boxRowH=68+10; // boxes + gap
   const chartH=(s.last10&&s.last10.length)?110+10:0;
@@ -2966,19 +2971,19 @@ function shareStats(){
   roundRect(ctx,1,1,W-2,H-2,0); ctx.stroke();
 
   // Header bar
-  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(0,0,W,64);
+  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(0,0,W,80);
   ctx.strokeStyle='rgba(201,168,76,0.2)'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(0,64); ctx.lineTo(W,64); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,80); ctx.lineTo(W,80); ctx.stroke();
   ctx.font='bold 28px "Bebas Neue",serif'; ctx.letterSpacing='3px';
   ctx.fillStyle=CREAM; ctx.textAlign='left';
   if(_logoImg.complete && _logoImg.naturalWidth>0){
     const logoH=44;
     const logoW=_logoImg.naturalWidth*logoH/_logoImg.naturalHeight;
-    ctx.drawImage(_logoImg,PAD,8,logoW,logoH);
+    ctx.drawImage(_logoImg,PAD,6,logoW,logoH);
   } else { ctx.fillText("VOICESCORE",PAD,40); }
   ctx.font='7.5px "DM Sans",sans-serif'; ctx.letterSpacing='0.8px';
   ctx.fillStyle='rgba(245,240,232,0.45)';
-  ctx.fillText('HANDS FREE · GOLF SCORECARD & STAT TRACKING',PAD,52);
+  ctx.fillText("HANDS FREE · GOLF SCORECARD & STAT TRACKING",PAD,68);
   ctx.font='600 10px "DM Sans",sans-serif'; ctx.letterSpacing='1px';
   ctx.fillStyle=GOLD; ctx.textAlign='right';
   ctx.fillText('MY STATS',W-PAD,38);
@@ -2986,7 +2991,7 @@ function shareStats(){
   if(username){
     ctx.font='400 9px "DM Sans",sans-serif'; ctx.letterSpacing='0px';
     ctx.fillStyle=TAN; ctx.textAlign='right';
-    ctx.fillText(username,W-PAD,52);
+    ctx.fillText(username,W-PAD,44);
   }
   ctx.letterSpacing='0px';
 
@@ -3155,7 +3160,7 @@ function shareH2H(){
   const GREEN='#5bc85b',RED='#e07060';
 
   const rowH=40;
-  const headerH=64+12;
+  const headerH=80+12;
   const roundCardsH=70+12;
   const tableH=allRows.length*rowH+2;
   const footerH=36;
@@ -3174,19 +3179,19 @@ function shareH2H(){
   roundRect(ctx,1,1,W-2,H-2,0); ctx.stroke();
 
   // Header bar
-  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(0,0,W,64);
+  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(0,0,W,80);
   ctx.strokeStyle='rgba(201,168,76,0.2)'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(0,64); ctx.lineTo(W,64); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0,80); ctx.lineTo(W,80); ctx.stroke();
   ctx.font='bold 28px "Bebas Neue",serif'; ctx.letterSpacing='3px';
   ctx.fillStyle=CREAM; ctx.textAlign='left';
   if(_logoImg.complete && _logoImg.naturalWidth>0){
     const logoH=44;
     const logoW=_logoImg.naturalWidth*logoH/_logoImg.naturalHeight;
-    ctx.drawImage(_logoImg,PAD,8,logoW,logoH);
+    ctx.drawImage(_logoImg,PAD,6,logoW,logoH);
   } else { ctx.fillText("VOICESCORE",PAD,40); }
   ctx.font='7.5px "DM Sans",sans-serif'; ctx.letterSpacing='0.8px';
   ctx.fillStyle='rgba(245,240,232,0.45)';
-  ctx.fillText('HANDS FREE · GOLF SCORECARD & STAT TRACKING',PAD,52);
+  ctx.fillText("HANDS FREE · GOLF SCORECARD & STAT TRACKING",PAD,68);
   ctx.font='600 10px "DM Sans",sans-serif'; ctx.letterSpacing='1px';
   ctx.fillStyle=GOLD; ctx.textAlign='right';
   ctx.fillText('HEAD TO HEAD',W-PAD,38);
