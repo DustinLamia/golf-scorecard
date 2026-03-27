@@ -115,7 +115,7 @@
   #welcome-screen{display:none;min-height:100vh;padding:40px 20px;flex-direction:column;align-items:center;justify-content:center;}
   .welcome-logo{text-align:center;margin-bottom:8px;}
   .welcome-logo h1{font-family:'Bebas Neue',cursive;font-size:clamp(3.5rem,14vw,5.5rem);letter-spacing:8px;color:var(--cream);text-shadow:2px 3px 0 rgba(0,0,0,.35),0 0 30px rgba(255,220,100,.15);margin:0;}
-  .welcome-logo p{font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;margin-bottom:40px;}
+  .welcome-logo p{font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;margin-top:0;}
   .welcome-tiers{display:flex;gap:16px;width:100%;max-width:600px;margin-bottom:24px;}
   .tier-card{flex:1;border-radius:16px;padding:24px 20px;display:flex;flex-direction:column;}
   .tier-free{background:rgba(245,240,232,.08);border:1px solid rgba(245,240,232,.2);}
@@ -438,8 +438,8 @@ function mpIdentify(id, props){try{if(typeof mixpanel!=='undefined'){mixpanel.id
 <!-- Welcome Screen -->
 <div id="welcome-screen" style="display:flex;">
   <div class="welcome-logo">
-    <h1>VoiceScore</h1>
-    <p>Hands Free &middot; Golf Scorecard &amp; Stat Tracking</p>
+    <img src="logo.png" alt="VoiceScore" style="width:min(380px,88vw);height:auto;display:block;margin:0 auto 4px;">
+    <p style="font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;margin-top:0;margin-bottom:8px;">Hands Free &middot; Golf Scorecard &amp; Stat Tracking</p>
   </div>
   <div class="welcome-tiers">
     <div class="tier-card tier-free">
@@ -503,8 +503,7 @@ function mpIdentify(id, props){try{if(typeof mixpanel!=='undefined'){mixpanel.id
 </div>
 
 <header style="display:none;text-align:center;" id="main-header">
-  <h1 style="font-family:'Bebas Neue',cursive;font-size:clamp(2.8rem,10vw,4.2rem);letter-spacing:6px;color:var(--cream);text-shadow:2px 3px 0 rgba(0,0,0,.35),0 0 30px rgba(255,220,100,.15);margin:0 0 2px;">VoiceScore</h1>
-  <p style="font-size:.75rem;color:var(--tan);letter-spacing:2px;text-transform:uppercase;">Hands Free &middot; Golf Scorecard &amp; Stat Tracking</p>
+  <img src="logo.png" alt="VoiceScore" style="width:min(200px,55vw);height:auto;display:block;margin:0 auto 4px;">
   <button class="auth-btn" id="auth-btn" onclick="toggleUserMenu()" style="display:none;">Sign In</button>
   <div class="user-menu" id="user-menu">
     <div class="user-menu-email" id="user-menu-email"></div>
@@ -2383,11 +2382,17 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
   ctx.fillText(today,rightX,CARD_PAD+62);
   ctx.textAlign='left';
 
-  // VOICESCORE — always bottom-left of header
-  ctx.font='bold 36px "Bebas Neue", serif';
-  ctx.letterSpacing='4px';
-  ctx.fillStyle=CREAM;
-  ctx.fillText('VOICESCORE',CARD_PAD,TOP_H-18);
+  // VOICESCORE logo — always bottom-left of header
+  if(_logoImg.complete && _logoImg.naturalWidth>0){
+    const logoH=28;
+    const logoW=_logoImg.naturalWidth*logoH/_logoImg.naturalHeight;
+    ctx.drawImage(_logoImg,CARD_PAD,TOP_H-logoH-8,logoW,logoH);
+  } else {
+    ctx.font='bold 36px "Bebas Neue", serif';
+    ctx.letterSpacing='4px';
+    ctx.fillStyle=CREAM;
+    ctx.fillText('VOICESCORE',CARD_PAD,TOP_H-18);
+  }
   ctx.font='8px "DM Sans", sans-serif';
   ctx.letterSpacing='0.8px';
   ctx.fillStyle='rgba(245,240,232,0.45)';
@@ -2966,7 +2971,11 @@ function shareStats(){
   ctx.beginPath(); ctx.moveTo(0,64); ctx.lineTo(W,64); ctx.stroke();
   ctx.font='bold 28px "Bebas Neue",serif'; ctx.letterSpacing='3px';
   ctx.fillStyle=CREAM; ctx.textAlign='left';
-  ctx.fillText('VOICESCORE',PAD,40);
+  if(_logoImg.complete && _logoImg.naturalWidth>0){
+    const logoH=22;
+    const logoW=_logoImg.naturalWidth*logoH/_logoImg.naturalHeight;
+    ctx.drawImage(_logoImg,PAD,16,logoW,logoH);
+  } else { ctx.fillText("VOICESCORE",PAD,40); }
   ctx.font='7.5px "DM Sans",sans-serif'; ctx.letterSpacing='0.8px';
   ctx.fillStyle='rgba(245,240,232,0.45)';
   ctx.fillText('HANDS FREE · GOLF SCORECARD & STAT TRACKING',PAD,52);
@@ -3170,7 +3179,11 @@ function shareH2H(){
   ctx.beginPath(); ctx.moveTo(0,64); ctx.lineTo(W,64); ctx.stroke();
   ctx.font='bold 28px "Bebas Neue",serif'; ctx.letterSpacing='3px';
   ctx.fillStyle=CREAM; ctx.textAlign='left';
-  ctx.fillText('VOICESCORE',PAD,40);
+  if(_logoImg.complete && _logoImg.naturalWidth>0){
+    const logoH=22;
+    const logoW=_logoImg.naturalWidth*logoH/_logoImg.naturalHeight;
+    ctx.drawImage(_logoImg,PAD,16,logoW,logoH);
+  } else { ctx.fillText("VOICESCORE",PAD,40); }
   ctx.font='7.5px "DM Sans",sans-serif'; ctx.letterSpacing='0.8px';
   ctx.fillStyle='rgba(245,240,232,0.45)';
   ctx.fillText('HANDS FREE · GOLF SCORECARD & STAT TRACKING',PAD,52);
@@ -4842,7 +4855,7 @@ function showPostRoundPrompt(showUpgradeAfter=false){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;';
   overlay.innerHTML=`
     <div style="background:#1e3d1a;border:1px solid rgba(201,168,76,.35);border-radius:16px;padding:28px 24px;width:100%;max-width:360px;text-align:center;">
-      <div style="font-size:1.5rem;margin-bottom:8px;">&#127920;</div>
+      <img src="mascot.png" alt="VoiceScore" style="width:80px;height:auto;margin-bottom:8px;">
       <div style="font-family:'Bebas Neue',cursive;font-size:1.4rem;letter-spacing:2px;color:var(--gold);margin-bottom:6px;">Round Saved!</div>
       <div style="font-size:.85rem;color:var(--tan);margin-bottom:22px;">Want to share your scorecard?</div>
       <div style="display:flex;flex-direction:column;gap:10px;">
@@ -6777,6 +6790,10 @@ document.addEventListener('visibilitychange', function(){
 });
 
 // Wire up welcome screen buttons after DOM is ready
+// Preload logo for canvas PNG exports
+const _logoImg = new Image();
+_logoImg.src = 'logo.png';
+
 document.addEventListener('DOMContentLoaded', function(){
   // Close past course dropdown when clicking outside
   document.addEventListener('click', function(e){
