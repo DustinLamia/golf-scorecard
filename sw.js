@@ -1,9 +1,11 @@
-const CACHE = 'voicescore-v12';
+const CACHE = 'voicescore-v13';
 const STATIC_ASSETS = [
   '/icon-192.png',
   '/icon-512.png',
   '/apple-touch-icon.png',
-  '/manifest.json'
+  '/manifest.json',
+  '/logo.png',
+  '/mascot.png'
 ];
 
 self.addEventListener('install', e => {
@@ -43,7 +45,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Cache-first for static assets (icons, manifest)
+  // Cache-first for static assets (icons, manifest, images)
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
       const clone = res.clone();
