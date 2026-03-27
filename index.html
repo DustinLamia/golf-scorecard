@@ -2995,7 +2995,7 @@ function shareStats(){
   }
   ctx.letterSpacing='0px';
 
-  let y=76;
+  let y=92;
 
   // ── Handicap card ──
   ctx.fillStyle='rgba(0,0,0,0.25)';
@@ -3199,12 +3199,12 @@ function shareH2H(){
   if(username){
     ctx.font='400 9px "DM Sans",sans-serif'; ctx.letterSpacing='0px';
     ctx.fillStyle=TAN; ctx.textAlign='right';
-    ctx.fillText(username,W-PAD,52);
+    ctx.fillText(username,W-PAD,44);
   }
   ctx.letterSpacing='0px';
 
   // Round cards
-  let y=64+12;
+  let y=80+12;
   const fmtDate=s=>{const d=new Date(s);return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate();};
   const cardW=(W-PAD*2-8)/2;
 
