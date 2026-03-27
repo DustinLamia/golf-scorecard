@@ -503,7 +503,7 @@ function mpIdentify(id, props){try{if(typeof mixpanel!=='undefined'){mixpanel.id
 </div>
 
 <header style="display:none;text-align:center;" id="main-header">
-  <img src="logo.png" alt="VoiceScore" style="width:min(200px,55vw);height:auto;display:block;margin:0 auto 4px;">
+  <img src="logo.png" alt="VoiceScore" style="width:min(260px,70vw);height:auto;display:block;margin:0 auto 4px;">
   <button class="auth-btn" id="auth-btn" onclick="toggleUserMenu()" style="display:none;">Sign In</button>
   <div class="user-menu" id="user-menu">
     <div class="user-menu-email" id="user-menu-email"></div>
@@ -2382,21 +2382,21 @@ function drawScorecard({courseName,teeLabel,location,today,pars,yardages,holes,p
   ctx.fillText(today,rightX,CARD_PAD+62);
   ctx.textAlign='left';
 
-  // VOICESCORE logo — always bottom-left of header
+  // VOICESCORE logo — bottom-left of header
   if(_logoImg.complete && _logoImg.naturalWidth>0){
-    const logoH=28;
+    const logoH=52;
     const logoW=_logoImg.naturalWidth*logoH/_logoImg.naturalHeight;
-    ctx.drawImage(_logoImg,CARD_PAD,TOP_H-logoH-8,logoW,logoH);
+    ctx.drawImage(_logoImg,CARD_PAD,TOP_H-logoH-6,logoW,logoH);
   } else {
     ctx.font='bold 36px "Bebas Neue", serif';
     ctx.letterSpacing='4px';
     ctx.fillStyle=CREAM;
     ctx.fillText('VOICESCORE',CARD_PAD,TOP_H-18);
+    ctx.font='8px "DM Sans", sans-serif';
+    ctx.letterSpacing='0.8px';
+    ctx.fillStyle='rgba(245,240,232,0.45)';
+    ctx.fillText('HANDS FREE · GOLF SCORECARD & STAT TRACKING',CARD_PAD,TOP_H-5);
   }
-  ctx.font='8px "DM Sans", sans-serif';
-  ctx.letterSpacing='0.8px';
-  ctx.fillStyle='rgba(245,240,232,0.45)';
-  ctx.fillText('HANDS FREE · GOLF SCORECARD & STAT TRACKING',CARD_PAD,TOP_H-5);
 
   // ── Table ──
   let y=TOP_H;
@@ -2972,9 +2972,9 @@ function shareStats(){
   ctx.font='bold 28px "Bebas Neue",serif'; ctx.letterSpacing='3px';
   ctx.fillStyle=CREAM; ctx.textAlign='left';
   if(_logoImg.complete && _logoImg.naturalWidth>0){
-    const logoH=22;
+    const logoH=44;
     const logoW=_logoImg.naturalWidth*logoH/_logoImg.naturalHeight;
-    ctx.drawImage(_logoImg,PAD,16,logoW,logoH);
+    ctx.drawImage(_logoImg,PAD,8,logoW,logoH);
   } else { ctx.fillText("VOICESCORE",PAD,40); }
   ctx.font='7.5px "DM Sans",sans-serif'; ctx.letterSpacing='0.8px';
   ctx.fillStyle='rgba(245,240,232,0.45)';
@@ -3180,9 +3180,9 @@ function shareH2H(){
   ctx.font='bold 28px "Bebas Neue",serif'; ctx.letterSpacing='3px';
   ctx.fillStyle=CREAM; ctx.textAlign='left';
   if(_logoImg.complete && _logoImg.naturalWidth>0){
-    const logoH=22;
+    const logoH=44;
     const logoW=_logoImg.naturalWidth*logoH/_logoImg.naturalHeight;
-    ctx.drawImage(_logoImg,PAD,16,logoW,logoH);
+    ctx.drawImage(_logoImg,PAD,8,logoW,logoH);
   } else { ctx.fillText("VOICESCORE",PAD,40); }
   ctx.font='7.5px "DM Sans",sans-serif'; ctx.letterSpacing='0.8px';
   ctx.fillStyle='rgba(245,240,232,0.45)';
