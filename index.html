@@ -6544,6 +6544,12 @@ function clearUser(){
   const startBtn=document.getElementById('start-btn');
   if(btn){btn.textContent='Sign In';btn.classList.remove('signed-in');}
   if(startBtn){startBtn.textContent='Sign In to Start';}
+  // Hide all app screens
+  ['profile-screen','history-screen','stats-screen','compare-screen','scorecard-screen','setup-screen','past-round-screen'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.style.display='none';
+  });
+  document.getElementById('main-header').style.display='none';
   if(window._authReady){showWelcomeScreen();hideBottomNav();}
 }
 
