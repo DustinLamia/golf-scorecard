@@ -2986,12 +2986,12 @@ function shareStats(){
   ctx.fillText("HANDS FREE · GOLF SCORECARD & STAT TRACKING",PAD,68);
   ctx.font='600 10px "DM Sans",sans-serif'; ctx.letterSpacing='1px';
   ctx.fillStyle=GOLD; ctx.textAlign='right';
-  ctx.fillText('MY STATS',W-PAD,38);
+  ctx.fillText("MY STATS",W-PAD,42);
   const username=currentUser?(currentUser.user_metadata?.username||currentUser.email.split('@')[0]):'';
   if(username){
     ctx.font='400 9px "DM Sans",sans-serif'; ctx.letterSpacing='0px';
     ctx.fillStyle=TAN; ctx.textAlign='right';
-    ctx.fillText(username,W-PAD,44);
+    ctx.fillText(username,W-PAD,58);
   }
   ctx.letterSpacing='0px';
 
@@ -3194,12 +3194,12 @@ function shareH2H(){
   ctx.fillText("HANDS FREE · GOLF SCORECARD & STAT TRACKING",PAD,68);
   ctx.font='600 10px "DM Sans",sans-serif'; ctx.letterSpacing='1px';
   ctx.fillStyle=GOLD; ctx.textAlign='right';
-  ctx.fillText('HEAD TO HEAD',W-PAD,38);
+  ctx.fillText("HEAD TO HEAD",W-PAD,42);
   const username=currentUser?(currentUser.user_metadata?.username||currentUser.email.split('@')[0]):'';
   if(username){
     ctx.font='400 9px "DM Sans",sans-serif'; ctx.letterSpacing='0px';
     ctx.fillStyle=TAN; ctx.textAlign='right';
-    ctx.fillText(username,W-PAD,44);
+    ctx.fillText(username,W-PAD,58);
   }
   ctx.letterSpacing='0px';
 
@@ -3274,9 +3274,11 @@ function shareH2H(){
   y+=tableH;
 
   // Footer
-  ctx.font='400 9px "DM Sans",sans-serif'; ctx.letterSpacing='.3px';
-  ctx.fillStyle='rgba(245,240,232,0.9)'; ctx.textAlign='center';
-  ctx.fillText('voicescore.app',W/2,y+22);
+  y+=8;
+  ctx.strokeStyle='rgba(201,168,76,0.1)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(PAD,y); ctx.lineTo(W-PAD,y); ctx.stroke();
+  ctx.font='500 10px "DM Sans",sans-serif'; ctx.fillStyle='rgba(245,240,232,0.9)'; ctx.textAlign='center';
+  ctx.fillText('voicescore.app',W/2,y+18);
 
   canvas.toBlob(blob=>{
     const url=URL.createObjectURL(blob);
