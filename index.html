@@ -1979,7 +1979,8 @@ function startSilentAudioLoop(){
     // Create a silent oscillator at 0 gain — inaudible but keeps the audio session alive
     const osc=ctx.createOscillator();
     const gain=ctx.createGain();
-    gain.gain.value=0.001; // near silent
+    osc.frequency.value=1; // 1 Hz — below human hearing range, physically inaudible
+    gain.gain.value=0.0001; // even lower gain as backup
     osc.connect(gain);
     gain.connect(ctx.destination);
     osc.start();
